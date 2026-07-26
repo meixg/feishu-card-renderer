@@ -50,6 +50,7 @@ export const containerFixtureMatrix = {
     invalid: cardWith({
       tag: "column_set",
       horizontal_align: "diagonal",
+      horizontal_spacing: "100px",
       future_column_set: { retained: true },
       columns: [{ tag: "column", elements: [] }],
     }),
@@ -84,6 +85,7 @@ export const containerFixtureMatrix = {
       columns: [{
         tag: "column",
         direction: "diagonal",
+        padding: "100px",
         future_column: { retained: true },
         elements: [],
       }],
@@ -112,6 +114,7 @@ export const containerFixtureMatrix = {
     invalid: cardWith({
       tag: "interactive_container",
       vertical_align: "sideways",
+      padding: "100px",
       future_interactive_container: { retained: true },
       elements: [],
     }),
@@ -140,6 +143,7 @@ export const containerFixtureMatrix = {
         title: { tag: "plain_text", content: "非法面板" },
         position: "sideways",
       },
+      border: { corner_radius: "100px" },
       future_collapsible_panel: { retained: true },
       elements: [],
     }),
@@ -170,6 +174,7 @@ export const containerFixtureMatrix = {
       tag: "form",
       name: "invalid_matrix_form",
       horizontal_align: "diagonal",
+      vertical_spacing: "100px",
       future_form: { retained: true },
       elements: [submit],
     }),

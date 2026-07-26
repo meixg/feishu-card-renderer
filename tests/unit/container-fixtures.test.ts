@@ -46,14 +46,48 @@ describe("container fixtures", () => {
   );
 
   it.each(Object.entries(containerFixtureMatrix))(
-    "diagnoses invalid enums and preserves unknown fields for %s",
+    "diagnoses invalid enums/lengths and preserves unknown fields for %s",
     (tag, fixtures) => {
-      expect(validateCard(fixtures.invalid).diagnostics.map(({ code }) => code))
-        .toContain("invalid_enum");
-      expect(JSON.stringify(normalizeCard(fixtures.invalid).card))
+      const codes = validateCard(fixtures.invalid).diagnostics.map(
+        ({ code }) => code,
+      );
+      expect(codes).toEqual(expect.arrayContaining([
+        "invalid_enum",
+        "invalid_style",
+      ]));
+      const normalized = JSON.stringify(normalizeCard(fixtures.invalid).card);
+      expect(normalized)
         .toContain(`future_${tag === "column" ? "column" : tag}`);
+      expect(normalized).not.toContain("100px");
     },
   );
+
+  it("limits position validation to collapsible panel headers", () => {
+    const result = validateCard({
+      schema: "2.0",
+      body: {
+        elements: [
+          { tag: "chart", chart_spec: { position: "inside" } },
+          {
+            tag: "interactive_container",
+            future_extension: { position: "inside" },
+            elements: [],
+          },
+          {
+            tag: "collapsible_panel",
+            header: { position: "sideways" },
+            elements: [],
+          },
+        ],
+      },
+    });
+    expect(result.diagnostics.filter(({ code }) => code === "invalid_enum"))
+      .toEqual([
+        expect.objectContaining({
+          path: "$.body.elements[2].header.position",
+        }),
+      ]);
+  });
 
   it("keeps form/table/chart nesting conservative", () => {
     const result = validateCard(invalidContainerCard);

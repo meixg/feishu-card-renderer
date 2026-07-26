@@ -6,6 +6,7 @@ import {
   type ValidationResult,
 } from "./diagnostics";
 import { validateCard } from "./validate";
+import { safeBox, safePx, safeSpacing } from "../styles/safe";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -85,6 +86,25 @@ function cloneAndNormalize(
       ? output.page_size : 5;
     output.row_height = ["low", "medium", "high"].includes(String(output.row_height))
       ? output.row_height : "medium";
+  }
+  const styleFields = [
+    ["padding", () => safeBox(output.padding, false)],
+    ["margin", () => safeBox(output.margin, true)],
+    ["horizontal_spacing", () => safeSpacing(output.horizontal_spacing)],
+    ["vertical_spacing", () => safeSpacing(output.vertical_spacing)],
+    ["corner_radius", () => safePx(output.corner_radius)],
+  ] as const;
+  for (const [field, parse] of styleFields) {
+    if (output[field] !== undefined && parse() === undefined) {
+      delete output[field];
+    }
+  }
+  if (tag === "collapsible_panel" && isRecord(output.border) &&
+    output.border.corner_radius !== undefined &&
+    safePx(output.border.corner_radius) === undefined) {
+    const border = { ...output.border };
+    delete border.corner_radius;
+    output.border = border;
   }
 
   return output;

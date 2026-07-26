@@ -38,7 +38,7 @@ describe("package entry", () => {
 
     expect(first).toBe(second);
     expect(first).toContain('data-fcr-depth="2"');
-    expect(first).toMatch(/aria-controls="fcr-panel-[a-z0-9]+"/);
+    expect(first).toMatch(/aria-controls="fcr-panel-[A-Za-z0-9_-]+"/);
     expect(first).toContain("<form");
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import type {
   CollapsiblePanelElement,
@@ -21,15 +21,6 @@ import { keyForElement } from "../../schema/identity";
 
 function childPath(path: string, collection: "columns" | "elements", index: number) {
   return `${path}.${collection}[${index}]`;
-}
-
-function stablePanelId(path: string): string {
-  let hash = 2166136261;
-  for (const character of path) {
-    hash ^= character.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return `fcr-panel-${(hash >>> 0).toString(36)}`;
 }
 
 function Children({ elements, path, collection = "elements" }: {
@@ -158,7 +149,8 @@ export function CollapsiblePanel({ element, path }: {
   useEffect(() => {
     setExpanded(element.expanded ?? false);
   }, [element.expanded]);
-  const contentId = stablePanelId(path);
+  const instanceId = useId().replace(/[^A-Za-z0-9_-]/g, "");
+  const contentId = `fcr-panel-${instanceId}`;
   const title = element.header?.title?.content ?? "折叠面板";
   const header = (
     <button type="button" className={[

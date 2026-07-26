@@ -41,6 +41,10 @@ function keyFor(diagnostic: CardDiagnostic): string {
 export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   const { onDiagnostic } = props;
   const result = useMemo(() => normalizeCard(props.card), [props.card]);
+  const uniqueElementIds = useMemo(
+    () => collectUniqueElementIds(props.card),
+    [props.card],
+  );
   const controllers = useRef(new Set<AbortController>());
   const imageCache = useRef(new Map());
   const personCache = useRef(new Map());
@@ -70,7 +74,6 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   }
 
   const card = result.card;
-  const uniqueElementIds = collectUniqueElementIds(card);
   const header = card.header as CardHeader | undefined;
   const width = card.config.width_mode;
   const context = {

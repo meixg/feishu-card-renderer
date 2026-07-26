@@ -43,6 +43,30 @@ describe("container rendering", () => {
       .toHaveAttribute("aria-controls", controls);
   });
 
+  it("uses unique disclosure control ids across card renderer instances", () => {
+    const { container } = render(
+      <>
+        <CardRenderer card={defaultContainerCard} />
+        <CardRenderer card={defaultContainerCard} />
+      </>,
+    );
+    const triggers = within(container).getAllByRole(
+      "button",
+      { name: "默认折叠" },
+    );
+    const controls = triggers.map((trigger) =>
+      trigger.getAttribute("aria-controls"));
+
+    expect(new Set(controls).size).toBe(2);
+    controls.forEach((id, index) => {
+      const controlled = document.getElementById(id!);
+      expect(controlled).not.toBeNull();
+      fireEvent.click(triggers[index]);
+      expect(controlled).not.toHaveAttribute("hidden");
+      expect(container.querySelectorAll(`#${id}`)).toHaveLength(1);
+    });
+  });
+
   it("lets an ordinary child button act before the parent container seam", () => {
     const card = {
       schema: "2.0",
@@ -136,6 +160,42 @@ describe("container rendering", () => {
     expect(consoleError.mock.calls.flat().join(" "))
       .not.toContain("same key");
     consoleError.mockRestore();
+  });
+
+  it("counts ids on replaced illegal nodes before choosing React identity", () => {
+    const card = (prefix: boolean) => ({
+      schema: "2.0" as const,
+      body: {
+        elements: [
+          ...(prefix ? [{ tag: "hr" as const }] : []),
+          {
+            tag: "collapsible_panel" as const,
+            element_id: "dup",
+            header: {
+              title: { tag: "plain_text" as const, content: "身份面板" },
+            },
+            elements: [],
+          },
+          {
+            tag: "interactive_container" as const,
+            elements: [{
+              tag: "form" as const,
+              element_id: "dup",
+              name: "illegal_form",
+              elements: [],
+            }],
+          },
+        ],
+      },
+    });
+    const { rerender } = render(<CardRenderer card={card(false)} />);
+    fireEvent.click(screen.getByRole("button", { name: "身份面板" }));
+    expect(screen.getByRole("button", { name: "身份面板" }))
+      .toHaveAttribute("aria-expanded", "true");
+
+    rerender(<CardRenderer card={card(true)} />);
+    expect(screen.getByRole("button", { name: "身份面板" }))
+      .toHaveAttribute("aria-expanded", "false");
   });
 
   it("replaces illegal nested nodes while preserving legal siblings", () => {

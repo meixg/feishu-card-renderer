@@ -11,6 +11,7 @@ import {
   type ValidationResult,
 } from "./diagnostics";
 import { isValidElementId } from "./identity";
+import { safeBox, safePx, safeSpacing } from "../styles/safe";
 
 const FORM_INTERACTIVE_TAGS = new Set([
   "input",
@@ -36,7 +37,6 @@ const ENUMS: Record<string, readonly string[]> = {
   direction: ["vertical", "horizontal"],
   horizontal_align: ["left", "center", "right"],
   vertical_align: ["top", "center", "bottom"],
-  position: ["top", "bottom"],
   input_type: ["text", "multiline_text", "password"],
   form_action_type: ["submit", "reset"],
   aspect_ratio: ["1:1", "2:1", "4:3", "16:9"],
@@ -62,6 +62,29 @@ function diagnostic(
     classification,
     severity: "error",
   };
+}
+
+function validateTaggedStyleFields(
+  value: Record<string, unknown>,
+  path: ProtocolPath,
+  state: WalkState,
+): void {
+  const fields = [
+    ["padding", () => safeBox(value.padding, false)],
+    ["margin", () => safeBox(value.margin, true)],
+    ["horizontal_spacing", () => safeSpacing(value.horizontal_spacing)],
+    ["vertical_spacing", () => safeSpacing(value.vertical_spacing)],
+    ["corner_radius", () => safePx(value.corner_radius)],
+  ] as const;
+  for (const [field, parse] of fields) {
+    if (value[field] !== undefined && parse() === undefined) {
+      state.diagnostics.push(diagnostic(
+        "invalid_style",
+        childPath(path, field),
+        `${field} contains an invalid or out-of-range length.`,
+      ));
+    }
+  }
 }
 
 type WalkState = {
@@ -146,6 +169,7 @@ function validateTaggedNodes(
       ));
     }
   }
+  if (tag) validateTaggedStyleFields(value, path, state);
 
   for (const [key, child] of Object.entries(value)) {
     validateTaggedNodes(child, childPath(path, key), nextDepth, state);
@@ -253,6 +277,24 @@ function validateComponentTree(
         "forbidden_child",
         childPath(itemPath, "tag"),
         "collapsible_panel cannot contain form.",
+      ));
+    }
+    if (tag === "collapsible_panel" && isRecord(item.header) &&
+      item.header.position !== undefined &&
+      !["top", "bottom"].includes(String(item.header.position))) {
+      state.diagnostics.push(diagnostic(
+        "invalid_enum",
+        childPath(childPath(itemPath, "header"), "position"),
+        "collapsible_panel.header.position must be top or bottom.",
+      ));
+    }
+    if (tag === "collapsible_panel" && isRecord(item.border) &&
+      item.border.corner_radius !== undefined &&
+      safePx(item.border.corner_radius) === undefined) {
+      state.diagnostics.push(diagnostic(
+        "invalid_style",
+        childPath(childPath(itemPath, "border"), "corner_radius"),
+        "collapsible_panel.border.corner_radius is out of range.",
       ));
     }
     if (context.inForm && tag === "chart") {
