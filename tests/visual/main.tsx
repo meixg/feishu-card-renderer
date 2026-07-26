@@ -2,7 +2,10 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 
 import { CardRenderer } from "../../src";
-import { completeRendererCard } from "../../src/fixtures/renderer-cards";
+import {
+  chartRendererCard,
+  completeRendererCard,
+} from "../../src/fixtures/renderer-cards";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
 import "../../src/styles.css";
 
@@ -21,6 +24,12 @@ createRoot(document.getElementById("root")!).render(
         card={completeRendererCard} /></section>
       <section id="case-containers"><CardRenderer
         card={completeContainerCard} /></section>
+      <section id="case-chart-light"><CardRenderer
+        card={chartRendererCard} /></section>
+      <section id="case-chart-dark"><CardRenderer colorScheme="dark"
+        card={chartRendererCard} /></section>
+      <section id="case-chart-mobile"><CardRenderer device="mobile"
+        card={chartRendererCard} /></section>
     </main>
   </React.StrictMode>,
 );

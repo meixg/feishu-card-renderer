@@ -40,3 +40,29 @@ export const invalidRendererCard = {
     ],
   },
 } as const;
+
+export const chartRendererCard: Card = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "chart",
+      aspect_ratio: "16:9",
+      color_theme: "brand",
+      preview: true,
+      chart_spec: {
+        type: "bar",
+        data: [{
+          id: "sales",
+          values: [
+            { month: "一月", value: 18 },
+            { month: "二月", value: 31 },
+            { month: "三月", value: 24 },
+          ],
+        }],
+        xField: "month",
+        yField: "value",
+        media: [],
+      },
+    }],
+  },
+};

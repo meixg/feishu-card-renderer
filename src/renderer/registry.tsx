@@ -3,12 +3,12 @@ import type { ComponentType } from "react";
 
 import { Div, Hr, Image, Markdown } from "../components/content/basic";
 import {
-  Chart,
   ImageCombination,
   Person,
   PersonList,
   Table,
 } from "../components/content/complex";
+import { Chart } from "../components/content/Chart";
 import {
   CollapsiblePanel,
   Column,

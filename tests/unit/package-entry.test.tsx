@@ -41,4 +41,16 @@ describe("package entry", () => {
     expect(first).toMatch(/aria-controls="fcr-panel-[A-Za-z0-9_-]+"/);
     expect(first).toContain("<form");
   });
+
+  it("renders a stable chart placeholder during SSR", () => {
+    const html = renderToString(<CardRenderer card={{
+      schema: "2.0",
+      body: { elements: [{ tag: "chart", aspect_ratio: "16:9", chart_spec: {
+        type: "bar", data: [], media: [],
+      } }] },
+    }} />);
+    expect(html).toContain("fcr-chart-placeholder");
+    expect(html).toContain('data-state="loading"');
+    expect(html).not.toContain("<canvas");
+  });
 });

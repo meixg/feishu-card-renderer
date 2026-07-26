@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import type {
-  ChartElement,
   CombinationImage,
   ImageCombinationElement,
   PersonElement,
@@ -151,15 +150,4 @@ export function Table({ element }: { element: TableElement }): React.JSX.Element
         onClick={() => setPage(page + 1)}>下一页</button>
     </nav>}
   </div>;
-}
-
-export function Chart({ element }: { element: ChartElement }): React.JSX.Element {
-  const result = useMemo(() => <div className="fcr-chart-result"
-    data-chart-result="safe" role="img" aria-label="图表安全渲染结果容器">
-    图表渲染器待接入
-  </div>, []);
-  return element.preview === true
-    ? <PreviewDialog label="打开图表预览"
-      items={[{ label: "图表预览", content: result }]}>{result}</PreviewDialog>
-    : result;
 }

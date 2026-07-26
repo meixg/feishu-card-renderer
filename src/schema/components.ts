@@ -150,6 +150,9 @@ export type ChartElement = BaseElement<"chart"> & {
   chart_spec?: Record<string, unknown>;
   preview?: boolean;
   aspect_ratio?: "1:1" | "2:1" | "4:3" | "16:9";
+  color_theme?: string;
+  height?: string;
+  margin?: string;
 };
 export type TableColumn = {
   name?: string;

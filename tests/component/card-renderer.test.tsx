@@ -1,6 +1,12 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("../../src/adapters/vchart-loader", () => ({
+  loadVChartRuntime: async () => ({
+    createChart: () => ({ update: vi.fn(), release: vi.fn() }),
+  }),
+}));
+
 import { CardRenderer } from "../../src";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 
@@ -202,13 +208,17 @@ describe("CardRenderer", () => {
     expect(trigger).toHaveFocus();
   });
 
-  it("previews only the chart safe-result container", () => {
+  it("previews only the chart safe-result container through the shared layer", () => {
     const rendered = render(<CardRenderer card={completeComplexContentCard} />);
-    fireEvent.click(within(rendered.container).getByRole(
+    const trigger = within(rendered.container).getByRole(
       "button", { name: "打开图表预览" },
-    ));
+    );
+    expect(within(trigger).getByRole("img", { name: "图表" })).toHaveAttribute(
+      "data-chart-result", "safe",
+    );
+    fireEvent.click(trigger);
     const dialog = within(rendered.container).getByRole("dialog");
-    expect(within(dialog).getByText("图表渲染器待接入")).toHaveAttribute(
+    expect(within(dialog).getByRole("img", { name: "图表预览" })).toHaveAttribute(
       "data-chart-result", "safe",
     );
   });

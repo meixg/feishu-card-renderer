@@ -16,3 +16,13 @@ test("container visual baseline", async ({ page }) => {
   await expect(renderer).toBeVisible();
   await expect(renderer).toHaveScreenshot("card-renderer-containers.png");
 });
+
+test("chart light, dark, and mobile visual baselines", async ({ page }) => {
+  await page.goto("/tests/visual/");
+  for (const name of ["chart-light", "chart-dark", "chart-mobile"]) {
+    const renderer = page.locator(`#case-${name}`);
+    await expect(renderer).toBeVisible();
+    await expect(renderer.locator(".fcr-chart")).toHaveAttribute("data-state", "ready");
+    await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
+  }
+});

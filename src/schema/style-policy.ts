@@ -33,10 +33,23 @@ const STYLE_FIELDS_BY_TAG: Readonly<
   img_combination: {
     corner_radius: safePx,
   },
+  chart: {
+    margin: (value) => safeBox(value, true),
+    height: safeChartHeight,
+  },
   hr: {
     margin: (value) => safeBox(value, true),
   },
 };
+
+export function safeChartHeight(value: unknown): string | undefined {
+  if (value === "auto" || value === undefined) return undefined;
+  if (typeof value !== "string") return undefined;
+  const match = /^([1-9]\d{0,2})px$/.exec(value);
+  if (!match) return undefined;
+  const height = Number(match[1]);
+  return height <= 999 ? `${height}px` : undefined;
+}
 
 export function invalidStyleFields(
   tag: string | undefined,
