@@ -23,6 +23,7 @@ const FORBIDDEN_KEYS = new Set([
 
 const EXECUTABLE_KEY = /^(?:on.*|.*(?:callback|handler|formatter|function|script|register).*)$/i;
 const EXECUTABLE_STRING = /(?:javascript\s*:|<\s*script\b|<\/\s*script\s*>)/i;
+const FORBIDDEN_RENDER_MODE = /^(?:html|dom|reactdom)$/;
 
 export type SafeChartSpecResult =
   | { ok: true; spec: Record<string, unknown> }
@@ -51,15 +52,47 @@ export function sanitizeChartSpec(input: unknown): SafeChartSpecResult {
       (typeof value === "number" && Number.isFinite(value))
     ) return value;
     if (typeof value === "string") {
-      if (EXECUTABLE_STRING.test(value)) failure = "unsafe";
+      const normalizedMode = value.toLowerCase().replace(/[\s_-]/g, "");
+      if (EXECUTABLE_STRING.test(value) ||
+        FORBIDDEN_RENDER_MODE.test(normalizedMode)) {
+        failure = "unsafe";
+      }
       return value;
     }
     if (Array.isArray(value)) {
+      const descriptors = Object.getOwnPropertyDescriptors(value) as
+        Record<string, PropertyDescriptor>;
+      if (Object.getOwnPropertySymbols(value).length > 0) {
+        failure = "invalid";
+        return undefined;
+      }
+      const lengthDescriptor = descriptors.length;
+      const rawLength = lengthDescriptor && "value" in lengthDescriptor
+        ? lengthDescriptor.value
+        : undefined;
+      if (typeof rawLength !== "number" ||
+        !Number.isSafeInteger(rawLength) || rawLength < 0) {
+        failure = "invalid";
+        return undefined;
+      }
+      const length = rawLength;
       const copy: unknown[] = [];
-      for (const item of value) {
-        const safeItem = visit(item, depth + 1);
+      for (let index = 0; index < length; index += 1) {
+        const descriptor = descriptors[String(index)];
+        if (!descriptor || !("value" in descriptor)) {
+          failure = descriptor ? "unsafe" : "invalid";
+          return undefined;
+        }
+        const safeItem = visit(descriptor.value, depth + 1);
         if (failure) return undefined;
         copy.push(safeItem);
+      }
+      if (Object.keys(descriptors).some((key) =>
+        key !== "length" &&
+        (!/^(?:0|[1-9]\d*)$/.test(key) || Number(key) >= length)
+      )) {
+        failure = "invalid";
+        return undefined;
       }
       return copy;
     }

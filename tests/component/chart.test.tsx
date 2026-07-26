@@ -70,6 +70,41 @@ describe("Chart lifecycle", () => {
       .toHaveTextContent("图表配置不安全");
   });
 
+  it("rejects chart spec accessors without invoking them through CardRenderer", async () => {
+    const nestedGetter = vi.fn(() => "executed");
+    const chartSpec = { type: "bar" };
+    Object.defineProperty(chartSpec, "label", {
+      enumerable: true,
+      get: nestedGetter,
+    });
+    const chartSpecGetter = vi.fn(() => ({ type: "bar" }));
+    const accessorChart: Record<string, unknown> = { tag: "chart" };
+    Object.defineProperty(accessorChart, "chart_spec", {
+      enumerable: true,
+      get: chartSpecGetter,
+    });
+
+    const { container } = render(<CardRenderer card={{
+      schema: "2.0",
+      body: {
+        elements: [
+          { tag: "chart", chart_spec: chartSpec },
+          accessorChart,
+        ],
+      },
+    }} />);
+    await act(async () => {});
+
+    expect(nestedGetter).not.toHaveBeenCalled();
+    expect(chartSpecGetter).not.toHaveBeenCalled();
+    expect(runtime.load).not.toHaveBeenCalled();
+    const chartResults = [...container.querySelectorAll(".fcr-chart")];
+    expect(chartResults).toHaveLength(2);
+    for (const result of chartResults) {
+      expect(result).toHaveTextContent("图表配置不安全");
+    }
+  });
+
   it("does not load the runtime for chartless cards", async () => {
     render(<CardRenderer card={{
       schema: "2.0",

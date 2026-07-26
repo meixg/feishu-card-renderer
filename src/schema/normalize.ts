@@ -26,11 +26,25 @@ type NestingContext = {
 };
 
 function cloneOpaque(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(cloneOpaque);
-  if (!isRecord(value)) return value;
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [key, cloneOpaque(child)]),
+  if (typeof value !== "object" || value === null) return value;
+  const output: object = Array.isArray(value) ? [] : Object.create(
+    Object.getPrototypeOf(value) === null ? null : Object.prototype,
   );
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor) continue;
+    if ("value" in descriptor) {
+      Object.defineProperty(output, key, {
+        value: cloneOpaque(descriptor.value),
+        enumerable: descriptor.enumerable,
+        writable: true,
+        configurable: !(Array.isArray(value) && key === "length"),
+      });
+    } else {
+      Object.defineProperty(output, key, descriptor);
+    }
+  }
+  return output;
 }
 
 function normalizeSlots(

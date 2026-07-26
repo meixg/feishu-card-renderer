@@ -34,6 +34,18 @@ describe("chart spec safety boundary", () => {
     expect(sanitizeChartSpec(input)).toMatchObject({ ok: false });
   });
 
+  it.each([
+    { type: "bar", tooltip: { renderMode: "html" } },
+    { type: "html", data: [] },
+    { type: "bar", label: { renderMode: "dom" } },
+    { type: "bar", tooltip: { renderMode: "react-dom" } },
+  ])("rejects HTML and DOM rendering modes %#", (input) => {
+    expect(sanitizeChartSpec(input)).toMatchObject({
+      ok: false,
+      reason: "unsafe",
+    });
+  });
+
   it.each([undefined, null, [], new Date(), { value: NaN }])(
     "rejects non-JSON data %#",
     (input) => {
@@ -52,6 +64,20 @@ describe("chart spec safety boundary", () => {
     const input = { type: "bar" };
     Object.defineProperty(input, "label", { enumerable: true, get: getter });
     expect(sanitizeChartSpec(input)).toMatchObject({ ok: false, reason: "unsafe" });
+    expect(getter).not.toHaveBeenCalled();
+  });
+
+  it("rejects array accessors without invoking them", () => {
+    const getter = vi.fn(() => ({ x: "executed" }));
+    const values: unknown[] = [];
+    Object.defineProperty(values, "0", {
+      enumerable: true,
+      get: getter,
+    });
+    expect(sanitizeChartSpec({ type: "bar", data: values })).toMatchObject({
+      ok: false,
+      reason: "unsafe",
+    });
     expect(getter).not.toHaveBeenCalled();
   });
 });

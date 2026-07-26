@@ -16,13 +16,23 @@ export function collectUniqueElementIds(value: unknown): ReadonlySet<string> {
       return;
     }
     if (!isRecord(candidate)) return;
-    if (isValidElementId(candidate.element_id)) {
+    const descriptors = Object.getOwnPropertyDescriptors(candidate);
+    const elementId = descriptors.element_id;
+    if (elementId && "value" in elementId &&
+      isValidElementId(elementId.value)) {
       counts.set(
-        candidate.element_id,
-        (counts.get(candidate.element_id) ?? 0) + 1,
+        elementId.value,
+        (counts.get(elementId.value) ?? 0) + 1,
       );
     }
-    Object.values(candidate).forEach(visit);
+    const tag = descriptors.tag && "value" in descriptors.tag
+      ? descriptors.tag.value
+      : undefined;
+    for (const [key, descriptor] of Object.entries(descriptors)) {
+      if (!("value" in descriptor)) continue;
+      if (tag === "chart" && key === "chart_spec") continue;
+      visit(descriptor.value);
+    }
   };
   visit(value);
   return new Set(

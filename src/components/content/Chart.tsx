@@ -28,9 +28,16 @@ function ChartSurface({ element, label }: {
   const [state, setState] = useState<"loading" | "ready" | "unsafe" | "error">(
     "loading",
   );
+  const chartSpecDescriptor = Object.getOwnPropertyDescriptor(
+    element,
+    "chart_spec",
+  );
+  const chartSpec = chartSpecDescriptor && "value" in chartSpecDescriptor
+    ? chartSpecDescriptor.value
+    : chartSpecDescriptor?.get;
   const safeSpec = useMemo(
-    () => sanitizeChartSpec(element.chart_spec),
-    [element.chart_spec],
+    () => sanitizeChartSpec(chartSpec),
+    [chartSpec],
   );
 
   useEffect(() => {
