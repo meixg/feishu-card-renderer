@@ -18,6 +18,7 @@ export type {
   CardHeader,
   NormalizedCard,
 } from "./card";
+export type { Card as CardJsonV2 } from "./card";
 export {
   childPath,
 } from "./diagnostics";

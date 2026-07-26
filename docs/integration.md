@@ -26,9 +26,12 @@ import {
   normalizeCard,
   validateCard,
   type Card,
+  type CardJsonV2,
   type CardDiagnostic,
 } from "@meixg/feishu-card-renderer/schema";
 ```
+
+`CardJsonV2` 是与父规格命名对齐的稳定别名，与 `Card` 表示同一个 JSON 2.0 根类型。
 
 ## 最小集成
 
@@ -61,7 +64,7 @@ recoverable 错误保留稳定占位和诊断，公共 API 不允许逐 tag 绕�
 1. React 入口：`CardRenderer`、`CardRendererProps`。
 2. `@meixg/feishu-card-renderer/schema` 纯函数：`validateCard`、
    `normalizeCard`、`isCardElement`、`isCardComponentTag`、`childPath`。
-3. 协议与宿主类型：`Card`、`CardElement`、`CardComponentTag`、
+3. 协议与宿主类型：`Card`（别名 `CardJsonV2`）、`CardElement`、`CardComponentTag`、
    `CardDiagnostic`、`ValidationResult`、`CardAction`、`Person`。
 4. 资源 seam：`resolveImage(imgKey, signal)`、
    `resolvePerson(id, signal)`；允许同步或异步返回，也允许返回 `undefined`

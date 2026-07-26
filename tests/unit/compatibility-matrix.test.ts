@@ -40,11 +40,7 @@ describe("1.0 executable per-tag compatibility matrix", () => {
       expect(validateCard(fixture.complete).diagnostics).toEqual([]);
       const normalized = normalizeCard(fixture.complete);
       const normalizedTarget = findFixtureTarget(normalized.card, tag);
-      for (const field of fixture.completeFields) {
-        expect(normalizedTarget?.[field], `${tag}.${field}`).toEqual(
-          target?.[field],
-        );
-      }
+      expect(normalizedTarget).toMatchObject(target!);
     },
   );
 
@@ -55,7 +51,11 @@ describe("1.0 executable per-tag compatibility matrix", () => {
       const result = normalizeCard(fixture.defaults);
       expect(result.fatal).toBe(false);
       const target = findFixtureTarget(result.card, tag);
-      expect(target).toMatchObject(fixture.defaultValues);
+      if (fixture.defaultValues === null) {
+        expect(target).toEqual(findFixtureTarget(fixture.defaults, tag));
+      } else {
+        expect(target).toMatchObject(fixture.defaultValues);
+      }
     },
   );
 
@@ -70,6 +70,12 @@ describe("1.0 executable per-tag compatibility matrix", () => {
         expect(codes, `${tag}:${code}`).toContain(code);
       }
       expect(fixture.invalidFields.length).toBeGreaterThan(0);
+      for (const field of fixture.invalidFields) {
+        expect(
+          validation.diagnostics.some(({ path }) => path.includes(field)),
+          `${tag}.${field} must own a diagnostic path`,
+        ).toBe(true);
+      }
 
       const normalized = normalizeCard(fixture.invalid);
       const target = findFixtureTarget(normalized.card, tag);
@@ -111,11 +117,25 @@ describe("1.0 executable per-tag compatibility matrix", () => {
   );
 
   it.each(CARD_COMPONENT_TAGS)(
+    "%s: nesting contract accounts for every executable context",
+    (tag) => {
+      const { allowed, forbidden } = compatibilityFixturesByTag[tag].nesting;
+      expect(new Set([...allowed, ...Object.keys(forbidden)])).toEqual(new Set([
+        "body", "column", "form", "interactive_container", "collapsible_panel",
+      ]));
+    },
+  );
+
+  it.each(CARD_COMPONENT_TAGS)(
     "%s: resource applicability is explicit",
     (tag) => {
       const resource = compatibilityFixturesByTag[tag].resource;
       if (resource.kind === "none") {
         expect(resource.modes).toEqual([]);
+      } else if (resource.kind === "chart") {
+        expect(resource.modes).toEqual([
+          "runtime_ready", "runtime_rejected", "late_unmount",
+        ]);
       } else {
         expect(resource.modes).toEqual([
           "missing", "resolved", "rejected", "aborted",
@@ -123,4 +143,14 @@ describe("1.0 executable per-tag compatibility matrix", () => {
       }
     },
   );
+
+  it("select_img explicitly distinguishes legal form multi-select", () => {
+    expect(validateCard(
+      compatibilityFixturesByTag.select_img.complete,
+    ).diagnostics).toEqual([]);
+    expect(validateCard(
+      compatibilityFixturesByTag.select_img.invalid,
+    ).diagnostics.map(({ code }) => code))
+      .toContain("select_img_multi_requires_form");
+  });
 });

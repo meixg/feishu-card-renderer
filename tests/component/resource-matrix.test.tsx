@@ -22,16 +22,22 @@ describe("per-tag resource fixtures", () => {
     missing.unmount();
 
     const resolved = render(<CardRenderer card={card}
-      resolveImage={(key) => `https://cdn.example.com/${key}.png`} />);
+      resolveImage={async (key) => `https://cdn.example.com/${key}.png`} />);
     await act(async () => {});
     expect(resolved.container.querySelector("img")).not.toBeNull();
     resolved.unmount();
 
     const rejected = render(<CardRenderer card={card}
-      resolveImage={() => "javascript:alert(1)"} />);
+      resolveImage={() => Promise.reject(new Error("image rejected"))} />);
     await act(async () => {});
     expect(rejected.container.querySelector("img")).toBeNull();
     rejected.unmount();
+
+    const thrown = render(<CardRenderer card={card}
+      resolveImage={() => { throw new Error("image resolver threw"); }} />);
+    await act(async () => {});
+    expect(thrown.container.querySelector("img")).toBeNull();
+    thrown.unmount();
 
     const signals: AbortSignal[] = [];
     const pending = render(<CardRenderer card={card}
@@ -39,6 +45,7 @@ describe("per-tag resource fixtures", () => {
         signals.push(signal);
         return new Promise(() => {});
       }} />);
+    await act(async () => {});
     expect(signals.length).toBeGreaterThan(0);
     pending.unmount();
     expect(signals.every(({ aborted }) => aborted)).toBe(true);
@@ -51,16 +58,22 @@ describe("per-tag resource fixtures", () => {
     missing.unmount();
 
     const resolved = render(<CardRenderer card={card}
-      resolvePerson={(id) => ({ id, name: `Resolved ${id.at(-1)}` })} />);
+      resolvePerson={async (id) => ({ id, name: `Resolved ${id.at(-1)}` })} />);
     await act(async () => {});
     expect(resolved.container.textContent).toContain("Resolved");
     resolved.unmount();
 
     const rejected = render(<CardRenderer card={card}
-      resolvePerson={() => undefined} />);
+      resolvePerson={() => Promise.reject(new Error("person rejected"))} />);
     await act(async () => {});
     expect(rejected.container.textContent).not.toContain("person-a");
     rejected.unmount();
+
+    const thrown = render(<CardRenderer card={card}
+      resolvePerson={() => { throw new Error("person resolver threw"); }} />);
+    await act(async () => {});
+    expect(thrown.container.textContent).not.toContain("person-a");
+    thrown.unmount();
 
     const signals: AbortSignal[] = [];
     const pending = render(<CardRenderer card={card}
@@ -68,16 +81,17 @@ describe("per-tag resource fixtures", () => {
         signals.push(signal);
         return new Promise(() => {});
       }} />);
+    await act(async () => {});
     expect(signals.length).toBeGreaterThan(0);
     pending.unmount();
     expect(signals.every(({ aborted }) => aborted)).toBe(true);
   });
 
-  it("chart declares runtime evidence instead of pretending to use a host adapter", () => {
+  it("chart points to runtime lifecycle evidence instead of host adapter modes", () => {
     const resource = compatibilityFixturesByTag.chart.resource;
     expect(resource.kind).toBe("chart");
     expect(resource.modes).toEqual([
-      "missing", "resolved", "rejected", "aborted",
+      "runtime_ready", "runtime_rejected", "late_unmount",
     ]);
   });
 });

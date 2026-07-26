@@ -19,7 +19,7 @@ export type TagCompatibilityFixture = {
   complete: Card;
   completeFields: readonly string[];
   defaults: Card;
-  defaultValues: Readonly<Record<string, unknown>>;
+  defaultValues: Readonly<Record<string, unknown>> | null;
   invalid: Card;
   invalidFields: readonly string[];
   expectedInvalidCodes: readonly string[];
@@ -30,7 +30,10 @@ export type TagCompatibilityFixture = {
   };
   resource: {
     kind: ResourceFixtureKind;
-    modes: readonly ("missing" | "resolved" | "rejected" | "aborted")[];
+    modes: readonly (
+      | "missing" | "resolved" | "rejected" | "aborted"
+      | "runtime_ready" | "runtime_rejected" | "late_unmount"
+    )[];
   };
 };
 
@@ -44,7 +47,7 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
   column_set: {
     element_id: "complete_columns", horizontal_spacing: "12px",
     horizontal_align: "center", flex_mode: "none",
-    background_style: "default",
+    background_style: "default", direction: "horizontal",
   },
   column: {
     element_id: "complete_column", width: "weighted", weight: 2,
@@ -205,7 +208,38 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
   },
 };
 
-const defaultValuesByTag: Record<CardComponentTag, Record<string, unknown>> = {
+// This contract is intentionally independent from completePatchByTag. A new
+// public field must update both the fixture and this reviewable acceptance list.
+const supportedFieldsByTag: Record<CardComponentTag, readonly string[]> = {
+  column_set: ["tag", "element_id", "columns", "direction", "horizontal_spacing", "horizontal_align", "flex_mode", "background_style"],
+  column: ["tag", "element_id", "elements", "width", "weight", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding"],
+  form: ["tag", "element_id", "name", "elements", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align"],
+  interactive_container: ["tag", "element_id", "elements", "width", "height", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding", "has_border", "corner_radius", "behaviors"],
+  collapsible_panel: ["tag", "element_id", "elements", "expanded", "header", "border"],
+  div: ["tag", "element_id", "width", "margin", "text", "icon"],
+  markdown: ["tag", "element_id", "content", "text_size", "text_align", "icon"],
+  img: ["tag", "element_id", "img_key", "alt", "title", "scale_type", "size", "margin", "corner_radius", "transparent", "preview"],
+  img_combination: ["tag", "element_id", "combination_mode", "combination_transparent", "corner_radius", "img_list"],
+  person: ["tag", "element_id", "user_id", "size", "show_avatar", "show_name", "style"],
+  person_list: ["tag", "element_id", "persons", "drop_invalid_user_id", "lines", "size", "show_avatar", "show_name"],
+  chart: ["tag", "element_id", "chart_spec", "aspect_ratio", "color_theme", "height", "margin", "preview"],
+  table: ["tag", "element_id", "page_size", "row_height", "freeze_first_column", "header_style", "columns", "rows"],
+  hr: ["tag", "element_id", "margin"],
+  input: ["tag", "element_id", "name", "label", "placeholder", "default_value", "input_type", "max_length", "rows", "disabled", "required", "hover_tips", "disabled_tips", "behaviors"],
+  button: ["tag", "element_id", "name", "text", "type", "size", "width", "value", "disabled", "required", "hover_tips", "disabled_tips", "confirm", "behaviors"],
+  overflow: ["tag", "element_id", "name", "options", "disabled", "required", "hover_tips", "disabled_tips"],
+  select_static: ["tag", "element_id", "name", "label", "placeholder", "options", "initial_option", "initial_index", "disabled", "required", "behaviors"],
+  multi_select_static: ["tag", "element_id", "name", "label", "placeholder", "options", "selected_values", "disabled", "required"],
+  select_person: ["tag", "element_id", "name", "label", "placeholder", "options", "initial_option", "initial_index", "disabled", "required"],
+  multi_select_person: ["tag", "element_id", "name", "label", "placeholder", "options", "selected_values", "disabled", "required"],
+  date_picker: ["tag", "element_id", "name", "label", "placeholder", "initial_date", "disabled", "required"],
+  picker_time: ["tag", "element_id", "name", "label", "placeholder", "initial_time", "disabled", "required"],
+  picker_datetime: ["tag", "element_id", "name", "label", "placeholder", "initial_datetime", "disabled", "required"],
+  select_img: ["tag", "element_id", "name", "multi_select", "options", "selected_values", "disabled", "required"],
+  checker: ["tag", "element_id", "name", "checked", "text", "checked_style", "button_area", "disabled", "required"],
+};
+
+const defaultValuesByTag: Record<CardComponentTag, Record<string, unknown> | null> = {
   column_set: {
     columns: [{ tag: "column", elements: [], direction: "vertical" }],
   },
@@ -216,15 +250,15 @@ const defaultValuesByTag: Record<CardComponentTag, Record<string, unknown>> = {
     elements: [], direction: "vertical", expanded: false,
     header: { position: "top", icon_position: "left" },
   },
-  div: {},
-  markdown: {},
-  img: {},
+  div: null,
+  markdown: null,
+  img: null,
   img_combination: { combination_mode: "double" },
   person: { size: "medium", show_avatar: true, show_name: true },
   person_list: { size: "medium", show_avatar: true, show_name: true },
-  chart: {},
+  chart: null,
   table: { columns: [], rows: [], page_size: 5, row_height: "medium" },
-  hr: {},
+  hr: null,
   input: {
     default_value: "", input_type: "text", max_length: 1000,
     disabled: false, required: false,
@@ -321,7 +355,11 @@ const nestingByTag = CARD_COMPONENT_TAGS.reduce(
   {} as Record<CardComponentTag, TagCompatibilityFixture["nesting"]>,
 );
 
-nestingByTag.column = { allowed: ["column"], forbidden: {} };
+nestingByTag.column = { allowed: ["column"], forbidden: {
+  body: "forbidden_child", form: "forbidden_child",
+  interactive_container: "forbidden_child",
+  collapsible_panel: "forbidden_child",
+} };
 nestingByTag.form = { allowed: ["body"], forbidden: {
   column: "root_only_component", form: "root_only_component",
   interactive_container: "root_only_component",
@@ -337,10 +375,18 @@ nestingByTag.chart = {
   forbidden: { form: "form_chart_forbidden" },
 };
 nestingByTag.multi_select_static = {
-  allowed: ["form"], forbidden: { body: "form_only_component" },
+  allowed: ["form"], forbidden: {
+    body: "form_only_component", column: "form_only_component",
+    interactive_container: "form_only_component",
+    collapsible_panel: "form_only_component",
+  },
 };
 nestingByTag.multi_select_person = {
-  allowed: ["form"], forbidden: { body: "form_only_component" },
+  allowed: ["form"], forbidden: {
+    body: "form_only_component", column: "form_only_component",
+    interactive_container: "form_only_component",
+    collapsible_panel: "form_only_component",
+  },
 };
 
 const resourceKindByTag: Partial<Record<CardComponentTag, ResourceFixtureKind>> = {
@@ -452,7 +498,7 @@ export const compatibilityFixturesByTag = Object.fromEntries(
       tag,
       minimal: clone(minimalCardsByTag[tag]),
       complete: cardWithPatch(tag, completePatchByTag[tag], true),
-      completeFields: Object.keys(completePatchByTag[tag]),
+      completeFields: supportedFieldsByTag[tag],
       defaults: clone(minimalCardsByTag[tag]),
       defaultValues: defaultValuesByTag[tag],
       invalid: cardWithPatch(tag, invalidPatch),
@@ -462,9 +508,10 @@ export const compatibilityFixturesByTag = Object.fromEntries(
       nesting: nestingByTag[tag],
       resource: {
         kind: resourceKind,
-        modes: resourceKind === "none"
-          ? []
-          : ["missing", "resolved", "rejected", "aborted"],
+        modes: resourceKind === "none" ? []
+          : resourceKind === "chart"
+            ? ["runtime_ready", "runtime_rejected", "late_unmount"]
+            : ["missing", "resolved", "rejected", "aborted"],
       },
     }];
   }),

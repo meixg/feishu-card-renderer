@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => ({
@@ -68,6 +75,16 @@ describe("Chart lifecycle", () => {
     expect(runtime.createChart).not.toHaveBeenCalled();
     expect(screen.getByRole("img", { name: "图表" }))
       .toHaveTextContent("图表配置不安全");
+  });
+
+  it("renders a stable error state when the lazy runtime rejects", async () => {
+    runtime.load.mockRejectedValue(new Error("runtime unavailable"));
+    const { container } = render(<CardRenderer card={chart(1)} />);
+    await waitFor(() => expect(container.querySelector(".fcr-chart"))
+      .toHaveAttribute("data-state", "error"));
+    expect(runtime.createChart).not.toHaveBeenCalled();
+    expect(within(container).getByRole("img", { name: "图表" }))
+      .toHaveTextContent("图表加载失败");
   });
 
   it("rejects chart spec accessors without invoking them through CardRenderer", async () => {

@@ -525,4 +525,18 @@ describe("JSON 2.0 schema core", () => {
     expect(result.card).not.toBe(input);
     expect(result.card?.body).not.toBe(input.body);
   });
+
+  it.each([
+    "text", "lark_md", "options", "number", "persons", "date", "markdown",
+  ])("accepts the supported table data_type %s", (dataType) => {
+    const result = validateCard({
+      schema: "2.0",
+      body: { elements: [{
+        tag: "table",
+        columns: [{ name: "value", data_type: dataType }],
+        rows: [{ value: "example" }],
+      }] },
+    });
+    expect(result.diagnostics).toEqual([]);
+  });
 });

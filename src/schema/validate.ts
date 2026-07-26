@@ -350,6 +350,13 @@ function validateComponentTree(
         `${tag} is only allowed directly in body.elements.`,
       ));
     }
+    if (tag === "column" && context.parentTag !== "column_set") {
+      state.diagnostics.push(diagnostic(
+        "forbidden_child",
+        childPath(itemPath, "tag"),
+        "column is only allowed directly inside column_set.columns.",
+      ));
+    }
     if (FORM_ONLY_TAGS.has(tag) && !context.inForm) {
       state.diagnostics.push(diagnostic(
         "form_only_component",
@@ -415,6 +422,20 @@ function validateComponentTree(
       ));
     }
     if (tag === "table") {
+      if (Array.isArray(item.columns) && item.columns.some((column) =>
+        !isRecord(column) ||
+        ![
+          "text", "lark_md", "options", "number", "persons", "date",
+          "markdown",
+        ].includes(
+          String(column.data_type),
+        ))) {
+        state.diagnostics.push(diagnostic(
+          "invalid_structure",
+          childPath(itemPath, "columns"),
+          "table.columns must use supported column definitions.",
+        ));
+      }
       for (const key of ["columns", "rows"] as const) {
         const nestedTag = findNestedTag(item[key]);
         if (nestedTag) {
@@ -425,6 +446,16 @@ function validateComponentTree(
           ));
         }
       }
+    }
+    if (tag === "person_list" && Array.isArray(item.persons) &&
+      item.persons.some((person) =>
+        !isRecord(person) || typeof person.id !== "string" ||
+        person.id.length === 0)) {
+      state.diagnostics.push(diagnostic(
+        "invalid_structure",
+        childPath(itemPath, "persons"),
+        "person_list.persons must contain non-empty string ids.",
+      ));
     }
 
     if (tag === "form") {

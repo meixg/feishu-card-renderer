@@ -40,7 +40,7 @@ export type CardDiagnostic = {
   message: string;
 };
 
-export type ValidationResult<T> = {
+export type ValidationResult<T = unknown> = {
   valid: boolean;
   fatal: boolean;
   card: T | null;

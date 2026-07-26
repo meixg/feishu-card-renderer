@@ -30,7 +30,13 @@ function useResource<T>(
     if (!entry.promise) {
       const controller = new AbortController();
       controllers.add(controller);
-      entry.promise = Promise.resolve(resolver(key, controller.signal))
+      let resolution: T | undefined | Promise<T | undefined>;
+      try {
+        resolution = resolver(key, controller.signal);
+      } catch (error) {
+        resolution = Promise.reject(error);
+      }
+      entry.promise = Promise.resolve(resolution)
         .then((raw) => {
           if (controller.signal.aborted) return;
           const value = sanitize(raw);
