@@ -1,5 +1,12 @@
 export { CardRenderer } from "./renderer/CardRenderer";
 export type { CardRendererProps } from "./renderer/CardRenderer";
+export type {
+  ActionSource,
+  CardAction,
+  FatalFallback,
+  Person,
+  ResourceResolver,
+} from "./types";
 export {
   AUXILIARY_TAGS,
   CARD_COMPONENT_TAGS,

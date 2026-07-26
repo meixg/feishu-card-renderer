@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-test("placeholder visual baseline", async ({ page }) => {
+test("theme, device, and width visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
 
-  const renderer = page.locator('[data-fcr-card-renderer="placeholder"]');
-  await expect(renderer).toBeVisible();
-  await expect(renderer).toHaveScreenshot("card-renderer-placeholder.png");
+  for (const name of ["default", "compact", "fill", "dark", "mobile"]) {
+    const renderer = page.locator(`#case-${name}`);
+    await expect(renderer).toBeVisible();
+    await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
+  }
 });

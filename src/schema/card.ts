@@ -28,6 +28,9 @@ export type CardBody = {
   direction?: "vertical" | "horizontal";
   horizontal_align?: "left" | "center" | "right";
   vertical_align?: "top" | "center" | "bottom";
+  padding?: string;
+  horizontal_spacing?: string;
+  vertical_spacing?: string;
   [key: string]: unknown;
 };
 

@@ -8,7 +8,7 @@ describe("package entry", () => {
   it("exports an SSR-safe CardRenderer", () => {
     const html = renderToString(<CardRenderer card={{ schema: "2.0" }} />);
 
-    expect(html).toContain('data-fcr-card-renderer="placeholder"');
+    expect(html).toContain('data-fcr-card-renderer="ready"');
     expect(renderCardToString({ schema: "2.0" })).toBe(html);
   });
 });

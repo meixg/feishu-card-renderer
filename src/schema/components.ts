@@ -65,9 +65,18 @@ export type InteractiveContainerElement =
 export type CollapsiblePanelElement = BaseElement<"collapsible_panel"> & {
   elements: CardElement[];
 };
-export type DivElement = BaseElement<"div"> & { text?: TextElement };
+export type DivElement = BaseElement<"div"> & {
+  text?: TextElement;
+  margin?: string;
+};
 export type MarkdownElement = BaseElement<"markdown"> & { content?: string };
-export type ImageElement = BaseElement<"img"> & { img_key?: string };
+export type ImageElement = BaseElement<"img"> & {
+  img_key?: string;
+  alt?: TextElement;
+  title?: TextElement;
+  margin?: string;
+  corner_radius?: string;
+};
 export type ImageCombinationElement = BaseElement<"img_combination"> & {
   img_list?: unknown[];
 };

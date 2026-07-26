@@ -25,7 +25,11 @@ export type CardDiagnosticCode =
   | "form_only_component"
   | "select_img_multi_requires_form"
   | "form_submit_required"
-  | "form_chart_forbidden";
+  | "form_chart_forbidden"
+  | "invalid_style"
+  | "unsafe_url"
+  | "image_unavailable"
+  | "image_resolve_failed";
 
 export type CardDiagnostic = {
   code: CardDiagnosticCode;
