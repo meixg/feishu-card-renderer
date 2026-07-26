@@ -49,12 +49,23 @@ test("chart preview dialog visual baseline", async ({ page }) => {
   await expect(dialog).toHaveScreenshot("card-renderer-chart-preview.png");
 });
 
-test("interactive controls remain usable across host environments", async ({ page }) => {
+test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", async ({ page }) => {
   await page.goto("/tests/visual/");
 
-  for (const name of ["default", "compact", "fill", "dark", "mobile"]) {
-    const renderer = page.locator(`#case-interactions-${name}`);
-    await expect(renderer).toBeVisible();
-    await expect(renderer).toHaveScreenshot(`card-interactions-${name}.png`);
+  for (const colorScheme of ["light", "dark"]) {
+    for (const device of ["pc", "mobile"]) {
+      for (const width of ["compact", "default", "fill"]) {
+        const name = `${colorScheme}-${device}-${width}`;
+        const renderer = page.locator(`#case-matrix-${name}`);
+        await expect(renderer).toBeVisible();
+        await expect(renderer.locator(".fcr-root")).toHaveClass(
+          new RegExp(`fcr-width-${width}`),
+        );
+        await expect(renderer.locator(".fcr-root")).toHaveClass(
+          new RegExp(`fcr-device-${device}`),
+        );
+        await expect(renderer).toHaveScreenshot(`card-matrix-${name}.png`);
+      }
+    }
   }
 });

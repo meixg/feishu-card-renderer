@@ -77,8 +77,16 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     [safeCard],
   );
   const controllers = useRef(new Set<AbortController>());
-  const imageCache = useRef(new Map());
-  const personCache = useRef(new Map());
+  // Resolver identity is part of the cache boundary. A host may switch tenant
+  // or session resolvers while reusing the renderer and protocol keys.
+  const imageCache = useMemo(() => ({
+    resolver: props.resolveImage,
+    cache: new Map(),
+  }), [props.resolveImage]).cache;
+  const personCache = useMemo(() => ({
+    resolver: props.resolvePerson,
+    cache: new Map(),
+  }), [props.resolvePerson]).cache;
   const diagnostics = useMemo(() => {
     const unique = new Map(result.diagnostics.map((item) => [keyFor(item), item]));
     if (!props.onAction && hasBusinessAction(safeCard)) {
@@ -122,8 +130,8 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     widthMode: width,
     resolveImage: props.resolveImage,
     resolvePerson: props.resolvePerson,
-    imageCache: imageCache.current,
-    personCache: personCache.current,
+    imageCache,
+    personCache,
     controllers: controllers.current,
     uniqueElementIds,
     onAction: props.onAction,

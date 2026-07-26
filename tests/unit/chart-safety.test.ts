@@ -5,6 +5,7 @@ import {
   FEISHU_MOBILE_CHART_LIMITATIONS,
   sanitizeChartSpec,
 } from "../../src/adapters/chart";
+import { feishuChartCardsByType } from "../../src/fixtures/chart-compatibility";
 
 describe("chart spec safety boundary", () => {
   it("deep-clones pure data without mutating the input", () => {
@@ -78,6 +79,21 @@ describe("chart spec safety boundary", () => {
     expect(FEISHU_CHART_TYPES).not.toContain("map");
     expect(FEISHU_MOBILE_CHART_LIMITATIONS).toContain("word-cloud-grid");
   });
+
+  it.each(FEISHU_CHART_TYPES)(
+    "keeps an executable pure-data compatibility fixture for %s",
+    (type) => {
+      const card = feishuChartCardsByType[type];
+      const element = card.body?.elements?.[0];
+      expect(element?.tag).toBe("chart");
+      if (element?.tag === "chart") {
+        expect(sanitizeChartSpec(element.chart_spec)).toMatchObject({
+          ok: true,
+          spec: { type, media: [] },
+        });
+      }
+    },
+  );
 
   it("rejects accessors without invoking them", () => {
     const getter = vi.fn(() => "executed");

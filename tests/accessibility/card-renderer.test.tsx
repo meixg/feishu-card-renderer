@@ -19,10 +19,10 @@ it("has no detectable accessibility violations", async () => {
     body: { elements: [{ tag: "img", img_key: "x",
       alt: { tag: "plain_text", content: "Diagram" } }] },
   }} />);
+  // jsdom cannot compute layout/canvas contrast; release-audit.test.ts checks
+  // every shipped theme token numerically instead.
   const results = await axe(container, {
-    rules: {
-      "color-contrast": { enabled: false },
-    },
+    rules: { "color-contrast": { enabled: false } },
   });
 
   expect(results.violations).toEqual([]);
@@ -43,9 +43,7 @@ it("keeps recursive containers and disclosure controls accessible", async () => 
     <CardRenderer card={completeContainerCard} />,
   );
   const results = await axe(container, {
-    rules: {
-      "color-contrast": { enabled: false },
-    },
+    rules: { "color-contrast": { enabled: false } },
   });
   expect(results.violations).toEqual([]);
 });

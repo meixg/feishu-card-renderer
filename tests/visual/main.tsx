@@ -7,16 +7,30 @@ import {
   completeRendererCard,
 } from "../../src/fixtures/renderer-cards";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
+import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 import { completeInteractiveCard } from "../../src/fixtures/interactive-card";
 import "../../src/styles.css";
 
-const interactiveCases = [
-  { name: "default", width: "default", colorScheme: "light", device: "pc" },
-  { name: "compact", width: "compact", colorScheme: "light", device: "pc" },
-  { name: "fill", width: "fill", colorScheme: "light", device: "pc" },
-  { name: "dark", width: "default", colorScheme: "dark", device: "pc" },
-  { name: "mobile", width: "default", colorScheme: "light", device: "mobile" },
-] as const;
+const releaseMatrix = (["light", "dark"] as const).flatMap((colorScheme) =>
+  (["pc", "mobile"] as const).flatMap((device) =>
+    (["compact", "default", "fill"] as const).map((width) => ({
+      name: `${colorScheme}-${device}-${width}`,
+      width,
+      colorScheme,
+      device,
+    }))));
+const releaseAllTagsCard = {
+  schema: "2.0" as const,
+  header: completeRendererCard.header,
+  body: {
+    elements: [
+      ...(completeRendererCard.body?.elements ?? []),
+      ...(completeContainerCard.body?.elements ?? []),
+      ...(completeComplexContentCard.body?.elements ?? []),
+      ...(completeInteractiveCard.body?.elements ?? []),
+    ],
+  },
+};
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -39,12 +53,12 @@ createRoot(document.getElementById("root")!).render(
         card={chartRendererCard} /></section>
       <section id="case-chart-mobile"><CardRenderer device="mobile"
         card={chartRendererCard} /></section>
-      {interactiveCases.map(({ name, width, colorScheme, device }) => (
-        <section id={`case-interactions-${name}`} key={`interactions-${name}`}
+      {releaseMatrix.map(({ name, width, colorScheme, device }) => (
+        <section id={`case-matrix-${name}`} key={`matrix-${name}`}
           style={device === "mobile" ? { maxWidth: 390 } : undefined}>
           <CardRenderer onAction={() => {}} colorScheme={colorScheme}
-            device={device} card={{ ...completeInteractiveCard,
-              config: { width_mode: width } }} />
+            device={device} card={{ ...releaseAllTagsCard,
+              config: { update_multi: true, width_mode: width } }} />
         </section>
       ))}
     </main>

@@ -81,6 +81,37 @@ describe("CardRenderer", () => {
     expect(document.querySelectorAll("img")).toHaveLength(2);
   });
 
+  it("isolates resource caches when host resolver identities change", async () => {
+    const firstImage = vi.fn(() => "https://first.example/image.png");
+    const secondImage = vi.fn(() => "https://second.example/image.png");
+    const firstPerson = vi.fn(() => ({ id: "same", name: "First tenant" }));
+    const secondPerson = vi.fn(() => ({ id: "same", name: "Second tenant" }));
+    const card = { schema: "2.0", body: { elements: [
+      { tag: "img", img_key: "same",
+        alt: { tag: "plain_text", content: "Tenant image" } },
+      { tag: "person", user_id: "same" },
+    ] } };
+    const rendered = render(<CardRenderer card={card}
+      resolveImage={firstImage} resolvePerson={firstPerson} />);
+    await act(async () => {});
+    expect(screen.getByRole("img", { name: "Tenant image" })).toHaveAttribute(
+      "src", "https://first.example/image.png",
+    );
+    expect(screen.getByText("First tenant")).toBeInTheDocument();
+
+    rendered.rerender(<CardRenderer card={card}
+      resolveImage={secondImage} resolvePerson={secondPerson} />);
+    await act(async () => {});
+    expect(screen.getByRole("img", { name: "Tenant image" })).toHaveAttribute(
+      "src", "https://second.example/image.png",
+    );
+    expect(screen.getByText("Second tenant")).toBeInTheDocument();
+    expect(firstImage).toHaveBeenCalledTimes(1);
+    expect(secondImage).toHaveBeenCalledTimes(1);
+    expect(firstPerson).toHaveBeenCalledTimes(1);
+    expect(secondPerson).toHaveBeenCalledTimes(1);
+  });
+
   it("aborts pending image work on unmount", () => {
     let signal: AbortSignal | undefined;
     const { unmount } = render(<CardRenderer
