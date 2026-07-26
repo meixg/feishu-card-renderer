@@ -91,6 +91,17 @@ export function Form({ element, path }: {
   path: string;
 }): React.JSX.Element {
   const recursive = useRecursiveContext();
+  return (
+    <FormScopeBoundary key={`${path}\u0000${element.name}`}
+      element={element} path={path} recursive={recursive} />
+  );
+}
+
+function FormScopeBoundary({ element, path, recursive }: {
+  element: FormElement;
+  path: string;
+  recursive: ReturnType<typeof useRecursiveContext>;
+}): React.JSX.Element {
   const form = useFormScope(element.name, path);
   return (
     <RecursiveContext.Provider value={{ ...recursive, form }}>

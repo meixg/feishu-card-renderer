@@ -223,6 +223,46 @@ describe("interactive components and CardAction", () => {
     }));
   });
 
+  it("creates a fresh form scope when the form owner changes at the same path", () => {
+    const onAction = vi.fn();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const card = (formName: string, initial: string, required: boolean) => ({
+      schema: "2.0", body: { elements: [{ tag: "form", name: formName,
+        elements: [
+          { tag: "input", name: "shared", required, default_value: initial,
+            label: { tag: "plain_text", content: `${formName} field` } },
+          { tag: "button", name: "reset", form_action_type: "reset",
+            text: { tag: "plain_text", content: `${formName} reset` } },
+          { tag: "button", name: "submit", form_action_type: "submit",
+            text: { tag: "plain_text", content: `${formName} submit` } },
+        ] }] },
+    });
+    const rendered = render(<CardRenderer
+      card={card("A", "old-initial", true)} onAction={onAction} />);
+    fireEvent.change(screen.getByLabelText("A field"), {
+      target: { value: "old-dirty" },
+    });
+
+    rendered.rerender(<CardRenderer
+      card={card("B", "new-initial", false)} onAction={onAction} />);
+    expect(screen.getByLabelText("B field")).toHaveValue("new-initial");
+    fireEvent.change(screen.getByLabelText("B field"), {
+      target: { value: "new-dirty" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "B reset" }));
+    expect(screen.getByLabelText("B field")).toHaveValue("new-initial");
+    fireEvent.click(screen.getByRole("button", { name: "B submit" }));
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+      formValue: { shared: "new-initial" },
+    }));
+    expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
+      /unmounted|while rendering|cannot update/i,
+    );
+    consoleError.mockRestore();
+  });
+
   it("keeps formValue on exactly one callback when submit also opens URLs", () => {
     const onAction = vi.fn();
     render(<CardRenderer onAction={onAction} card={{ schema: "2.0", body: {

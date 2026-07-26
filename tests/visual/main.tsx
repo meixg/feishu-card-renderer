@@ -7,7 +7,16 @@ import {
   completeRendererCard,
 } from "../../src/fixtures/renderer-cards";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
+import { completeInteractiveCard } from "../../src/fixtures/interactive-card";
 import "../../src/styles.css";
+
+const interactiveCases = [
+  { name: "default", width: "default", colorScheme: "light", device: "pc" },
+  { name: "compact", width: "compact", colorScheme: "light", device: "pc" },
+  { name: "fill", width: "fill", colorScheme: "light", device: "pc" },
+  { name: "dark", width: "default", colorScheme: "dark", device: "pc" },
+  { name: "mobile", width: "default", colorScheme: "light", device: "mobile" },
+] as const;
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -30,6 +39,14 @@ createRoot(document.getElementById("root")!).render(
         card={chartRendererCard} /></section>
       <section id="case-chart-mobile"><CardRenderer device="mobile"
         card={chartRendererCard} /></section>
+      {interactiveCases.map(({ name, width, colorScheme, device }) => (
+        <section id={`case-interactions-${name}`} key={`interactions-${name}`}
+          style={device === "mobile" ? { maxWidth: 390 } : undefined}>
+          <CardRenderer onAction={() => {}} colorScheme={colorScheme}
+            device={device} card={{ ...completeInteractiveCard,
+              config: { width_mode: width } }} />
+        </section>
+      ))}
     </main>
   </React.StrictMode>,
 );

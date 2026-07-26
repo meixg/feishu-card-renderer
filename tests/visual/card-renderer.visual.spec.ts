@@ -48,3 +48,13 @@ test("chart preview dialog visual baseline", async ({ page }) => {
   );
   await expect(dialog).toHaveScreenshot("card-renderer-chart-preview.png");
 });
+
+test("interactive controls remain usable across host environments", async ({ page }) => {
+  await page.goto("/tests/visual/");
+
+  for (const name of ["default", "compact", "fill", "dark", "mobile"]) {
+    const renderer = page.locator(`#case-interactions-${name}`);
+    await expect(renderer).toBeVisible();
+    await expect(renderer).toHaveScreenshot(`card-interactions-${name}.png`);
+  }
+});
