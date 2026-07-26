@@ -9,6 +9,13 @@ import {
   PersonList,
   Table,
 } from "../components/content/complex";
+import {
+  CollapsiblePanel,
+  Column,
+  ColumnSet,
+  Form,
+  InteractiveContainer,
+} from "../components/containers/containers";
 import type { CardComponentTag, CardElement } from "../schema/components";
 import { UnknownComponent } from "./UnknownComponent";
 
@@ -25,11 +32,13 @@ export const registry: Record<CardComponentTag, ComponentType<RendererProps>> = 
   markdown: Markdown as unknown as ComponentType<RendererProps>,
   img: Image as unknown as ComponentType<RendererProps>,
   hr: Hr as unknown as ComponentType<RendererProps>,
-  column_set: Placeholder,
-  column: Placeholder,
-  form: Placeholder,
-  interactive_container: Placeholder,
-  collapsible_panel: Placeholder,
+  column_set: ColumnSet as unknown as ComponentType<RendererProps>,
+  column: Column as unknown as ComponentType<RendererProps>,
+  form: Form as unknown as ComponentType<RendererProps>,
+  interactive_container:
+    InteractiveContainer as unknown as ComponentType<RendererProps>,
+  collapsible_panel:
+    CollapsiblePanel as unknown as ComponentType<RendererProps>,
   img_combination: ImageCombination as unknown as ComponentType<RendererProps>,
   person: Person as unknown as ComponentType<RendererProps>,
   person_list: PersonList as unknown as ComponentType<RendererProps>,

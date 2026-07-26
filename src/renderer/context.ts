@@ -29,8 +29,31 @@ type RendererContextValue = Readonly<{
 
 export const RendererContext = createContext<RendererContextValue | null>(null);
 
+export type FormScope = Readonly<{
+  name: string;
+  path: string;
+  values: Readonly<Record<string, unknown>>;
+  registerInitialValue: (name: string, value: unknown) => void;
+  setValue: (name: string, value: unknown) => void;
+}>;
+
+export type RecursiveContextValue = Readonly<{
+  path: string;
+  containerDepth: number;
+  form?: FormScope;
+}>;
+
+export const RecursiveContext = createContext<RecursiveContextValue>({
+  path: "$.body",
+  containerDepth: 0,
+});
+
 export function useRendererContext(): RendererContextValue {
   const value = useContext(RendererContext);
   if (!value) throw new Error("RendererContext is missing");
   return value;
+}
+
+export function useRecursiveContext(): RecursiveContextValue {
+  return useContext(RecursiveContext);
 }

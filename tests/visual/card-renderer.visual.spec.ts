@@ -9,3 +9,10 @@ test("theme, device, and width visual baselines", async ({ page }) => {
     await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
   }
 });
+
+test("container visual baseline", async ({ page }) => {
+  await page.goto("/tests/visual/");
+  const renderer = page.locator("#case-containers");
+  await expect(renderer).toBeVisible();
+  await expect(renderer).toHaveScreenshot("card-renderer-containers.png");
+});

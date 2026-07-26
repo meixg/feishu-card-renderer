@@ -52,18 +52,58 @@ export type BaseElement<TTag extends CardComponentTag> = {
 
 export type ColumnSetElement = BaseElement<"column_set"> & {
   columns: ColumnElement[];
+  direction?: "vertical" | "horizontal";
+  horizontal_spacing?: string;
+  horizontal_align?: "left" | "center" | "right";
+  flex_mode?: string;
 };
 export type ColumnElement = BaseElement<"column"> & {
   elements: CardElement[];
+  width?: string;
+  weight?: number;
+  direction?: "vertical" | "horizontal";
+  horizontal_spacing?: string;
+  vertical_spacing?: string;
+  horizontal_align?: "left" | "center" | "right";
+  vertical_align?: "top" | "center" | "bottom";
+  padding?: string;
 };
 export type FormElement = BaseElement<"form"> & {
   name: string;
   elements: CardElement[];
+  direction?: "vertical" | "horizontal";
+  horizontal_spacing?: string;
+  vertical_spacing?: string;
+  horizontal_align?: "left" | "center" | "right";
+  vertical_align?: "top" | "center" | "bottom";
 };
 export type InteractiveContainerElement =
-  BaseElement<"interactive_container"> & { elements: CardElement[] };
+  BaseElement<"interactive_container"> & {
+    elements: CardElement[];
+    behaviors?: unknown[];
+    direction?: "vertical" | "horizontal";
+    horizontal_spacing?: string;
+    vertical_spacing?: string;
+    horizontal_align?: "left" | "center" | "right";
+    vertical_align?: "top" | "center" | "bottom";
+    padding?: string;
+    has_border?: boolean;
+    corner_radius?: string;
+  };
 export type CollapsiblePanelElement = BaseElement<"collapsible_panel"> & {
   elements: CardElement[];
+  expanded?: boolean;
+  header?: {
+    title?: TextElement;
+    position?: "top" | "bottom";
+    icon_position?: "left" | "right";
+    [key: string]: unknown;
+  };
+  border?: {
+    color?: string;
+    corner_radius?: string;
+    [key: string]: unknown;
+  };
 };
 export type DivElement = BaseElement<"div"> & {
   text?: TextElement;

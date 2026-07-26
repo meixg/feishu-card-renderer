@@ -109,6 +109,39 @@
     width: 100%; min-height: 180px; display: grid; place-items: center;
     border: 1px dashed var(--fcr-color-border); color: var(--fcr-color-text-secondary);
   }
+  .fcr-column-set { display: flex; width: 100%; min-width: 0; }
+  .fcr-column, .fcr-form, .fcr-interactive-container {
+    display: flex; min-width: 0;
+  }
+  .fcr-column { flex: 1 1 0; }
+  .fcr-form { margin: 0; }
+  .fcr-interactive-container { width: 100%; }
+  .fcr-interactive-container.fcr-has-border {
+    border: 1px solid var(--fcr-color-border);
+  }
+  .fcr-collapsible-panel {
+    overflow: hidden;
+    border: 1px solid var(--fcr-color-border);
+  }
+  .fcr-collapsible-trigger {
+    display: flex; width: 100%; align-items: center; gap: 8px;
+    border: 0; padding: 10px 12px; background: transparent;
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+  }
+  .fcr-collapsible-trigger:focus-visible {
+    outline: 2px solid var(--fcr-color-primary); outline-offset: -2px;
+  }
+  .fcr-collapsible-trigger.fcr-icon-right {
+    flex-direction: row-reverse; justify-content: space-between;
+  }
+  .fcr-collapse-icon { transition: transform 160ms ease; }
+  .fcr-collapsible-trigger[aria-expanded="true"] .fcr-collapse-icon {
+    transform: rotate(180deg);
+  }
+  .fcr-collapsible-content { padding: 0 12px 12px; }
+  @media (prefers-reduced-motion: reduce) {
+    .fcr-collapse-icon { transition: none; }
+  }
   .fcr-image-placeholder, .fcr-unsupported {
     min-height: 72px; display: grid; place-items: center;
     border: 1px dashed var(--fcr-color-border); color: var(--fcr-color-text-secondary);

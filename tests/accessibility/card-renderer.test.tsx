@@ -4,6 +4,7 @@ import { expect, it } from "vitest";
 
 import { CardRenderer } from "../../src";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";
+import { completeContainerCard } from "../../src/fixtures/container-cards";
 
 it("has no detectable accessibility violations", async () => {
   const { container } = render(<CardRenderer card={{ schema: "2.0",
@@ -26,6 +27,18 @@ it("keeps complex content and preview controls accessible", async () => {
     resolvePerson={(id) => ({ id, name: "Person" })} />);
   const results = await axe(container, {
     rules: { "color-contrast": { enabled: false } },
+  });
+  expect(results.violations).toEqual([]);
+});
+
+it("keeps recursive containers and disclosure controls accessible", async () => {
+  const { container } = render(
+    <CardRenderer card={completeContainerCard} />,
+  );
+  const results = await axe(container, {
+    rules: {
+      "color-contrast": { enabled: false },
+    },
   });
   expect(results.violations).toEqual([]);
 });

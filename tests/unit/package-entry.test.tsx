@@ -2,6 +2,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { CardRenderer } from "../../src";
+import { completeContainerCard } from "../../src/fixtures/container-cards";
 import { renderCardToString } from "../utils/ssr";
 
 describe("package entry", () => {
@@ -29,5 +30,15 @@ describe("package entry", () => {
     expect(html).not.toContain("<img");
     expect(html).not.toContain("private");
     expect(html).toContain('data-state="loading"');
+  });
+
+  it("renders recursive containers with deterministic disclosure ids in SSR", () => {
+    const first = renderToString(<CardRenderer card={completeContainerCard} />);
+    const second = renderToString(<CardRenderer card={completeContainerCard} />);
+
+    expect(first).toBe(second);
+    expect(first).toContain('data-fcr-depth="2"');
+    expect(first).toMatch(/aria-controls="fcr-panel-[a-z0-9]+"/);
+    expect(first).toContain("<form");
   });
 });

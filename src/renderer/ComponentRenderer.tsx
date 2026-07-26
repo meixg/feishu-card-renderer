@@ -1,4 +1,6 @@
 import type { CardElement, UnsupportedCardElement } from "../schema/components";
+import { CONTAINER_TAGS } from "../schema/components";
+import { RecursiveContext, useRecursiveContext } from "./context";
 import { registry } from "./registry";
 import { UnknownComponent } from "./UnknownComponent";
 
@@ -6,11 +8,22 @@ export function ComponentRenderer({ element, path }: {
   element: CardElement | UnsupportedCardElement;
   path: string;
 }): React.JSX.Element {
+  const parent = useRecursiveContext();
   if (element.tag === "__unsupported") {
     return <UnknownComponent tag={element.originalTag} path={path} />;
   }
   const Renderer = registry[element.tag];
-  return Renderer
-    ? <Renderer element={element as never} path={path} />
-    : <UnknownComponent tag={String(element.tag)} path={path} />;
+  const context = {
+    ...parent,
+    path,
+    containerDepth: parent.containerDepth +
+      (CONTAINER_TAGS.has(element.tag) ? 1 : 0),
+  } as const;
+  return (
+    <RecursiveContext.Provider value={context}>
+      {Renderer
+        ? <Renderer element={element as never} path={path} />
+        : <UnknownComponent tag={String(element.tag)} path={path} />}
+    </RecursiveContext.Provider>
+  );
 }
