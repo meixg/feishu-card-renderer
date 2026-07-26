@@ -89,6 +89,66 @@ describe("container fixtures", () => {
       ]);
   });
 
+  it("preserves chart and extension style-shaped data during normalization", () => {
+    const card = {
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "chart",
+          chart_spec: {
+            padding: 12,
+            margin: [1, 2, 3, 4],
+          },
+          future_extension: {
+            padding: { top: 4 },
+            margin: [8, 16],
+          },
+        }],
+      },
+    };
+
+    expect(normalizeCard(card).card?.body.elements[0]).toMatchObject({
+      chart_spec: {
+        padding: 12,
+        margin: [1, 2, 3, 4],
+      },
+      future_extension: {
+        padding: { top: 4 },
+        margin: [8, 16],
+      },
+    });
+  });
+
+  it("diagnoses and normalizes collapsible header enums", () => {
+    const card = {
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "collapsible_panel",
+          header: {
+            position: "sideways",
+            icon_position: "left injected-class",
+          },
+          elements: [],
+        }],
+      },
+    };
+    const result = normalizeCard(card);
+
+    expect(result.diagnostics.filter(({ code }) => code === "invalid_enum"))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          path: "$.body.elements[0].header.position",
+        }),
+        expect.objectContaining({
+          path: "$.body.elements[0].header.icon_position",
+        }),
+      ]));
+    expect(result.card?.body.elements[0]).toMatchObject({
+      header: { position: "top", icon_position: "left" },
+    });
+  });
+
   it("keeps form/table/chart nesting conservative", () => {
     const result = validateCard(invalidContainerCard);
     const codes = result.diagnostics.map(

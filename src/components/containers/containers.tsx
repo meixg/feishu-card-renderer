@@ -152,10 +152,14 @@ export function CollapsiblePanel({ element, path }: {
   const instanceId = useId().replace(/[^A-Za-z0-9_-]/g, "");
   const contentId = `fcr-panel-${instanceId}`;
   const title = element.header?.title?.content ?? "折叠面板";
+  const iconPositionClass = {
+    left: "fcr-icon-left",
+    right: "fcr-icon-right",
+  }[element.header?.icon_position ?? "left"];
   const header = (
     <button type="button" className={[
       "fcr-collapsible-trigger",
-      `fcr-icon-${element.header?.icon_position ?? "left"}`,
+      iconPositionClass,
     ].join(" ")}
       aria-expanded={expanded} aria-controls={contentId}
       onClick={() => setExpanded((value) => !value)}

@@ -5,8 +5,9 @@ import {
   type ProtocolPath,
   type ValidationResult,
 } from "./diagnostics";
+import { invalidStyleFields } from "./style-policy";
 import { validateCard } from "./validate";
-import { safeBox, safePx, safeSpacing } from "../styles/safe";
+import { safePx } from "../styles/safe";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -69,7 +70,19 @@ function cloneAndNormalize(
     output.elements ??= [];
     output.direction ??= "vertical";
   }
-  if (tag === "collapsible_panel") output.expanded ??= false;
+  if (tag === "collapsible_panel") {
+    output.expanded ??= false;
+    const header = isRecord(output.header) ? { ...output.header } : {};
+    header.position = ["top", "bottom"].includes(String(header.position))
+      ? header.position
+      : "top";
+    header.icon_position = ["left", "right"].includes(
+        String(header.icon_position),
+      )
+      ? header.icon_position
+      : "left";
+    output.header = header;
+  }
   if (tag === "column_set") output.columns ??= [];
   if (tag === "select_img") output.multi_select ??= false;
   if (tag === "img_combination") output.combination_mode ??= "double";
@@ -87,17 +100,8 @@ function cloneAndNormalize(
     output.row_height = ["low", "medium", "high"].includes(String(output.row_height))
       ? output.row_height : "medium";
   }
-  const styleFields = [
-    ["padding", () => safeBox(output.padding, false)],
-    ["margin", () => safeBox(output.margin, true)],
-    ["horizontal_spacing", () => safeSpacing(output.horizontal_spacing)],
-    ["vertical_spacing", () => safeSpacing(output.vertical_spacing)],
-    ["corner_radius", () => safePx(output.corner_radius)],
-  ] as const;
-  for (const [field, parse] of styleFields) {
-    if (output[field] !== undefined && parse() === undefined) {
-      delete output[field];
-    }
+  for (const field of invalidStyleFields(tag, output)) {
+    delete output[field];
   }
   if (tag === "collapsible_panel" && isRecord(output.border) &&
     output.border.corner_radius !== undefined &&

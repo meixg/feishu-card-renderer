@@ -67,6 +67,34 @@ describe("container rendering", () => {
     });
   });
 
+  it("keeps an invalid collapsible header safe and keyboard accessible", () => {
+    const { container } = render(<CardRenderer card={{
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "collapsible_panel",
+          header: {
+            title: { tag: "plain_text", content: "安全折叠" },
+            position: "sideways",
+            icon_position: "left injected-class",
+          },
+          elements: [],
+        }],
+      },
+    }} />);
+    const trigger = screen.getByRole("button", { name: "安全折叠" });
+    const controls = trigger.getAttribute("aria-controls");
+
+    expect(trigger).toHaveClass("fcr-icon-left");
+    expect(trigger).not.toHaveClass("injected-class");
+    expect(controls).toMatch(/^fcr-panel-/);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById(controls!)).not.toHaveAttribute("hidden");
+    expect(container.querySelectorAll(`#${controls}`)).toHaveLength(1);
+  });
+
   it("lets an ordinary child button act before the parent container seam", () => {
     const card = {
       schema: "2.0",

@@ -11,7 +11,8 @@ import {
   type ValidationResult,
 } from "./diagnostics";
 import { isValidElementId } from "./identity";
-import { safeBox, safePx, safeSpacing } from "../styles/safe";
+import { invalidStyleFields } from "./style-policy";
+import { safePx } from "../styles/safe";
 
 const FORM_INTERACTIVE_TAGS = new Set([
   "input",
@@ -69,21 +70,13 @@ function validateTaggedStyleFields(
   path: ProtocolPath,
   state: WalkState,
 ): void {
-  const fields = [
-    ["padding", () => safeBox(value.padding, false)],
-    ["margin", () => safeBox(value.margin, true)],
-    ["horizontal_spacing", () => safeSpacing(value.horizontal_spacing)],
-    ["vertical_spacing", () => safeSpacing(value.vertical_spacing)],
-    ["corner_radius", () => safePx(value.corner_radius)],
-  ] as const;
-  for (const [field, parse] of fields) {
-    if (value[field] !== undefined && parse() === undefined) {
-      state.diagnostics.push(diagnostic(
-        "invalid_style",
-        childPath(path, field),
-        `${field} contains an invalid or out-of-range length.`,
-      ));
-    }
+  const tag = typeof value.tag === "string" ? value.tag : undefined;
+  for (const field of invalidStyleFields(tag, value)) {
+    state.diagnostics.push(diagnostic(
+      "invalid_style",
+      childPath(path, field),
+      `${field} contains an invalid or out-of-range length.`,
+    ));
   }
 }
 
@@ -286,6 +279,15 @@ function validateComponentTree(
         "invalid_enum",
         childPath(childPath(itemPath, "header"), "position"),
         "collapsible_panel.header.position must be top or bottom.",
+      ));
+    }
+    if (tag === "collapsible_panel" && isRecord(item.header) &&
+      item.header.icon_position !== undefined &&
+      !["left", "right"].includes(String(item.header.icon_position))) {
+      state.diagnostics.push(diagnostic(
+        "invalid_enum",
+        childPath(childPath(itemPath, "header"), "icon_position"),
+        "collapsible_panel.header.icon_position must be left or right.",
       ));
     }
     if (tag === "collapsible_panel" && isRecord(item.border) &&
