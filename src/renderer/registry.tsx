@@ -2,6 +2,13 @@
 import type { ComponentType } from "react";
 
 import { Div, Hr, Image, Markdown } from "../components/content/basic";
+import {
+  Chart,
+  ImageCombination,
+  Person,
+  PersonList,
+  Table,
+} from "../components/content/complex";
 import type { CardComponentTag, CardElement } from "../schema/components";
 import { UnknownComponent } from "./UnknownComponent";
 
@@ -23,11 +30,11 @@ export const registry: Record<CardComponentTag, ComponentType<RendererProps>> = 
   form: Placeholder,
   interactive_container: Placeholder,
   collapsible_panel: Placeholder,
-  img_combination: Placeholder,
-  person: Placeholder,
-  person_list: Placeholder,
-  chart: Placeholder,
-  table: Placeholder,
+  img_combination: ImageCombination as unknown as ComponentType<RendererProps>,
+  person: Person as unknown as ComponentType<RendererProps>,
+  person_list: PersonList as unknown as ComponentType<RendererProps>,
+  chart: Chart as unknown as ComponentType<RendererProps>,
+  table: Table as unknown as ComponentType<RendererProps>,
   input: Placeholder,
   button: Placeholder,
   overflow: Placeholder,

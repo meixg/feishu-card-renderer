@@ -1,4 +1,5 @@
 import type { Card } from "../schema/card";
+import { completeComplexContentCard } from "./complex-content";
 
 export const minimalRendererCard: Card = {
   schema: "2.0",
@@ -22,6 +23,7 @@ export const completeRendererCard: Card = {
       { tag: "markdown", content: "# Markdown\n`code` 与长文本" },
       { tag: "img", img_key: "cover", alt: { tag: "plain_text", content: "封面" }, corner_radius: "8px" },
       { tag: "hr", margin: "4px 0px" },
+      ...(completeComplexContentCard.body?.elements ?? []),
     ],
   },
 };

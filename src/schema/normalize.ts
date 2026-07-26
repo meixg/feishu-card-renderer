@@ -65,6 +65,21 @@ function cloneAndNormalize(
   }
   if (tag === "column_set") output.columns ??= [];
   if (tag === "select_img") output.multi_select ??= false;
+  if (tag === "img_combination") output.combination_mode ??= "double";
+  if (tag === "person" || tag === "person_list") {
+    output.size ??= "medium";
+    output.show_avatar ??= true;
+    output.show_name ??= true;
+  }
+  if (tag === "table") {
+    output.columns ??= [];
+    output.rows ??= [];
+    output.page_size = Number.isInteger(output.page_size) &&
+      Number(output.page_size) >= 1 && Number(output.page_size) <= 10
+      ? output.page_size : 5;
+    output.row_height = ["low", "medium", "high"].includes(String(output.row_height))
+      ? output.row_height : "medium";
+  }
 
   return output;
 }

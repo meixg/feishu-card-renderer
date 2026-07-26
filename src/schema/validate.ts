@@ -39,6 +39,9 @@ const ENUMS: Record<string, readonly string[]> = {
   input_type: ["text", "multiline_text", "password"],
   form_action_type: ["submit", "reset"],
   aspect_ratio: ["1:1", "2:1", "4:3", "16:9"],
+  combination_mode: ["double", "triple", "bisect", "trisect"],
+  row_height: ["low", "medium", "high"],
+  data_type: ["text", "lark_md", "options", "number", "persons", "date", "markdown"],
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -39,6 +39,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   const result = useMemo(() => normalizeCard(props.card), [props.card]);
   const controllers = useRef(new Set<AbortController>());
   const imageCache = useRef(new Map());
+  const personCache = useRef(new Map());
   const diagnostics = useMemo(() => {
     const unique = new Map(result.diagnostics.map((item) => [keyFor(item), item]));
     return [...unique.values()];
@@ -73,7 +74,9 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     device: props.device ?? "pc",
     widthMode: width,
     resolveImage: props.resolveImage,
+    resolvePerson: props.resolvePerson,
     imageCache: imageCache.current,
+    personCache: personCache.current,
     controllers: controllers.current,
   } as const;
   const bodyStyle = {

@@ -1,7 +1,8 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CardRenderer } from "../../src";
+import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 
 describe("CardRenderer", () => {
   it("renders header and supported body without mutating frozen input", () => {
@@ -118,6 +119,97 @@ describe("CardRenderer", () => {
     await act(async () => {});
     expect(screen.getByRole("img", { name: "Safe image" })).toHaveAttribute(
       "src", "https://cdn.example.com/a.png",
+    );
+  });
+
+  it("resolves people synchronously/asynchronously once per id without exposing ids", async () => {
+    let finish!: (value: { id: string; name: string; avatarUrl: string }) => void;
+    const resolvePerson = vi.fn((id: string) => id === "person-a"
+      ? { id, name: "Alice", avatarUrl: "https://cdn.example.com/a.png" }
+      : new Promise<{ id: string; name: string; avatarUrl: string }>((resolve) => {
+        finish = resolve;
+      }));
+    render(<CardRenderer card={completeComplexContentCard}
+      resolvePerson={resolvePerson} />);
+    await act(async () => {});
+    expect(screen.getAllByText("Alice").length).toBeGreaterThan(0);
+    expect(resolvePerson).toHaveBeenCalledTimes(2);
+    expect(document.body.textContent).not.toContain("person-a");
+    expect(document.body.textContent).not.toContain("person-b");
+    await act(async () => finish({ id: "person-b", name: "Bob",
+      avatarUrl: "https://cdn.example.com/b.png" }));
+    expect(screen.getAllByText("Bob").length).toBeGreaterThan(0);
+  });
+
+  it("keeps unavailable/failed people anonymous and aborts pending work", async () => {
+    const failed = render(<CardRenderer card={{ schema: "2.0", body: {
+      elements: [{ tag: "person", user_id: "failed-sensitive" }],
+    } }} resolvePerson={() => undefined} />);
+    await act(async () => {});
+    expect(within(failed.container).getByText("人员不可用")).toBeInTheDocument();
+    expect(failed.container).not.toHaveTextContent("failed-sensitive");
+
+    let signal: AbortSignal | undefined;
+    let reject!: (reason: Error) => void;
+    const { unmount } = render(<CardRenderer card={{ schema: "2.0", body: {
+      elements: [{ tag: "person", user_id: "sensitive" }],
+    } }} resolvePerson={(_, nextSignal) => {
+      signal = nextSignal;
+      return new Promise((_, nextReject) => { reject = nextReject; });
+    }} />);
+    await act(async () => {});
+    expect(screen.getByText("加载中")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("sensitive");
+    unmount();
+    expect(signal?.aborted).toBe(true);
+    reject(new Error("internal sensitive"));
+  });
+
+  it("renders semantic table types, pages, and never recursively renders row components", async () => {
+    const first = render(<CardRenderer card={completeComplexContentCard}
+      resolvePerson={(id) => ({ id, name: "Owner" })} />);
+    await act(async () => {});
+    const table = within(first.container).getByRole("table");
+    expect(within(table).getByRole("columnheader", { name: "金额" })).toBeInTheDocument();
+    expect(within(table).getByText("¥1,234.50")).toBeInTheDocument();
+    expect(within(table).getByText("2026-07-26")).toBeInTheDocument();
+    fireEvent.click(within(first.container).getByRole("button", { name: "下一页" }));
+    expect(within(first.container).getByText("项目 B")).toBeInTheDocument();
+
+    const { container } = render(<CardRenderer card={{ schema: "2.0", body: {
+      elements: [{ tag: "table", columns: [{ name: "x", display_name: "X" }],
+        rows: [{ x: { tag: "button", text: "secret" } }] }],
+    } }} />);
+    expect(container.querySelector("button")).toBeNull();
+    expect(container).not.toHaveTextContent("secret");
+  });
+
+  it("supports keyboard image preview navigation, focus trap, Esc, and restoration", async () => {
+    const rendered = render(<CardRenderer card={completeComplexContentCard}
+      resolveImage={(key) => `https://cdn.example.com/${key}.png`} />);
+    await act(async () => {});
+    const trigger = within(rendered.container).getByRole(
+      "button", { name: "打开图片组预览" },
+    );
+    trigger.focus();
+    fireEvent.click(trigger);
+    const dialog = within(rendered.container).getByRole("dialog");
+    expect(within(dialog).getByText("1 / 3")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "ArrowRight" });
+    expect(within(dialog).getByText("2 / 3")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(within(rendered.container).queryByRole("dialog")).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("previews only the chart safe-result container", () => {
+    const rendered = render(<CardRenderer card={completeComplexContentCard} />);
+    fireEvent.click(within(rendered.container).getByRole(
+      "button", { name: "打开图表预览" },
+    ));
+    const dialog = within(rendered.container).getByRole("dialog");
+    expect(within(dialog).getByText("图表渲染器待接入")).toHaveAttribute(
+      "data-chart-result", "safe",
     );
   });
 });

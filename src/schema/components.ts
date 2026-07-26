@@ -76,20 +76,61 @@ export type ImageElement = BaseElement<"img"> & {
   title?: TextElement;
   margin?: string;
   corner_radius?: string;
+  preview?: boolean;
+};
+export type CombinationImage = {
+  img_key?: string;
+  alt?: TextElement;
+  transparent?: boolean;
+  [key: string]: unknown;
 };
 export type ImageCombinationElement = BaseElement<"img_combination"> & {
-  img_list?: unknown[];
+  combination_mode?: "double" | "triple" | "bisect" | "trisect";
+  combination_transparent?: boolean;
+  corner_radius?: string;
+  img_list?: CombinationImage[];
 };
-export type PersonElement = BaseElement<"person"> & { user_id?: string };
+export type PersonElement = BaseElement<"person"> & {
+  user_id?: string;
+  size?: "small" | "medium" | "large";
+  show_avatar?: boolean;
+  show_name?: boolean;
+  style?: "normal" | "capsule";
+};
+export type PersonItem = { id?: string; [key: string]: unknown };
 export type PersonListElement = BaseElement<"person_list"> & {
-  persons?: unknown[];
+  persons?: PersonItem[];
+  drop_invalid_user_id?: boolean;
+  lines?: number;
+  size?: "small" | "medium" | "large";
+  show_avatar?: boolean;
+  show_name?: boolean;
 };
 export type ChartElement = BaseElement<"chart"> & {
   chart_spec?: Record<string, unknown>;
+  preview?: boolean;
+  aspect_ratio?: "1:1" | "2:1" | "4:3" | "16:9";
+};
+export type TableColumn = {
+  name?: string;
+  display_name?: string;
+  data_type?: "text" | "lark_md" | "options" | "number" | "persons" | "date" | "markdown";
+  width?: string;
+  format?: {
+    symbol?: string;
+    precision?: number;
+    separator?: boolean;
+    date_format?: string;
+  };
+  [key: string]: unknown;
 };
 export type TableElement = BaseElement<"table"> & {
-  columns?: unknown[];
-  rows?: unknown[];
+  columns?: TableColumn[];
+  rows?: Record<string, unknown>[];
+  page_size?: number;
+  row_height?: "low" | "medium" | "high";
+  freeze_first_column?: boolean;
+  header_style?: Record<string, unknown>;
 };
 export type HrElement = BaseElement<"hr">;
 export type InputElement = BaseElement<"input"> & { name?: string };
