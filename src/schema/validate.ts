@@ -108,6 +108,27 @@ function validateProtocolSlots(
   }
 }
 
+function validateEnums(
+  value: Readonly<Record<string, unknown>>,
+  path: ProtocolPath,
+  state: WalkState,
+  fields: readonly string[] = Object.keys(ENUMS),
+): void {
+  for (const key of fields) {
+    const allowed = ENUMS[key];
+    if (!allowed) continue;
+    const candidate = value[key];
+    if (candidate !== undefined &&
+      (typeof candidate !== "string" || !allowed.includes(candidate))) {
+      state.diagnostics.push(diagnostic(
+        "invalid_enum",
+        childPath(path, key),
+        `${key} must be one of: ${allowed.join(", ")}.`,
+      ));
+    }
+  }
+}
+
 function validateTaggedNode(
   value: unknown,
   path: ProtocolPath,
@@ -165,17 +186,7 @@ function validateTaggedNode(
     }
   }
 
-  for (const [key, allowed] of Object.entries(ENUMS)) {
-    const candidate = value[key];
-    if (candidate !== undefined &&
-      (typeof candidate !== "string" || !allowed.includes(candidate))) {
-      state.diagnostics.push(diagnostic(
-        "invalid_enum",
-        childPath(path, key),
-        `${key} must be one of: ${allowed.join(", ")}.`,
-      ));
-    }
-  }
+  validateEnums(value, path, state);
   if (tag) validateTaggedStyleFields(value, path, state);
 
   validateProtocolSlots(componentChildSlots(value), path, nextDepth, state);
@@ -440,10 +451,14 @@ export function validateCard(input: unknown): ValidationResult<Card> {
     validateProtocolSlots(headerChildSlots(input.header), "$.header", 0, state);
   }
   if (isRecord(input.config)) {
-    validateTaggedNode(input.config, "$.config", 0, state);
+    validateEnums(input.config, "$.config", state, ["width_mode"]);
   }
   if (isRecord(input.body)) {
-    validateTaggedNode(input.body, "$.body", 0, state);
+    validateEnums(input.body, "$.body", state, [
+      "direction",
+      "horizontal_align",
+      "vertical_align",
+    ]);
     if (Array.isArray(input.body.elements)) {
       validateProtocolSlots(
         input.body.elements.map((value, index) => ({

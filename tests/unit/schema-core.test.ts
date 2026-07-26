@@ -224,6 +224,44 @@ describe("JSON 2.0 schema core", () => {
       .toHaveLength(1);
   });
 
+  it("keeps config and body roots out of component traversal", () => {
+    const pseudo = {
+      tag: "future_root",
+      element_id: "not valid",
+      elements: Array.from({ length: 250 }, () => ({ tag: "hr" })),
+    };
+    const result = validateCard({
+      schema: "2.0",
+      config: {
+        ...pseudo,
+        width_mode: "wide",
+        direction: "opaque_config_value",
+      },
+      body: {
+        tag: "future_body",
+        element_id: "also invalid",
+        direction: "diagonal",
+        width_mode: "opaque_body_value",
+        future_elements: pseudo.elements,
+        elements: [{ tag: "hr" }],
+      },
+    });
+    const componentCodes = new Set([
+      "unknown_tag",
+      "invalid_element_id",
+      "component_limit",
+      "container_depth",
+    ]);
+
+    expect(result.diagnostics.filter(({ code }) => componentCodes.has(code)))
+      .toEqual([]);
+    expect(result.diagnostics.filter(({ code }) => code === "invalid_enum")
+      .map(({ path }) => path).sort()).toEqual([
+        "$.body.direction",
+        "$.config.width_mode",
+      ]);
+  });
+
   it("uses exact tagged child fields and keeps same-named extensions opaque", () => {
     const pseudo = {
       tag: "person",
@@ -318,6 +356,48 @@ describe("JSON 2.0 schema core", () => {
       reason: "component_limit",
       path: "$.body.elements[196]",
     });
+  });
+
+  it("traverses only locale tag lists in i18n_text_tag_list", () => {
+    const tags = Array.from({ length: 200 }, (_, index) => ({
+      tag: "text_tag",
+      text: String(index),
+    }));
+    const card = {
+      schema: "2.0",
+      header: {
+        title: { tag: "plain_text", content: "title" },
+        i18n_text_tag_list: {
+          zh_cn: tags,
+        },
+        i18n_future: {
+          zh_cn: Array.from({ length: 20 }, () => ({ tag: "hr" })),
+        },
+      },
+      body: { elements: [] },
+    };
+    const diagnostics = validateCard(card).diagnostics.filter(
+      ({ code }) => code === "component_limit",
+    );
+    const normalizedHeader = normalizeCard(card).card?.header as
+      | Record<string, unknown>
+      | undefined;
+
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        path: "$.header.i18n_text_tag_list.zh_cn[199].tag",
+      }),
+    ]);
+    expect(normalizedHeader?.i18n_text_tag_list).toMatchObject({
+      zh_cn: expect.arrayContaining([
+        expect.objectContaining({
+          tag: "__unsupported",
+          reason: "component_limit",
+          path: "$.header.i18n_text_tag_list.zh_cn[199]",
+        }),
+      ]),
+    });
+    expect(normalizedHeader?.i18n_future).toEqual(card.header.i18n_future);
   });
 
   it("allows five counted container levels and degrades the sixth", () => {

@@ -87,5 +87,16 @@ export function headerChildSlots(header: RecordValue): ProtocolChildSlot[] {
   if (Array.isArray(header.text_tag_list)) {
     slots.push(...arraySlots(header.text_tag_list, ["text_tag_list"]));
   }
+  if (isRecord(header.i18n_text_tag_list)) {
+    for (const [locale, tagList] of Object.entries(
+      header.i18n_text_tag_list,
+    )) {
+      if (!Array.isArray(tagList)) continue;
+      slots.push(...arraySlots(
+        tagList,
+        ["i18n_text_tag_list", locale],
+      ));
+    }
+  }
   return slots;
 }
