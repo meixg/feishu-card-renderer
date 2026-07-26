@@ -96,6 +96,8 @@ describe("container fixtures", () => {
         elements: [
           {
             tag: "chart",
+            height: "1000px",
+            margin: "1px; color:red",
             chart_spec: {
               series: {
                 imageLikeData: { tag: "img", margin: [1, 2, 3, 4] },
@@ -129,6 +131,8 @@ describe("container fixtures", () => {
       .toEqual(card.body.elements[0].chart_spec);
     expect(normalizedChart?.future_extension)
       .toEqual(card.body.elements[0].future_extension);
+    expect(normalizedChart).not.toHaveProperty("height");
+    expect(normalizedChart).not.toHaveProperty("margin");
     expect(normalized?.body.elements[1]).not.toHaveProperty("margin");
     expect(normalized?.body.elements[2]).toMatchObject({
       size: "medium",

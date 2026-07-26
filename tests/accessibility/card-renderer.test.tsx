@@ -1,6 +1,12 @@
 import { render } from "@testing-library/react";
 import { axe } from "vitest-axe";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+
+vi.mock("../../src/adapters/vchart-loader", () => ({
+  loadVChartRuntime: async () => ({
+    createChart: () => ({ update: vi.fn(), release: vi.fn() }),
+  }),
+}));
 
 import { CardRenderer } from "../../src";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";

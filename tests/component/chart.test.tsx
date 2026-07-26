@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => ({
@@ -90,5 +90,32 @@ describe("Chart lifecycle", () => {
     unmount();
     await act(async () => finish({ createChart: runtime.createChart }));
     expect(runtime.createChart).not.toHaveBeenCalled();
+  });
+
+  it("mounts and releases a safe chart through the shared preview layer", async () => {
+    const base = chart(1);
+    const previewCard = {
+      ...base,
+      body: { elements: [{ ...base.body.elements[0], preview: true }] },
+    };
+    const { container, unmount } = render(<CardRenderer card={previewCard} />);
+    await act(async () => {});
+    expect(runtime.createChart).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(within(container).getByRole(
+      "button", { name: "打开图表预览" },
+    ));
+    await act(async () => {});
+    const dialog = within(container).getByRole("dialog");
+    expect(within(dialog).getByRole("img", { name: "图表预览" }))
+      .toHaveAttribute("data-chart-result", "safe");
+    expect(runtime.createChart).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(within(dialog).getByRole(
+      "button", { name: "关闭预览" },
+    ));
+    expect(runtime.release).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(runtime.release).toHaveBeenCalledTimes(2);
   });
 });

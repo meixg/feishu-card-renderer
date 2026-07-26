@@ -45,7 +45,7 @@ describe("package entry", () => {
   it("renders a stable chart placeholder during SSR", () => {
     const html = renderToString(<CardRenderer card={{
       schema: "2.0",
-      body: { elements: [{ tag: "chart", aspect_ratio: "16:9", chart_spec: {
+      body: { elements: [{ tag: "chart", aspect_ratio: "16:9", preview: true, chart_spec: {
         type: "bar", data: [], media: [],
       } }] },
     }} />);

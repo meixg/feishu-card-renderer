@@ -630,7 +630,7 @@ type CardAction = {
 
 实现使用正式依赖 `@visactor/vchart`，并隔离在仅由 `chart` 客户端挂载触发的懒加载 chunk 中；SSR 只输出尺寸稳定的占位。输入 spec 会先递归复制并拒绝函数、脚本入口、危险原型字段、HTML/DOM 扩展、函数注册和其它可执行配置。
 
-兼容范围以飞书文档列出的折线、面积、柱/条、饼/环、组合、漏斗、散点、雷达、进度和词云为基线，不等同于当前 npm VChart 的全部能力。飞书说明客户端会默认追加 media，但没有公开完整规则；本渲染器不猜测这组隐式 media，fixture 使用 `media: []` 获得可重复结果。飞书列出的移动端限制（纹理、圆锥渐变、grid 词云、`extensionMark` 图片 repeat、SVG 图元背景）也保留为明确 limitation。`preview` 由统一预览 seam 后续接入，本组件当前只渲染安全图表。
+兼容范围以飞书文档列出的折线、面积、柱/条、饼/环、组合、漏斗、散点、雷达、进度和词云为基线，不等同于当前 npm VChart 的全部能力。飞书说明客户端会默认追加 media，但没有公开完整规则；本渲染器不猜测这组隐式 media，fixture 使用 `media: []` 获得可重复结果。飞书列出的移动端限制（纹理、圆锥渐变、grid 词云、`extensionMark` 图片 repeat、SVG 图元背景）也保留为明确 limitation。`preview: true` 复用图片与图表统一的可访问预览层，并在预览层中重新挂载同一份经过安全过滤的图表结果；关闭预览会销毁对应 VChart 实例。
 
 #### 表格 `table`
 
