@@ -9,6 +9,7 @@ export type ImageCacheEntry = {
   status: "loading" | "ready" | "error";
   value?: string;
   promise?: Promise<void>;
+  listeners: Set<() => void>;
 };
 
 type RendererContextValue = Readonly<{

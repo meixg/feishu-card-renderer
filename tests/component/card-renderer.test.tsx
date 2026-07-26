@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CardRenderer } from "../../src";
@@ -45,6 +45,20 @@ describe("CardRenderer", () => {
     expect(onDiagnostic.mock.calls[0][0][0].code).toBe("invalid_root");
   });
 
+  it("shows an unknown tag and stable protocol path in development", () => {
+    render(<CardRenderer card={{
+      schema: "2.0",
+      body: { elements: [
+        { tag: "div", text: { tag: "plain_text", content: "before" } },
+        { tag: "future_widget" },
+      ] },
+    }} />);
+
+    const placeholder = screen.getByRole("note");
+    expect(placeholder).toHaveTextContent("future_widget");
+    expect(placeholder).toHaveTextContent("$.body.elements[1]");
+  });
+
   it("resolves duplicate image keys once after hydration", async () => {
     let finish!: (value: string) => void;
     const resolveImage = vi.fn(() => new Promise<string>((resolve) => { finish = resolve; }));
@@ -57,7 +71,7 @@ describe("CardRenderer", () => {
     expect(resolveImage).toHaveBeenCalledTimes(1);
     expect(document.body.textContent).not.toContain("secret");
     await act(async () => finish("https://example.com/image.png"));
-    expect(screen.getAllByRole("img")).toHaveLength(2);
+    expect(document.querySelectorAll("img")).toHaveLength(2);
   });
 
   it("aborts pending image work on unmount", () => {
@@ -71,5 +85,39 @@ describe("CardRenderer", () => {
     />);
     unmount();
     expect(signal?.aborted).toBe(true);
+  });
+
+  it.each([
+    "javascript:alert(1)",
+    "data:image/svg+xml,<svg onload=alert(1)>",
+    "file:///etc/passwd",
+    "blob:https://example.com/id",
+  ])("rejects an unsafe resolver URL without creating an img: %s", async (url) => {
+    const { container } = render(<CardRenderer resolveImage={() => url} card={{
+      schema: "2.0",
+      body: { elements: [{ tag: "img", img_key: "private", alt: {
+        tag: "plain_text", content: "Safe alt",
+      } }] },
+    }} />);
+
+    await act(async () => {});
+    expect(container.querySelector("img")).toBeNull();
+    expect(within(container).getByRole("img", { name: "Safe alt" }))
+      .toHaveAttribute("data-state", "error");
+    expect(document.body.textContent).not.toContain(url);
+  });
+
+  it("renders a resolver URL with an explicitly allowed HTTPS scheme", async () => {
+    render(<CardRenderer resolveImage={() => "https://cdn.example.com/a.png"} card={{
+      schema: "2.0",
+      body: { elements: [{ tag: "img", img_key: "safe", alt: {
+        tag: "plain_text", content: "Safe image",
+      } }] },
+    }} />);
+
+    await act(async () => {});
+    expect(screen.getByRole("img", { name: "Safe image" })).toHaveAttribute(
+      "src", "https://cdn.example.com/a.png",
+    );
   });
 });

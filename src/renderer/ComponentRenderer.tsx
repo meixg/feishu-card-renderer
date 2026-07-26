@@ -7,10 +7,10 @@ export function ComponentRenderer({ element, path }: {
   path: string;
 }): React.JSX.Element {
   if (element.tag === "__unsupported") {
-    return <UnknownComponent tag={element.originalTag} />;
+    return <UnknownComponent tag={element.originalTag} path={path} />;
   }
   const Renderer = registry[element.tag];
   return Renderer
     ? <Renderer element={element as never} path={path} />
-    : <UnknownComponent tag={String(element.tag)} />;
+    : <UnknownComponent tag={String(element.tag)} path={path} />;
 }

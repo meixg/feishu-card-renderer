@@ -10,8 +10,8 @@ type RendererProps<T extends CardElement = CardElement> = {
   path: string;
 };
 
-const Placeholder = ({ element }: RendererProps): React.JSX.Element =>
-  <UnknownComponent tag={element.tag} />;
+const Placeholder = ({ element, path }: RendererProps): React.JSX.Element =>
+  <UnknownComponent tag={element.tag} path={path} />;
 
 export const registry: Record<CardComponentTag, ComponentType<RendererProps>> = {
   div: Div as unknown as ComponentType<RendererProps>,

@@ -7,10 +7,9 @@ import type {
   MarkdownElement,
 } from "../../schema/components";
 import {
-  type ImageCacheEntry,
   useRendererContext,
 } from "../../renderer/context";
-import { safeBox, safePx } from "../../styles/safe";
+import { safeBox, safePx, safeUrl } from "../../styles/safe";
 import { SafeMarkdown, SafeText } from "../primitives/SafeText";
 
 export function Div({ element }: { element: DivElement }): React.JSX.Element {
@@ -38,30 +37,39 @@ export function Image({ element }: { element: ImageElement }): React.JSX.Element
   const context = useRendererContext();
   const [, update] = useState(0);
   const key = element.img_key;
-  const entry = key ? context.imageCache.get(key) : undefined;
   useEffect(() => {
-    if (!key || !context.resolveImage || context.imageCache.has(key)) return;
-    const controller = new AbortController();
-    context.controllers.add(controller);
-    const cacheEntry: ImageCacheEntry = { status: "loading" };
-    context.imageCache.set(key, cacheEntry);
-    cacheEntry.promise = Promise.resolve(context.resolveImage(key, controller.signal))
-      .then((value) => {
-        if (controller.signal.aborted) return;
-        context.imageCache.set(key, value
-          ? { status: "ready", value }
-          : { status: "error" });
-        update((value) => value + 1);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          context.imageCache.set(key, { status: "error" });
-          update((value) => value + 1);
-        }
-      })
-      .finally(() => context.controllers.delete(controller));
-    update((value) => value + 1);
-  }, [context, entry, key]);
+    if (!key || !context.resolveImage) return;
+    const listener = () => update((value) => value + 1);
+    let cacheEntry = context.imageCache.get(key);
+    if (!cacheEntry) {
+      cacheEntry = { status: "loading", listeners: new Set() };
+      context.imageCache.set(key, cacheEntry);
+    }
+    cacheEntry.listeners.add(listener);
+    if (!cacheEntry.promise) {
+      const controller = new AbortController();
+      context.controllers.add(controller);
+      cacheEntry.promise = Promise.resolve(context.resolveImage(key, controller.signal))
+        .then((value) => {
+          if (controller.signal.aborted) return;
+          const safeValue = safeUrl(value);
+          cacheEntry!.status = safeValue ? "ready" : "error";
+          cacheEntry!.value = safeValue;
+          cacheEntry!.listeners.forEach((notify) => notify());
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            cacheEntry!.status = "error";
+            cacheEntry!.listeners.forEach((notify) => notify());
+          }
+        })
+        .finally(() => context.controllers.delete(controller));
+    }
+    listener();
+    return () => {
+      cacheEntry?.listeners.delete(listener);
+    };
+  }, [context, key]);
   const current = key ? context.imageCache.get(key) : undefined;
   const alt = element.alt?.content ?? "";
   const title = element.title?.content;
