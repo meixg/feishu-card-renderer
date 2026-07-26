@@ -188,6 +188,138 @@ describe("JSON 2.0 schema core", () => {
     }))).not.toContain("component_limit");
   });
 
+  it("excludes opaque pseudo components from component diagnostics and limits", () => {
+    const pseudo = Array.from({ length: 300 }, (_, index) => ({
+      tag: `future_${index}`,
+      element_id: "not valid",
+      padding: "100px",
+      elements: [{ tag: "collapsible_panel", elements: [] }],
+    }));
+    const input = {
+      schema: "2.0",
+      body: {
+        elements: [
+          ...Array.from({ length: 199 }, () => ({ tag: "hr" })),
+          { tag: "chart", chart_spec: { pseudo } },
+        ],
+      },
+      future_extension: { pseudo },
+    };
+    const excluded = new Set([
+      "unknown_tag",
+      "invalid_style",
+      "invalid_element_id",
+      "container_depth",
+      "component_limit",
+    ]);
+
+    expect(validateCard(input).diagnostics.filter(({ code }) =>
+      excluded.has(code))).toEqual([]);
+    expect(validateCard({
+      schema: "2.0",
+      body: {
+        elements: Array.from({ length: 201 }, () => ({ tag: "hr" })),
+      },
+    }).diagnostics.filter(({ code }) => code === "component_limit"))
+      .toHaveLength(1);
+  });
+
+  it("uses exact tagged child fields and keeps same-named extensions opaque", () => {
+    const pseudo = {
+      tag: "person",
+      element_id: "opaque-invalid-id",
+      margin: ["opaque"],
+    };
+    const realText = (content: string) => ({
+      tag: "plain_text",
+      content,
+      element_id: "real-invalid-id",
+    });
+    const card = {
+      schema: "2.0",
+      body: {
+        elements: [
+          { tag: "chart", text: pseudo, title: pseudo, alt: pseudo },
+          { tag: "table", text: pseudo, title: pseudo, alt: pseudo },
+          { tag: "person", text: pseudo, title: pseudo, alt: pseudo },
+          {
+            tag: "div",
+            text: realText("div"),
+          },
+          {
+            tag: "button",
+            text: realText("button"),
+          },
+          {
+            tag: "img",
+            alt: realText("alt"),
+            title: realText("title"),
+          },
+          {
+            tag: "img_combination",
+            img_list: [{ alt: realText("combination alt") }],
+          },
+          {
+            tag: "collapsible_panel",
+            header: { title: realText("panel") },
+            elements: [],
+          },
+        ],
+      },
+    };
+    const normalized = normalizeCard(card).card;
+    const invalidIdPaths = validateCard(card).diagnostics
+      .filter(({ code }) => code === "invalid_element_id")
+      .map(({ path }) => path);
+
+    expect(invalidIdPaths).toEqual([
+      "$.body.elements[3].text.element_id",
+      "$.body.elements[4].text.element_id",
+      "$.body.elements[5].alt.element_id",
+      "$.body.elements[5].title.element_id",
+      "$.body.elements[6].img_list[0].alt.element_id",
+      "$.body.elements[7].header.title.element_id",
+    ]);
+    for (const index of [0, 1, 2]) {
+      const element = normalized?.body.elements[index] as
+        | Record<string, unknown>
+        | undefined;
+      expect(element?.text).toEqual(pseudo);
+      expect(element?.title).toEqual(pseudo);
+      expect(element?.alt).toEqual(pseudo);
+    }
+  });
+
+  it("counts only exact top-level header tagged children with stable paths", () => {
+    const card = {
+      schema: "2.0",
+      header: {
+        title: { tag: "plain_text", content: "title" },
+        subtitle: { tag: "plain_text", content: "subtitle" },
+        icon: { tag: "standard_icon", token: "chat_outlined" },
+        text_tag_list: [{ tag: "text_tag", text: "tag" }],
+        future_header: {
+          tag: "collapsible_panel",
+          elements: Array.from({ length: 20 }, () => ({ tag: "hr" })),
+        },
+      },
+      body: {
+        elements: Array.from({ length: 197 }, () => ({ tag: "hr" })),
+      },
+    };
+    const diagnostics = validateCard(card).diagnostics.filter(
+      ({ code }) => code === "component_limit",
+    );
+
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]?.path).toBe("$.body.elements[196].tag");
+    expect(normalizeCard(card).card?.body.elements[196]).toMatchObject({
+      tag: "__unsupported",
+      reason: "component_limit",
+      path: "$.body.elements[196]",
+    });
+  });
+
   it("allows five counted container levels and degrades the sixth", () => {
     const nested = (levels: number): unknown =>
       levels === 0

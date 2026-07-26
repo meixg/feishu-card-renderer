@@ -1,11 +1,16 @@
 import type { NormalizedCard } from "./card";
-import { CONTAINER_TAGS, KNOWN_TAGS } from "./components";
+import { CONTAINER_TAGS } from "./components";
 import {
   childPath,
   type ProtocolPath,
   type ValidationResult,
 } from "./diagnostics";
 import { invalidStyleFields } from "./style-policy";
+import {
+  componentChildSlots,
+  headerChildSlots,
+  type ProtocolChildSlot,
+} from "./traversal-policy";
 import { validateCard } from "./validate";
 import { safePx } from "../styles/safe";
 
@@ -28,20 +33,23 @@ function cloneOpaque(value: unknown): unknown {
   );
 }
 
-function cloneTaggedField(
-  output: Record<string, unknown>,
-  field: string,
+function normalizeSlots(
+  slots: readonly ProtocolChildSlot[],
   path: ProtocolPath,
   depth: number,
   state: NormalizeState,
 ): void {
-  if (isRecord(output[field]) && typeof output[field].tag === "string") {
-    output[field] = cloneAndNormalizeComponent(
-      output[field],
-      childPath(path, field),
+  for (const slot of slots) {
+    const childProtocolPath = slot.path.reduce<ProtocolPath>(
+      (current, segment) => childPath(current, segment),
+      path,
+    );
+    slot.replace(cloneAndNormalizeComponent(
+      slot.value,
+      childProtocolPath,
       depth,
       state,
-    );
+    ));
   }
 }
 
@@ -81,60 +89,7 @@ function cloneAndNormalizeComponent(
   }
 
   const output = cloneOpaque(value) as Record<string, unknown>;
-  const collection = tag === "column_set"
-    ? "columns"
-    : ["column", "form", "interactive_container", "collapsible_panel"]
-        .includes(String(tag))
-    ? "elements"
-    : undefined;
-  if (collection && Array.isArray(output[collection])) {
-    output[collection] = output[collection].map((child, index) =>
-      cloneAndNormalizeComponent(
-        child,
-        childPath(childPath(path, collection), index),
-        nextDepth,
-        state,
-      )
-    );
-  }
-  if (tag && KNOWN_TAGS.has(tag)) {
-    for (const field of ["text", "alt", "title", "icon"]) {
-      cloneTaggedField(output, field, path, nextDepth, state);
-    }
-    if (Array.isArray(output.text_tag_list)) {
-      output.text_tag_list = output.text_tag_list.map((child, index) =>
-        cloneAndNormalizeComponent(
-          child,
-          childPath(childPath(path, "text_tag_list"), index),
-          nextDepth,
-          state,
-        )
-      );
-    }
-  }
-  if (tag === "collapsible_panel" && isRecord(output.header)) {
-    cloneTaggedField(
-      output.header,
-      "title",
-      childPath(path, "header"),
-      nextDepth,
-      state,
-    );
-  }
-  if (tag === "img_combination" && Array.isArray(output.img_list)) {
-    output.img_list = output.img_list.map((image, index) => {
-      if (!isRecord(image)) return image;
-      const clonedImage = cloneOpaque(image) as Record<string, unknown>;
-      cloneTaggedField(
-        clonedImage,
-        "alt",
-        childPath(childPath(path, "img_list"), index),
-        nextDepth,
-        state,
-      );
-      return clonedImage;
-    });
-  }
+  normalizeSlots(componentChildSlots(output), path, nextDepth, state);
 
   if (tag === "column" || tag === "form" ||
     tag === "interactive_container" || tag === "collapsible_panel") {
@@ -250,9 +205,7 @@ export function normalizeCard(
   const state = { componentCount: 0 };
   const cloned = cloneOpaque(validation.card) as Record<string, unknown>;
   if (isRecord(cloned.header)) {
-    for (const field of ["title", "subtitle"]) {
-      cloneTaggedField(cloned.header, field, "$.header", 0, state);
-    }
+    normalizeSlots(headerChildSlots(cloned.header), "$.header", 0, state);
   }
   if (isRecord(cloned.body) && Array.isArray(cloned.body.elements)) {
     cloned.body.elements = cloned.body.elements.map((element, index) =>

@@ -12,6 +12,11 @@ import {
 } from "./diagnostics";
 import { isValidElementId } from "./identity";
 import { invalidStyleFields } from "./style-policy";
+import {
+  componentChildSlots,
+  headerChildSlots,
+  type ProtocolChildSlot,
+} from "./traversal-policy";
 import { safePx } from "../styles/safe";
 
 const FORM_INTERACTIVE_TAGS = new Set([
@@ -88,18 +93,27 @@ type WalkState = {
   fieldNames: Map<string, ProtocolPath>;
 };
 
-function validateTaggedNodes(
+function validateProtocolSlots(
+  slots: readonly ProtocolChildSlot[],
+  path: ProtocolPath,
+  depth: number,
+  state: WalkState,
+): void {
+  for (const slot of slots) {
+    const childProtocolPath = slot.path.reduce<ProtocolPath>(
+      (current, segment) => childPath(current, segment),
+      path,
+    );
+    validateTaggedNode(slot.value, childProtocolPath, depth, state);
+  }
+}
+
+function validateTaggedNode(
   value: unknown,
   path: ProtocolPath,
   depth: number,
   state: WalkState,
 ): void {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      validateTaggedNodes(item, childPath(path, index), depth, state);
-    });
-    return;
-  }
   if (!isRecord(value)) return;
 
   const tag = typeof value.tag === "string" ? value.tag : undefined;
@@ -129,7 +143,7 @@ function validateTaggedNodes(
     }
   }
 
-  if ("element_id" in value) {
+  if (tag && "element_id" in value) {
     const idPath = childPath(path, "element_id");
     if (!isValidElementId(value.element_id)) {
       state.diagnostics.push(diagnostic(
@@ -164,9 +178,7 @@ function validateTaggedNodes(
   }
   if (tag) validateTaggedStyleFields(value, path, state);
 
-  for (const [key, child] of Object.entries(value)) {
-    validateTaggedNodes(child, childPath(path, key), nextDepth, state);
-  }
+  validateProtocolSlots(componentChildSlots(value), path, nextDepth, state);
 }
 
 type Context = {
@@ -424,7 +436,27 @@ export function validateCard(input: unknown): ValidationResult<Card> {
     formNames: new Map(),
     fieldNames: new Map(),
   };
-  validateTaggedNodes(input, "$", 0, state);
+  if (isRecord(input.header)) {
+    validateProtocolSlots(headerChildSlots(input.header), "$.header", 0, state);
+  }
+  if (isRecord(input.config)) {
+    validateTaggedNode(input.config, "$.config", 0, state);
+  }
+  if (isRecord(input.body)) {
+    validateTaggedNode(input.body, "$.body", 0, state);
+    if (Array.isArray(input.body.elements)) {
+      validateProtocolSlots(
+        input.body.elements.map((value, index) => ({
+          value,
+          path: [index],
+          replace: () => {},
+        })),
+        "$.body.elements",
+        0,
+        state,
+      );
+    }
+  }
 
   if (input.config !== undefined && !isRecord(input.config)) {
     state.diagnostics.push(diagnostic(
