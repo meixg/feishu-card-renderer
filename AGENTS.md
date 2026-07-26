@@ -288,6 +288,8 @@ type CardRendererProps = {
 
 本仓库使用 GitHub Issues 跟踪需求和任务。详见 `docs/agents/issue-tracker.md`。
 
+所有 `gh` CLI 命令必须直接在沙箱外执行，不得先在沙箱内尝试。
+
 ### 分诊标签
 
 本仓库使用 Matt Pocock 工程技能的默认五类分诊标签。详见 `docs/agents/triage-labels.md`。
