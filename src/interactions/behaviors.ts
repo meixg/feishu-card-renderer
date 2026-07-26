@@ -12,6 +12,7 @@ export function serializableValue(value: unknown, depth = 0,
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (depth >= 12 || typeof value !== "object") return undefined;
   if (seen.has(value)) return undefined;
+  if (Object.getOwnPropertySymbols(value).length > 0) return undefined;
   seen.add(value);
   if (Array.isArray(value)) {
     const output: unknown[] = [];

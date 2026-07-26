@@ -37,11 +37,14 @@ function useTips(element: {
     describedBy,
     nodes: tips.length > 0
       ? <span id={describedBy} className="fcr-field-tips">
-          {tips.map((tip) => <span key={tip}>{tip}</span>)}
+          {tips.map((tip, index) => <span key={index}>{tip}</span>)}
         </span>
       : null,
   };
 }
+
+const optionValue = (option: SelectOption, index: number): string =>
+  typeof option.value === "string" ? option.value.slice(0, 1000) : String(index);
 
 function useField(element: InteractiveElement, initial: unknown,
   dispatchWithoutBehavior = true, allowLocalWithoutAction = false,
@@ -136,7 +139,7 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
       onChange={(event) => field.set(event.target.value, path)}>
       <option value="">{element.placeholder?.content ?? "请选择"}</option>
       {(element.options ?? []).map((option, index) =>
-        <option key={`${option.value ?? index}`} value={String(option.value ?? "")}
+        <option key={index} value={optionValue(option, index)}
           disabled={option.disabled}>{optionText(option)}</option>)}
     </select>
   </label>{tips.nodes}{field.confirmDialog}</>;
@@ -153,7 +156,7 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
       disabled={field.disabled} required={element.required}
       onChange={(event) => field.set([...event.target.selectedOptions].map(({ value }) => value), path)}>
       {(element.options ?? []).map((option, index) =>
-        <option key={`${option.value ?? index}`} value={String(option.value ?? "")}
+        <option key={index} value={optionValue(option, index)}
           disabled={option.disabled}>{optionText(option)}</option>)}
     </select>
   </label>{tips.nodes}{field.confirmDialog}</>;
@@ -200,7 +203,7 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
     aria-describedby={tips.describedBy}>
     <legend>{element.label?.content ?? element.name ?? "选择图片"}</legend>
     {(element.options ?? []).map((option, index) => {
-      const value = String(option.value ?? index);
+      const value = optionValue(option, index);
       const checked = element.multi_select ? Array.isArray(field.value) &&
         field.value.includes(value) : field.value === value;
       return <label key={value}><input type={element.multi_select ? "checkbox" : "radio"}
@@ -274,7 +277,9 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (open) menu.current?.focus();
+    if (open) menu.current?.querySelector<HTMLButtonElement>(
+      "[role='menuitem']:not(:disabled)",
+    )?.focus();
   }, [open]);
   const close = () => {
     setOpen(false);
@@ -290,9 +295,23 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
       aria-label="更多操作"
       onKeyDown={(event) => {
         if (event.key === "Escape") { event.preventDefault(); close(); }
+        const items = [...(menu.current?.querySelectorAll<HTMLButtonElement>(
+          "[role='menuitem']:not(:disabled)",
+        ) ?? [])];
+        if (items.length === 0) return;
+        const current = items.indexOf(document.activeElement as HTMLButtonElement);
+        const target = event.key === "Home" ? 0 :
+          event.key === "End" ? items.length - 1 :
+          event.key === "ArrowDown" ? (current + 1) % items.length :
+          event.key === "ArrowUp"
+            ? (current <= 0 ? items.length - 1 : current - 1) : undefined;
+        if (target !== undefined) {
+          event.preventDefault();
+          items[target]?.focus();
+        }
       }}>{(element.options ?? []).map((option, index) =>
       <button role="menuitem" type="button" disabled={element.disabled || !onAction}
-        key={`${option.value ?? index}`} onClick={(event) => {
+        key={index} onClick={(event) => {
           event.stopPropagation();
           const run = () => {
             const optionBehaviors = [

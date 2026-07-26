@@ -16,6 +16,8 @@ export function hasOwnDataProperty(
   return descriptor !== undefined && "value" in descriptor;
 }
 
+const unsafeDataMarker = Object.freeze({ [Symbol("unsafe-data")]: true });
+
 export function safeDataSnapshot(
   value: unknown,
   depth = 0,
@@ -24,7 +26,7 @@ export function safeDataSnapshot(
   if (value === null || typeof value === "string" ||
     typeof value === "boolean" || typeof value === "number") return value;
   if (typeof value !== "object" || depth >= 24 || seen.has(value)) {
-    return undefined;
+    return unsafeDataMarker;
   }
   seen.add(value);
   if (Array.isArray(value)) {
@@ -44,9 +46,13 @@ export function safeDataSnapshot(
       continue;
     }
     const descriptor = descriptors[key];
-    if (!descriptor || !("value" in descriptor)) continue;
+    if (!descriptor) continue;
+    if (!("value" in descriptor)) {
+      output[key] = unsafeDataMarker;
+      continue;
+    }
     const child = safeDataSnapshot(descriptor.value, depth + 1, seen);
-    if (child !== undefined) output[key] = child;
+    output[key] = child;
   }
   seen.delete(value);
   return output;

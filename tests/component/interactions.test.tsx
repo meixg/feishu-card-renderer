@@ -70,10 +70,33 @@ describe("interactive components and CardAction", () => {
     fireEvent.keyDown(trigger, { key: "Enter" });
     fireEvent.click(trigger);
     const menu = screen.getByRole("menu");
-    expect(menu).toHaveFocus();
+    expect(screen.getByRole("menuitem", { name: "菜单项" })).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "End" });
+    expect(screen.getByRole("menuitem", { name: "菜单项" })).toHaveFocus();
     fireEvent.keyDown(menu, { key: "Escape" });
     expect(screen.queryByRole("menu")).toBeNull();
     await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("does not coerce untrusted option values or invoke their getters", () => {
+    const getter = vi.fn(() => "unsafe");
+    const unsafeValue = { toString: "not callable" };
+    Object.defineProperty(unsafeValue, "trap", { enumerable: true, get: getter });
+    expect(() => render(<CardRenderer onAction={() => {}} card={{
+      schema: "2.0", body: { elements: [
+        { tag: "select_static", name: "unsafe-select",
+          options: [{ text: { tag: "plain_text", content: "安全标签" },
+            value: unsafeValue }] },
+        { tag: "overflow", options: [
+          { text: { tag: "plain_text", content: "安全菜单" },
+            value: unsafeValue },
+        ] },
+      ] },
+    }} />)).not.toThrow();
+    fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+    expect(screen.getByRole("option", { name: "安全标签" })).toHaveValue("0");
+    expect(screen.getByRole("menuitem", { name: "安全菜单" })).toBeVisible();
+    expect(getter).not.toHaveBeenCalled();
   });
 
   it("does not dispatch disabled controls and confirms with Esc focus restoration", async () => {
