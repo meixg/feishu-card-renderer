@@ -11,6 +11,7 @@ vi.mock("../../src/adapters/vchart-loader", () => ({
 import { CardRenderer } from "../../src";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
+import { completeInteractiveCard } from "../../src/fixtures/interactive-card";
 
 it("has no detectable accessibility violations", async () => {
   const { container } = render(<CardRenderer card={{ schema: "2.0",
@@ -45,6 +46,16 @@ it("keeps recursive containers and disclosure controls accessible", async () => 
     rules: {
       "color-contrast": { enabled: false },
     },
+  });
+  expect(results.violations).toEqual([]);
+});
+
+it("keeps form controls, menus, and business-action disabled states accessible", async () => {
+  const { container } = render(
+    <CardRenderer card={completeInteractiveCard} />,
+  );
+  const results = await axe(container, {
+    rules: { "color-contrast": { enabled: false } },
   });
   expect(results.violations).toEqual([]);
 });

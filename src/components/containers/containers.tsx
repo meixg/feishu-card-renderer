@@ -14,7 +14,7 @@ import {
   useRendererContext,
   useRecursiveContext,
 } from "../../renderer/context";
-import { activateInteractiveContainer } from "../../interactions/container";
+import { actionsFor } from "../../interactions/behaviors";
 import { useFormScope } from "../../interactions/form-state";
 import { ContainerLayout, layoutStyle, safeRadius } from "./layout";
 import { keyForElement } from "../../schema/identity";
@@ -109,14 +109,29 @@ export function InteractiveContainer({ element, path }: {
   path: string;
 }): React.JSX.Element {
   const { containerDepth } = useRecursiveContext();
-  const behaviors = Array.isArray(element.behaviors) ? element.behaviors : [];
+  const { onAction } = useRendererContext();
+  const actionable = Array.isArray(element.behaviors) &&
+    element.behaviors.length > 0;
+  const activate = (event: React.SyntheticEvent<HTMLElement>) => {
+    event.stopPropagation();
+    actionsFor(element, path).forEach((action) => onAction?.(action));
+  };
   return (
     <ContainerLayout className={[
       "fcr-interactive-container",
       element.has_border ? "fcr-has-border" : "",
     ].filter(Boolean).join(" ")} element={element}
       data-fcr-path={path} data-fcr-depth={containerDepth}
+      role={actionable ? "button" : undefined}
+      aria-label={actionable ? "交互容器" : undefined}
+      tabIndex={actionable && onAction ? 0 : undefined}
+      aria-disabled={actionable && !onAction ? true : undefined}
       style={{ borderRadius: safeRadius(element.corner_radius) }}
+      onKeyDown={(event) => {
+        if (!onAction || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        activate(event);
+      }}
       onClick={(event) => {
         const target = event.target as Element;
         const childControl = target.closest(
@@ -124,16 +139,13 @@ export function InteractiveContainer({ element, path }: {
         );
         const nestedContainer = target.closest(".fcr-interactive-container");
         if (event.defaultPrevented ||
-          (childControl && event.currentTarget.contains(childControl)) ||
+          (childControl && childControl !== event.currentTarget &&
+            event.currentTarget.contains(childControl)) ||
           (nestedContainer && nestedContainer !== event.currentTarget)) {
           return;
         }
-        activateInteractiveContainer(event, {
-          tag: "interactive_container",
-          path,
-          elementId: element.element_id,
-          behaviors,
-        });
+        if (onAction) activate(event);
+        else event.stopPropagation();
       }}>
       <Children elements={element.elements} path={path} />
     </ContainerLayout>

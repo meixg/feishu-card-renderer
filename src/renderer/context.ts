@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type { Person } from "../types";
+import type { CardAction } from "../types";
 
 export type ResourceResolver<T> = (
   key: string,
@@ -26,6 +27,7 @@ type RendererContextValue = Readonly<{
   personCache: Map<string, PersonCacheEntry>;
   controllers: Set<AbortController>;
   uniqueElementIds: ReadonlySet<string>;
+  onAction?: (action: CardAction) => void;
 }>;
 
 export const RendererContext = createContext<RendererContextValue | null>(null);
@@ -36,6 +38,9 @@ export type FormScope = Readonly<{
   values: Readonly<Record<string, unknown>>;
   registerInitialValue: (name: string, value: unknown) => void;
   setValue: (name: string, value: unknown) => void;
+  reset: () => void;
+  required: ReadonlySet<string>;
+  registerRequired: (name: string, required: boolean) => void;
 }>;
 
 export type RecursiveContextValue = Readonly<{

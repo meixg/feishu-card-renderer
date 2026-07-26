@@ -283,7 +283,9 @@ describe("container rendering", () => {
     ]) {
       expect(within(container).getByText(text)).toBeInTheDocument();
     }
-    expect(within(container).getAllByRole("note")).toHaveLength(5);
+    // The four illegal children remain placeholders; the submit button is now
+    // rendered by the Issue #4 interaction registry rather than a placeholder.
+    expect(within(container).getAllByRole("note")).toHaveLength(4);
     expect(container.querySelector("table")).toBeNull();
     expect(container.querySelector(".fcr-chart-result")).toBeNull();
   });

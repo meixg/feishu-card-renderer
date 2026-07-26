@@ -125,6 +125,30 @@ function cloneAndNormalizeComponent(
   }
   if (tag === "column_set") output.columns ??= [];
   if (tag === "select_img") output.multi_select ??= false;
+  if (tag === "input") {
+    output.default_value = typeof output.default_value === "string"
+      ? output.default_value : "";
+    output.input_type = ["text", "multiline_text", "password"].includes(
+      String(output.input_type),
+    ) ? output.input_type : "text";
+    output.max_length = Number.isInteger(output.max_length) &&
+      Number(output.max_length) >= 1 && Number(output.max_length) <= 1000
+      ? output.max_length : 1000;
+  }
+  if (["input", "button", "overflow", "select_static",
+    "multi_select_static", "select_person", "multi_select_person",
+    "date_picker", "picker_time", "picker_datetime", "select_img",
+    "checker"].includes(String(tag))) {
+    output.disabled = output.disabled === true;
+    output.required = output.required === true;
+  }
+  if (["multi_select_static", "multi_select_person", "select_img"]
+    .includes(String(tag))) {
+    output.selected_values = Array.isArray(output.selected_values)
+      ? output.selected_values.filter((value) => typeof value === "string")
+      : [];
+  }
+  if (tag === "checker") output.checked = output.checked === true;
   if (tag === "img_combination") output.combination_mode ??= "double";
   if (tag === "person" || tag === "person_list") {
     output.size ??= "medium";

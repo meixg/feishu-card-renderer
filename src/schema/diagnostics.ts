@@ -28,6 +28,7 @@ export type CardDiagnosticCode =
   | "form_chart_forbidden"
   | "invalid_style"
   | "unsafe_url"
+  | "missing_on_action"
   | "image_unavailable"
   | "image_resolve_failed";
 

@@ -38,6 +38,21 @@ function keyFor(diagnostic: CardDiagnostic): string {
   return `${diagnostic.code}:${diagnostic.path}:${diagnostic.message}`;
 }
 
+function hasBusinessAction(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasBusinessAction);
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  if (Array.isArray(record.behaviors) && record.behaviors.length > 0) return true;
+  if (record.tag === "button" && record.form_action_type === "submit") return true;
+  if (["input", "select_static", "select_person", "date_picker",
+    "picker_time", "picker_datetime", "select_img"].includes(String(record.tag))) {
+    return true;
+  }
+  if (record.tag === "overflow" && Array.isArray(record.options) &&
+    record.options.length > 0) return true;
+  return Object.values(record).some(hasBusinessAction);
+}
+
 export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   const { onDiagnostic } = props;
   const result = useMemo(() => normalizeCard(props.card), [props.card]);
@@ -50,8 +65,16 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   const personCache = useRef(new Map());
   const diagnostics = useMemo(() => {
     const unique = new Map(result.diagnostics.map((item) => [keyFor(item), item]));
+    if (!props.onAction && hasBusinessAction(props.card)) {
+      const item: CardDiagnostic = {
+        code: "missing_on_action", path: "$", classification: "recoverable",
+        severity: "warning",
+        message: "Business actions are disabled because onAction is not configured.",
+      };
+      unique.set(keyFor(item), item);
+    }
     return [...unique.values()];
-  }, [result.diagnostics]);
+  }, [props.card, props.onAction, result.diagnostics]);
   const diagnosticKey = diagnostics.map(keyFor).join("|");
   useEffect(() => {
     onDiagnostic?.(diagnostics);
@@ -87,6 +110,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     personCache: personCache.current,
     controllers: controllers.current,
     uniqueElementIds,
+    onAction: props.onAction,
   } as const;
   const bodyStyle = {
     padding: safeBox(card.body.padding, false),

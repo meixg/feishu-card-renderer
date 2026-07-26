@@ -176,35 +176,67 @@ export type TableElement = BaseElement<"table"> & {
   header_style?: Record<string, unknown>;
 };
 export type HrElement = BaseElement<"hr">;
-export type InputElement = BaseElement<"input"> & { name?: string };
+export type InteractiveBase<T extends CardComponentTag> = BaseElement<T> & {
+  name?: string;
+  disabled?: boolean;
+  required?: boolean;
+  behaviors?: unknown[];
+  value?: unknown;
+  confirm?: { title?: TextElement; text?: TextElement };
+  label?: TextElement;
+  placeholder?: TextElement;
+};
+export type SelectOption = {
+  text?: TextElement;
+  value?: unknown;
+  img_key?: string;
+  disabled?: boolean;
+  behaviors?: unknown[];
+  multi_url?: { url?: string; pc_url?: string; default_url?: string };
+  [key: string]: unknown;
+};
+export type InputElement = InteractiveBase<"input"> & {
+  default_value?: string; input_type?: "text" | "multiline_text" | "password";
+  max_length?: number; rows?: number;
+};
 export type ButtonElement = BaseElement<"button"> & {
   name?: string;
   form_action_type?: "submit" | "reset";
   text?: TextElement;
+  disabled?: boolean; behaviors?: unknown[]; value?: unknown;
+  confirm?: { title?: TextElement; text?: TextElement };
 };
-export type OverflowElement = BaseElement<"overflow"> & { name?: string };
-export type SelectStaticElement = BaseElement<"select_static"> & {
-  name?: string;
+export type OverflowElement = InteractiveBase<"overflow"> & {
+  options?: SelectOption[];
 };
-export type MultiSelectStaticElement = BaseElement<"multi_select_static"> & {
-  name?: string;
+export type SelectStaticElement = InteractiveBase<"select_static"> & {
+  options?: SelectOption[]; initial_option?: string; initial_index?: number;
 };
-export type SelectPersonElement = BaseElement<"select_person"> & {
-  name?: string;
+export type MultiSelectStaticElement = InteractiveBase<"multi_select_static"> & {
+  options?: SelectOption[]; selected_values?: string[];
 };
-export type MultiSelectPersonElement = BaseElement<"multi_select_person"> & {
-  name?: string;
+export type SelectPersonElement = InteractiveBase<"select_person"> & {
+  options?: SelectOption[]; initial_option?: string; initial_index?: number;
 };
-export type DatePickerElement = BaseElement<"date_picker"> & { name?: string };
-export type TimePickerElement = BaseElement<"picker_time"> & { name?: string };
-export type DateTimePickerElement = BaseElement<"picker_datetime"> & {
-  name?: string;
+export type MultiSelectPersonElement = InteractiveBase<"multi_select_person"> & {
+  options?: SelectOption[]; selected_values?: string[];
 };
-export type SelectImageElement = BaseElement<"select_img"> & {
-  name?: string;
+export type DatePickerElement = InteractiveBase<"date_picker"> & {
+  initial_date?: string;
+};
+export type TimePickerElement = InteractiveBase<"picker_time"> & {
+  initial_time?: string;
+};
+export type DateTimePickerElement = InteractiveBase<"picker_datetime"> & {
+  initial_datetime?: string;
+};
+export type SelectImageElement = InteractiveBase<"select_img"> & {
   multi_select?: boolean;
+  options?: SelectOption[]; selected_values?: string[];
 };
-export type CheckerElement = BaseElement<"checker"> & { name?: string };
+export type CheckerElement = InteractiveBase<"checker"> & {
+  checked?: boolean; text?: TextElement;
+};
 
 export type CardElement =
   | ColumnSetElement

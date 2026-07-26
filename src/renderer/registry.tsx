@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import type { ComponentType } from "react";
 
 import { Div, Hr, Image, Markdown } from "../components/content/basic";
@@ -17,15 +16,15 @@ import {
   InteractiveContainer,
 } from "../components/containers/containers";
 import type { CardComponentTag, CardElement } from "../schema/components";
-import { UnknownComponent } from "./UnknownComponent";
+import {
+  Button, Checker, Input, MultiSelect, Overflow, Picker, SelectImage,
+  SingleSelect,
+} from "../components/interactive/interactive";
 
 type RendererProps<T extends CardElement = CardElement> = {
   element: T;
   path: string;
 };
-
-const Placeholder = ({ element, path }: RendererProps): React.JSX.Element =>
-  <UnknownComponent tag={element.tag} path={path} />;
 
 export const registry: Record<CardComponentTag, ComponentType<RendererProps>> = {
   div: Div as unknown as ComponentType<RendererProps>,
@@ -44,16 +43,16 @@ export const registry: Record<CardComponentTag, ComponentType<RendererProps>> = 
   person_list: PersonList as unknown as ComponentType<RendererProps>,
   chart: Chart as unknown as ComponentType<RendererProps>,
   table: Table as unknown as ComponentType<RendererProps>,
-  input: Placeholder,
-  button: Placeholder,
-  overflow: Placeholder,
-  select_static: Placeholder,
-  multi_select_static: Placeholder,
-  select_person: Placeholder,
-  multi_select_person: Placeholder,
-  date_picker: Placeholder,
-  picker_time: Placeholder,
-  picker_datetime: Placeholder,
-  select_img: Placeholder,
-  checker: Placeholder,
+  input: Input as unknown as ComponentType<RendererProps>,
+  button: Button as unknown as ComponentType<RendererProps>,
+  overflow: Overflow as unknown as ComponentType<RendererProps>,
+  select_static: SingleSelect as unknown as ComponentType<RendererProps>,
+  multi_select_static: MultiSelect as unknown as ComponentType<RendererProps>,
+  select_person: SingleSelect as unknown as ComponentType<RendererProps>,
+  multi_select_person: MultiSelect as unknown as ComponentType<RendererProps>,
+  date_picker: Picker as unknown as ComponentType<RendererProps>,
+  picker_time: Picker as unknown as ComponentType<RendererProps>,
+  picker_datetime: Picker as unknown as ComponentType<RendererProps>,
+  select_img: SelectImage as unknown as ComponentType<RendererProps>,
+  checker: Checker as unknown as ComponentType<RendererProps>,
 };
