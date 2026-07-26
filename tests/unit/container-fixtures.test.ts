@@ -93,29 +93,47 @@ describe("container fixtures", () => {
     const card = {
       schema: "2.0",
       body: {
-        elements: [{
-          tag: "chart",
-          chart_spec: {
-            padding: 12,
-            margin: [1, 2, 3, 4],
+        elements: [
+          {
+            tag: "chart",
+            chart_spec: {
+              series: {
+                imageLikeData: { tag: "img", margin: [1, 2, 3, 4] },
+                personLikeData: { tag: "person" },
+              },
+            },
+            future_extension: {
+              nested: {
+                tag: "interactive_container",
+                padding: ["business", "data"],
+                child: { tag: "person" },
+              },
+            },
           },
-          future_extension: {
-            padding: { top: 4 },
-            margin: [8, 16],
+          { tag: "img", img_key: "real", margin: ["invalid"] },
+          {
+            tag: "person",
+            user_id: "real",
           },
-        }],
+        ],
       },
     };
+    const original = structuredClone(card);
+    const normalized = normalizeCard(card).card;
+    const normalizedChart = normalized?.body.elements[0] as
+      | Record<string, unknown>
+      | undefined;
 
-    expect(normalizeCard(card).card?.body.elements[0]).toMatchObject({
-      chart_spec: {
-        padding: 12,
-        margin: [1, 2, 3, 4],
-      },
-      future_extension: {
-        padding: { top: 4 },
-        margin: [8, 16],
-      },
+    expect(card).toEqual(original);
+    expect(normalizedChart?.chart_spec)
+      .toEqual(card.body.elements[0].chart_spec);
+    expect(normalizedChart?.future_extension)
+      .toEqual(card.body.elements[0].future_extension);
+    expect(normalized?.body.elements[1]).not.toHaveProperty("margin");
+    expect(normalized?.body.elements[2]).toMatchObject({
+      size: "medium",
+      show_avatar: true,
+      show_name: true,
     });
   });
 

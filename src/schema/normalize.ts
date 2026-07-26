@@ -1,5 +1,5 @@
 import type { NormalizedCard } from "./card";
-import { CONTAINER_TAGS } from "./components";
+import { CONTAINER_TAGS, KNOWN_TAGS } from "./components";
 import {
   childPath,
   type ProtocolPath,
@@ -20,7 +20,32 @@ type NestingContext = {
   inForm: boolean;
 };
 
-function cloneAndNormalize(
+function cloneOpaque(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(cloneOpaque);
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [key, cloneOpaque(child)]),
+  );
+}
+
+function cloneTaggedField(
+  output: Record<string, unknown>,
+  field: string,
+  path: ProtocolPath,
+  depth: number,
+  state: NormalizeState,
+): void {
+  if (isRecord(output[field]) && typeof output[field].tag === "string") {
+    output[field] = cloneAndNormalizeComponent(
+      output[field],
+      childPath(path, field),
+      depth,
+      state,
+    );
+  }
+}
+
+function cloneAndNormalizeComponent(
   value: unknown,
   path: ProtocolPath,
   depth: number,
@@ -28,10 +53,10 @@ function cloneAndNormalize(
 ): unknown {
   if (Array.isArray(value)) {
     return value.map((item, index) =>
-      cloneAndNormalize(item, childPath(path, index), depth, state)
+      cloneAndNormalizeComponent(item, childPath(path, index), depth, state)
     );
   }
-  if (!isRecord(value)) return value;
+  if (!isRecord(value)) return cloneOpaque(value);
 
   const tag = typeof value.tag === "string" ? value.tag : undefined;
   const nextDepth = tag && CONTAINER_TAGS.has(tag) ? depth + 1 : depth;
@@ -55,14 +80,60 @@ function cloneAndNormalize(
     }
   }
 
-  const output: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value)) {
-    output[key] = cloneAndNormalize(
-      child,
-      childPath(path, key),
+  const output = cloneOpaque(value) as Record<string, unknown>;
+  const collection = tag === "column_set"
+    ? "columns"
+    : ["column", "form", "interactive_container", "collapsible_panel"]
+        .includes(String(tag))
+    ? "elements"
+    : undefined;
+  if (collection && Array.isArray(output[collection])) {
+    output[collection] = output[collection].map((child, index) =>
+      cloneAndNormalizeComponent(
+        child,
+        childPath(childPath(path, collection), index),
+        nextDepth,
+        state,
+      )
+    );
+  }
+  if (tag && KNOWN_TAGS.has(tag)) {
+    for (const field of ["text", "alt", "title", "icon"]) {
+      cloneTaggedField(output, field, path, nextDepth, state);
+    }
+    if (Array.isArray(output.text_tag_list)) {
+      output.text_tag_list = output.text_tag_list.map((child, index) =>
+        cloneAndNormalizeComponent(
+          child,
+          childPath(childPath(path, "text_tag_list"), index),
+          nextDepth,
+          state,
+        )
+      );
+    }
+  }
+  if (tag === "collapsible_panel" && isRecord(output.header)) {
+    cloneTaggedField(
+      output.header,
+      "title",
+      childPath(path, "header"),
       nextDepth,
       state,
     );
+  }
+  if (tag === "img_combination" && Array.isArray(output.img_list)) {
+    output.img_list = output.img_list.map((image, index) => {
+      if (!isRecord(image)) return image;
+      const clonedImage = cloneOpaque(image) as Record<string, unknown>;
+      cloneTaggedField(
+        clonedImage,
+        "alt",
+        childPath(childPath(path, "img_list"), index),
+        nextDepth,
+        state,
+      );
+      return clonedImage;
+    });
   }
 
   if (tag === "column" || tag === "form" ||
@@ -176,12 +247,23 @@ export function normalizeCard(
     return { ...validation, card: null };
   }
 
-  const cloned = cloneAndNormalize(
-    validation.card,
-    "$",
-    0,
-    { componentCount: 0 },
-  ) as Record<string, unknown>;
+  const state = { componentCount: 0 };
+  const cloned = cloneOpaque(validation.card) as Record<string, unknown>;
+  if (isRecord(cloned.header)) {
+    for (const field of ["title", "subtitle"]) {
+      cloneTaggedField(cloned.header, field, "$.header", 0, state);
+    }
+  }
+  if (isRecord(cloned.body) && Array.isArray(cloned.body.elements)) {
+    cloned.body.elements = cloned.body.elements.map((element, index) =>
+      cloneAndNormalizeComponent(
+        element,
+        childPath("$.body.elements", index),
+        0,
+        state,
+      )
+    );
+  }
   const rawConfig = isRecord(cloned.config) ? cloned.config : {};
   const rawBody = isRecord(cloned.body) ? cloned.body : {};
   const normalizedElements = replaceInvalidNesting(
