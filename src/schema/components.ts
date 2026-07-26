@@ -188,9 +188,16 @@ export type InteractiveBase<T extends CardComponentTag> = BaseElement<T> & {
   hover_tips?: TextElement;
   disabled_tips?: TextElement;
 };
+export type OptionValue =
+  | string
+  | number
+  | boolean
+  | null
+  | OptionValue[]
+  | { [key: string]: OptionValue };
 export type SelectOption = {
   text?: TextElement;
-  value?: unknown;
+  value?: OptionValue;
   img_key?: string;
   disabled?: boolean;
   behaviors?: unknown[];
@@ -209,16 +216,16 @@ export type OverflowElement = InteractiveBase<"overflow"> & {
   options?: SelectOption[];
 };
 export type SelectStaticElement = InteractiveBase<"select_static"> & {
-  options?: SelectOption[]; initial_option?: string; initial_index?: number;
+  options?: SelectOption[]; initial_option?: OptionValue; initial_index?: number;
 };
 export type MultiSelectStaticElement = InteractiveBase<"multi_select_static"> & {
-  options?: SelectOption[]; selected_values?: string[];
+  options?: SelectOption[]; selected_values?: OptionValue[];
 };
 export type SelectPersonElement = InteractiveBase<"select_person"> & {
-  options?: SelectOption[]; initial_option?: string; initial_index?: number;
+  options?: SelectOption[]; initial_option?: OptionValue; initial_index?: number;
 };
 export type MultiSelectPersonElement = InteractiveBase<"multi_select_person"> & {
-  options?: SelectOption[]; selected_values?: string[];
+  options?: SelectOption[]; selected_values?: OptionValue[];
 };
 export type DatePickerElement = InteractiveBase<"date_picker"> & {
   initial_date?: string;
@@ -231,7 +238,7 @@ export type DateTimePickerElement = InteractiveBase<"picker_datetime"> & {
 };
 export type SelectImageElement = InteractiveBase<"select_img"> & {
   multi_select?: boolean;
-  options?: SelectOption[]; selected_values?: string[];
+  options?: SelectOption[]; selected_values?: OptionValue[];
 };
 export type CheckerElement = InteractiveBase<"checker"> & {
   checked?: boolean; text?: TextElement;

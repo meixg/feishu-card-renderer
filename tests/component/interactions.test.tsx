@@ -25,7 +25,8 @@ describe("interactive components and CardAction", () => {
     expect(onAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "重置" }));
     expect(input).toHaveValue("初始值");
-    expect(screen.getByLabelText("类型")).toHaveValue("a");
+    expect((screen.getByRole("option", { name: "A" }) as HTMLOptionElement)
+      .selected).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "提交" }));
     const dialog = screen.getByRole("dialog", { name: "确认提交" });
@@ -80,9 +81,10 @@ describe("interactive components and CardAction", () => {
 
   it("does not coerce untrusted option values or invoke their getters", () => {
     const getter = vi.fn(() => "unsafe");
+    const onAction = vi.fn();
     const unsafeValue = { toString: "not callable" };
     Object.defineProperty(unsafeValue, "trap", { enumerable: true, get: getter });
-    expect(() => render(<CardRenderer onAction={() => {}} card={{
+    expect(() => render(<CardRenderer onAction={onAction} card={{
       schema: "2.0", body: { elements: [
         { tag: "select_static", name: "unsafe-select",
           options: [{ text: { tag: "plain_text", content: "安全标签" },
@@ -93,10 +95,99 @@ describe("interactive components and CardAction", () => {
         ] },
       ] },
     }} />)).not.toThrow();
+    const select = screen.getByLabelText("unsafe-select");
+    const safeOption = screen.getByRole<HTMLOptionElement>(
+      "option", { name: "安全标签" },
+    );
+    fireEvent.change(select, { target: { value: safeOption.value } });
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      value: { toString: "not callable" },
+    }));
     fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
-    expect(screen.getByRole("option", { name: "安全标签" })).toHaveValue("0");
-    expect(screen.getByRole("menuitem", { name: "安全菜单" })).toBeVisible();
+    fireEvent.click(screen.getByRole("menuitem", { name: "安全菜单" }));
     expect(getter).not.toHaveBeenCalled();
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      value: { toString: "not callable" },
+    }));
+  });
+
+  it("maps collision-resistant UI tokens back to complete option values", () => {
+    const onAction = vi.fn();
+    const prefix = "x".repeat(1000);
+    const first = `${prefix}A`;
+    const second = `${prefix}B`;
+    render(<CardRenderer onAction={onAction} card={{
+      schema: "2.0", body: { elements: [
+        { tag: "form", name: "raw-options", elements: [
+          { tag: "select_static", name: "single", initial_option: second,
+            label: { tag: "plain_text", content: "长单选" },
+            options: [
+              { text: { tag: "plain_text", content: "长值 A" }, value: first },
+              { text: { tag: "plain_text", content: "长值 B" }, value: second },
+            ] },
+          { tag: "multi_select_static", name: "multi",
+            selected_values: [first],
+            label: { tag: "plain_text", content: "长多选" },
+            options: [
+              { text: { tag: "plain_text", content: "多选 A" }, value: first },
+              { text: { tag: "plain_text", content: "多选 B" }, value: second },
+            ] },
+          { tag: "select_person", name: "person", initial_option: 7,
+            label: { tag: "plain_text", content: "数字人员" },
+            options: [{ text: { tag: "plain_text", content: "七" }, value: 7 }] },
+          { tag: "multi_select_person", name: "people",
+            selected_values: [true],
+            label: { tag: "plain_text", content: "布尔人员" },
+            options: [{ text: { tag: "plain_text", content: "真" }, value: true }] },
+          { tag: "select_img", name: "image", selected_values: [second],
+            options: [
+              { text: { tag: "plain_text", content: "图片 A" }, value: first },
+              { text: { tag: "plain_text", content: "图片 B" }, value: second },
+            ] },
+          { tag: "button", form_action_type: "submit",
+            text: { tag: "plain_text", content: "提交原值" } },
+        ] },
+        { tag: "overflow", options: [
+          { text: { tag: "plain_text", content: "发送长值" }, value: second },
+        ] },
+      ] },
+    }} />);
+
+    expect((screen.getByRole("option", { name: "长值 B" }) as HTMLOptionElement)
+      .selected).toBe(true);
+    expect((screen.getByRole("option", { name: "多选 A" }) as HTMLOptionElement)
+      .selected).toBe(true);
+    expect((screen.getByRole("option", { name: "七" }) as HTMLOptionElement)
+      .selected).toBe(true);
+    expect((screen.getByRole("option", { name: "真" }) as HTMLOptionElement)
+      .selected).toBe(true);
+    expect(screen.getByRole("radio", { name: "图片 B" })).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "提交原值" }));
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      formValue: {
+        single: second, multi: [first], person: 7, people: [true],
+        image: second,
+      },
+    }));
+
+    fireEvent.change(screen.getByLabelText("长单选"), {
+      target: {
+        value: screen.getByRole<HTMLOptionElement>(
+          "option", { name: "长值 A" },
+        ).value,
+      },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: "图片 A" }));
+    fireEvent.click(screen.getByRole("button", { name: "提交原值" }));
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      formValue: expect.objectContaining({ single: first, image: first }),
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "发送长值" }));
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      value: second,
+    }));
   });
 
   it("does not dispatch disabled controls and confirms with Esc focus restoration", async () => {
@@ -392,9 +483,14 @@ describe("interactive components and CardAction", () => {
   it("updates person, multi-select, time, datetime, image, and checker controls by keyboard-compatible native seams", () => {
     const onAction = vi.fn();
     render(<CardRenderer card={completeInteractiveCard} onAction={onAction} />);
-    fireEvent.change(screen.getByLabelText("owner"), { target: { value: "ou_a" } });
+    const owner = screen.getByLabelText("owner");
+    fireEvent.change(owner, {
+      target: { value: within(owner).getByRole<HTMLOptionElement>(
+        "option", { name: "甲" }).value },
+    });
     const members = screen.getByLabelText<HTMLSelectElement>("members");
-    for (const option of members.options) option.selected = option.value === "ou_b";
+    for (const option of members.options) option.selected =
+      option.textContent === "乙";
     fireEvent.change(members);
     fireEvent.change(screen.getByLabelText("time"), { target: { value: "10:45" } });
     fireEvent.change(screen.getByLabelText("at"), {

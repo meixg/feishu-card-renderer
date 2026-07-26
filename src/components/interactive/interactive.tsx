@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type {
   ButtonElement, CheckerElement, DatePickerElement, DateTimePickerElement,
   InputElement, MultiSelectPersonElement, MultiSelectStaticElement,
-  OverflowElement, SelectImageElement, SelectOption, SelectPersonElement,
+  OptionValue, OverflowElement, SelectImageElement, SelectOption, SelectPersonElement,
   SelectStaticElement, TimePickerElement,
 } from "../../schema/components";
 import { useRecursiveContext, useRendererContext } from "../../renderer/context";
@@ -19,7 +19,8 @@ type InteractiveElement = InputElement | SelectStaticElement |
 const empty = (value: unknown) => value === "" || value == null ||
   (Array.isArray(value) && value.length === 0);
 const optionText = (option: SelectOption) => option.text?.content ??
-  (typeof option.value === "string" ? option.value : "");
+  (typeof option.value === "string" || typeof option.value === "number" ||
+    typeof option.value === "boolean" ? String(option.value) : "");
 const checkerMissing = (value: unknown) => value !== true;
 
 function useTips(element: {
@@ -43,8 +44,27 @@ function useTips(element: {
   };
 }
 
-const optionValue = (option: SelectOption, index: number): string =>
-  typeof option.value === "string" ? option.value.slice(0, 1000) : String(index);
+const rawOptionValue = (option: SelectOption): OptionValue | undefined => {
+  if (typeof option.value === "number" && !Number.isFinite(option.value)) {
+    return undefined;
+  }
+  return serializableValue(option.value) as OptionValue | undefined;
+};
+const optionToken = (path: string, index: number): string =>
+  `${path}:option:${index}`;
+const sameOptionValue = (left: unknown, right: unknown): boolean => {
+  if (Object.is(left, right)) return true;
+  if (typeof left !== "object" || left === null ||
+    typeof right !== "object" || right === null) return false;
+  try {
+    return JSON.stringify(serializableValue(left)) ===
+      JSON.stringify(serializableValue(right));
+  } catch {
+    return false;
+  }
+};
+const includesOption = (values: unknown, target: OptionValue): boolean =>
+  Array.isArray(values) && values.some((value) => sameOptionValue(value, target));
 
 function useField(element: InteractiveElement, initial: unknown,
   dispatchWithoutBehavior = true, allowLocalWithoutAction = false,
@@ -127,20 +147,33 @@ type Single = SelectStaticElement | SelectPersonElement;
 export function SingleSelect({ element, path }: { element: Single; path: string }) {
   const indexed = typeof element.initial_index === "number"
     ? element.options?.[element.initial_index]?.value : undefined;
-  const initial = element.initial_option ?? (typeof indexed === "string" ? indexed : "");
+  const initial = element.initial_option ??
+    (typeof indexed === "string" || typeof indexed === "boolean" ||
+      typeof indexed === "number" && Number.isFinite(indexed) ? indexed : "");
   const field = useField(element, initial);
   const tips = useTips(element);
+  const selectedIndex = (element.options ?? []).findIndex((option) =>
+    sameOptionValue(rawOptionValue(option), field.value));
   return <><label className="fcr-field">{element.label?.content ??
     element.placeholder?.content ?? element.name ?? "选择"}
     <select aria-label={element.label?.content ?? element.placeholder?.content ??
-      element.name ?? "选择"} value={String(field.value ?? "")}
+      element.name ?? "选择"} value={selectedIndex < 0
+        ? "" : optionToken(path, selectedIndex)}
       aria-describedby={tips.describedBy}
       disabled={field.disabled} required={element.required}
-      onChange={(event) => field.set(event.target.value, path)}>
+      onChange={(event) => {
+        const index = (element.options ?? []).findIndex((_, optionIndex) =>
+          optionToken(path, optionIndex) === event.target.value);
+        const value = index < 0 ? "" :
+          rawOptionValue(element.options?.[index] as SelectOption);
+        if (value !== undefined || index < 0) field.set(value ?? "", path);
+      }}>
       <option value="">{element.placeholder?.content ?? "请选择"}</option>
       {(element.options ?? []).map((option, index) =>
-        <option key={index} value={optionValue(option, index)}
-          disabled={option.disabled}>{optionText(option)}</option>)}
+        <option key={optionToken(path, index)} value={optionToken(path, index)}
+          disabled={option.disabled || rawOptionValue(option) === undefined}>
+          {optionText(option)}
+        </option>)}
     </select>
   </label>{tips.nodes}{field.confirmDialog}</>;
 }
@@ -149,15 +182,29 @@ type Multi = MultiSelectStaticElement | MultiSelectPersonElement;
 export function MultiSelect({ element, path }: { element: Multi; path: string }) {
   const field = useField(element, element.selected_values ?? []);
   const tips = useTips(element);
+  const selectedTokens = (element.options ?? []).flatMap((option, index) => {
+    const value = rawOptionValue(option);
+    return value !== undefined && includesOption(field.value, value)
+      ? [optionToken(path, index)] : [];
+  });
   return <><label className="fcr-field">{element.label?.content ?? element.name ?? "多选"}
     <select multiple aria-label={element.label?.content ?? element.name ?? "多选"}
-      value={Array.isArray(field.value) ? field.value.map(String) : []}
+      value={selectedTokens}
       aria-describedby={tips.describedBy}
       disabled={field.disabled} required={element.required}
-      onChange={(event) => field.set([...event.target.selectedOptions].map(({ value }) => value), path)}>
+      onChange={(event) => field.set([...event.target.selectedOptions]
+        .flatMap(({ value: token }) => {
+          const index = (element.options ?? []).findIndex((_, optionIndex) =>
+            optionToken(path, optionIndex) === token);
+          const value = index < 0 ? undefined :
+            rawOptionValue(element.options?.[index] as SelectOption);
+          return value === undefined ? [] : [value];
+        }), path)}>
       {(element.options ?? []).map((option, index) =>
-        <option key={index} value={optionValue(option, index)}
-          disabled={option.disabled}>{optionText(option)}</option>)}
+        <option key={optionToken(path, index)} value={optionToken(path, index)}
+          disabled={option.disabled || rawOptionValue(option) === undefined}>
+          {optionText(option)}
+        </option>)}
     </select>
   </label>{tips.nodes}{field.confirmDialog}</>;
 }
@@ -203,14 +250,19 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
     aria-describedby={tips.describedBy}>
     <legend>{element.label?.content ?? element.name ?? "选择图片"}</legend>
     {(element.options ?? []).map((option, index) => {
-      const value = optionValue(option, index);
+      const value = rawOptionValue(option);
+      const token = optionToken(path, index);
       const checked = element.multi_select ? Array.isArray(field.value) &&
-        field.value.includes(value) : field.value === value;
-      return <label key={value}><input type={element.multi_select ? "checkbox" : "radio"}
-        name={element.name} checked={checked} onChange={() => {
+        value !== undefined && includesOption(field.value, value) :
+        value !== undefined && sameOptionValue(field.value, value);
+      return <label key={token}><input type={element.multi_select ? "checkbox" : "radio"}
+        name={`fcr-choice-${path}`} checked={checked}
+        disabled={value === undefined || option.disabled} onChange={() => {
+          if (value === undefined) return;
           const next = element.multi_select
-            ? checked ? (field.value as string[]).filter((item) => item !== value)
-              : [...(field.value as string[]), value]
+            ? checked ? (field.value as OptionValue[])
+                .filter((item) => !sameOptionValue(item, value))
+              : [...(field.value as OptionValue[]), value]
             : value;
           field.set(next, path);
         }} />{optionText(option)}</label>;
@@ -310,7 +362,9 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
           items[target]?.focus();
         }
       }}>{(element.options ?? []).map((option, index) =>
-      <button role="menuitem" type="button" disabled={element.disabled || !onAction}
+      <button role="menuitem" type="button"
+        disabled={element.disabled || !onAction ||
+          rawOptionValue(option) === undefined}
         key={index} onClick={(event) => {
           event.stopPropagation();
           const run = () => {

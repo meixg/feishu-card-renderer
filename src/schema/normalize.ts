@@ -150,7 +150,7 @@ function cloneAndNormalizeComponent(
   if (["multi_select_static", "multi_select_person", "select_img"]
     .includes(String(tag))) {
     output.selected_values = Array.isArray(output.selected_values)
-      ? output.selected_values.filter((value) => typeof value === "string")
+      ? output.selected_values
       : [];
   }
   if (tag === "checker") output.checked = output.checked === true;
