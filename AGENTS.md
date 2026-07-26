@@ -281,3 +281,17 @@ type CardRendererProps = {
 - 不执行输入中的代码，不绕过 URL/HTML/样式白名单。
 - fixture、行为测试和必要的视觉回归已加入。
 - README 与官方文档链接保持同步。
+
+## Agent 技能
+
+### Issue tracker
+
+本仓库使用 GitHub Issues 跟踪需求和任务。详见 `docs/agents/issue-tracker.md`。
+
+### 分诊标签
+
+本仓库使用 Matt Pocock 工程技能的默认五类分诊标签。详见 `docs/agents/triage-labels.md`。
+
+### 领域文档
+
+本仓库采用单上下文布局，在根目录维护 `CONTEXT.md`，在 `docs/adr/` 中维护架构决策记录。详见 `docs/agents/domain.md`。
