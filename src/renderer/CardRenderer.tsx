@@ -11,6 +11,10 @@ import {
 import { Header } from "../components/content/Header";
 import type { CardHeader } from "../schema/card";
 import { safeBox, safeSpacing } from "../styles/safe";
+import {
+  collectUniqueElementIds,
+  keyForElement,
+} from "../schema/identity";
 
 export type { ResourceResolver } from "./context";
 export type FatalFallback = (
@@ -66,6 +70,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   }
 
   const card = result.card;
+  const uniqueElementIds = collectUniqueElementIds(card);
   const header = card.header as CardHeader | undefined;
   const width = card.config.width_mode;
   const context = {
@@ -78,6 +83,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     imageCache: imageCache.current,
     personCache: personCache.current,
     controllers: controllers.current,
+    uniqueElementIds,
   } as const;
   const bodyStyle = {
     padding: safeBox(card.body.padding, false),
@@ -102,10 +108,11 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
         <div className={`fcr-body fcr-direction-${card.body.direction}`}
           style={bodyStyle}>
           {card.body.elements.map((element, index) => (
-            <ComponentRenderer key={
-              "element_id" in element && typeof element.element_id === "string"
-                ? element.element_id : `$.body.elements[${index}]`
-            } element={element} path={`$.body.elements[${index}]`} />
+            <ComponentRenderer key={keyForElement(
+              element,
+              `$.body.elements[${index}]`,
+              uniqueElementIds,
+            )} element={element} path={`$.body.elements[${index}]`} />
           ))}
         </div>
       </article>

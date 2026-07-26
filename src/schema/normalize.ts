@@ -13,6 +13,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 type NormalizeState = { componentCount: number };
 
+type NestingContext = {
+  directBody: boolean;
+  inForm: boolean;
+};
+
 function cloneAndNormalize(
   value: unknown,
   path: ProtocolPath,
@@ -63,6 +68,7 @@ function cloneAndNormalize(
     output.elements ??= [];
     output.direction ??= "vertical";
   }
+  if (tag === "collapsible_panel") output.expanded ??= false;
   if (tag === "column_set") output.columns ??= [];
   if (tag === "select_img") output.multi_select ??= false;
   if (tag === "img_combination") output.combination_mode ??= "double";
@@ -84,6 +90,60 @@ function cloneAndNormalize(
   return output;
 }
 
+function isInvalidNesting(
+  tag: string,
+  context: NestingContext,
+): boolean {
+  if ((tag === "form" || tag === "table") && !context.directBody) return true;
+  if (context.inForm && tag === "chart") return true;
+  return false;
+}
+
+function replaceInvalidNesting(
+  value: unknown,
+  path: ProtocolPath,
+  context: NestingContext,
+): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((candidate, index) => {
+    const candidatePath = childPath(path, index);
+    if (!isRecord(candidate) || typeof candidate.tag !== "string") {
+      return candidate;
+    }
+    const tag = candidate.tag;
+    if (isInvalidNesting(tag, context)) {
+      return {
+        tag: "__unsupported",
+        originalTag: tag,
+        reason: "invalid_nesting",
+        path: candidatePath,
+      };
+    }
+
+    if (tag === "column_set" && Array.isArray(candidate.columns)) {
+      candidate.columns = replaceInvalidNesting(
+        candidate.columns,
+        childPath(candidatePath, "columns"),
+        { directBody: false, inForm: context.inForm },
+      );
+    } else if (
+      ["column", "form", "interactive_container", "collapsible_panel"]
+        .includes(tag) &&
+      Array.isArray(candidate.elements)
+    ) {
+      candidate.elements = replaceInvalidNesting(
+        candidate.elements,
+        childPath(candidatePath, "elements"),
+        {
+          directBody: false,
+          inForm: context.inForm || tag === "form",
+        },
+      );
+    }
+    return candidate;
+  });
+}
+
 export function normalizeCard(
   input: unknown,
 ): ValidationResult<NormalizedCard> {
@@ -100,6 +160,11 @@ export function normalizeCard(
   ) as Record<string, unknown>;
   const rawConfig = isRecord(cloned.config) ? cloned.config : {};
   const rawBody = isRecord(cloned.body) ? cloned.body : {};
+  const normalizedElements = replaceInvalidNesting(
+    Array.isArray(rawBody.elements) ? rawBody.elements : [],
+    "$.body.elements",
+    { directBody: true, inForm: false },
+  );
   cloned.config = {
     ...rawConfig,
     update_multi: true,
@@ -124,7 +189,7 @@ export function normalizeCard(
     )
       ? rawBody.vertical_align
       : "top",
-    elements: Array.isArray(rawBody.elements) ? rawBody.elements : [],
+    elements: normalizedElements,
   };
 
   return {

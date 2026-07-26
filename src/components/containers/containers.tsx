@@ -11,19 +11,13 @@ import { safeSpacing } from "../../styles/safe";
 import { ComponentRenderer } from "../../renderer/ComponentRenderer";
 import {
   RecursiveContext,
+  useRendererContext,
   useRecursiveContext,
 } from "../../renderer/context";
 import { activateInteractiveContainer } from "../../interactions/container";
 import { useFormScope } from "../../interactions/form-state";
 import { ContainerLayout, layoutStyle, safeRadius } from "./layout";
-
-function keyFor(element: unknown, path: string): string {
-  if (typeof element === "object" && element !== null &&
-    "element_id" in element && typeof element.element_id === "string") {
-    return element.element_id;
-  }
-  return path;
-}
+import { keyForElement } from "../../schema/identity";
 
 function childPath(path: string, collection: "columns" | "elements", index: number) {
   return `${path}.${collection}[${index}]`;
@@ -43,12 +37,17 @@ function Children({ elements, path, collection = "elements" }: {
   path: string;
   collection?: "columns" | "elements";
 }): React.JSX.Element {
+  const { uniqueElementIds } = useRendererContext();
   return (
     <>
       {elements.map((element, index) => {
         const nextPath = childPath(path, collection, index);
         return (
-          <ComponentRenderer key={keyFor(element, nextPath)}
+          <ComponentRenderer key={keyForElement(
+            element,
+            nextPath,
+            uniqueElementIds,
+          )}
             element={element} path={nextPath} />
         );
       })}
@@ -127,11 +126,17 @@ export function InteractiveContainer({ element, path }: {
     ].filter(Boolean).join(" ")} element={element}
       data-fcr-path={path} data-fcr-depth={containerDepth}
       style={{ borderRadius: safeRadius(element.corner_radius) }}
-      onClickCapture={(event) => {
-        const closest = (event.target as Element).closest(
-          ".fcr-interactive-container",
+      onClick={(event) => {
+        const target = event.target as Element;
+        const childControl = target.closest(
+          "button, a, input, select, textarea, [role='button'], [role='link']",
         );
-        if (closest !== event.currentTarget) return;
+        const nestedContainer = target.closest(".fcr-interactive-container");
+        if (event.defaultPrevented ||
+          (childControl && event.currentTarget.contains(childControl)) ||
+          (nestedContainer && nestedContainer !== event.currentTarget)) {
+          return;
+        }
         activateInteractiveContainer(event, {
           tag: "interactive_container",
           path,

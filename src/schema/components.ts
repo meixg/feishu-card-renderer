@@ -234,7 +234,7 @@ export type CardElement =
 export type UnsupportedCardElement = {
   tag: "__unsupported";
   originalTag: string;
-  reason: "component_limit" | "container_depth";
+  reason: "component_limit" | "container_depth" | "invalid_nesting";
   path: string;
 };
 

@@ -25,6 +25,7 @@ type RendererContextValue = Readonly<{
   imageCache: Map<string, ImageCacheEntry>;
   personCache: Map<string, PersonCacheEntry>;
   controllers: Set<AbortController>;
+  uniqueElementIds: ReadonlySet<string>;
 }>;
 
 export const RendererContext = createContext<RendererContextValue | null>(null);

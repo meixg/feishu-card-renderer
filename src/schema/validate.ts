@@ -10,8 +10,8 @@ import {
   type ProtocolPath,
   type ValidationResult,
 } from "./diagnostics";
+import { isValidElementId } from "./identity";
 
-const ELEMENT_ID = /^[A-Za-z][A-Za-z0-9_]{0,19}$/;
 const FORM_INTERACTIVE_TAGS = new Set([
   "input",
   "button",
@@ -36,6 +36,7 @@ const ENUMS: Record<string, readonly string[]> = {
   direction: ["vertical", "horizontal"],
   horizontal_align: ["left", "center", "right"],
   vertical_align: ["top", "center", "bottom"],
+  position: ["top", "bottom"],
   input_type: ["text", "multiline_text", "password"],
   form_action_type: ["submit", "reset"],
   aspect_ratio: ["1:1", "2:1", "4:3", "16:9"],
@@ -114,7 +115,7 @@ function validateTaggedNodes(
 
   if ("element_id" in value) {
     const idPath = childPath(path, "element_id");
-    if (typeof value.element_id !== "string" || !ELEMENT_ID.test(value.element_id)) {
+    if (!isValidElementId(value.element_id)) {
       state.diagnostics.push(diagnostic(
         "invalid_element_id",
         idPath,
