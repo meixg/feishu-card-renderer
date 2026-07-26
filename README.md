@@ -2,7 +2,34 @@
 
 一个面向 Web 的飞书卡片 JSON 2.0 渲染器。项目计划使用 React + Tailwind CSS，把飞书会话流中的卡片 JSON 转换成尽可能接近飞书客户端的可视界面，并在浏览器中模拟卡片交互。
 
-> 当前仓库处于规范沉淀阶段，尚未初始化前端工程。本文件是首版产品边界、JSON 结构和组件协议基线。
+> 当前仓库已建立组件库工程与质量基线，具体协议渲染仍在后续阶段实现。本文件是首版产品边界、JSON 结构和组件协议基线。
+
+## 工程基线
+
+安装依赖并运行全部质量检查：
+
+```bash
+pnpm install
+pnpm check
+```
+
+也可独立运行 `pnpm typecheck`、`pnpm lint`、`pnpm unit`、
+`pnpm component`、`pnpm accessibility`、`pnpm visual` 和 `pnpm build`。
+视觉快照需要本机安装 Google Chrome；基线更新使用 `pnpm visual:update`。
+
+当前占位入口可供宿主验证包集成：
+
+```tsx
+import { CardRenderer } from "@meixg/feishu-card-renderer";
+import "@meixg/feishu-card-renderer/styles.css";
+
+export function CardHost() {
+  return <CardRenderer card={{ schema: "2.0" }} />;
+}
+```
+
+发布构建仅输出 ESM、TypeScript 声明和带 `.fcr-root` 作用域的预编译 CSS。
+React 与 ReactDOM 保持 peer dependencies，宿主无需安装或配置 Tailwind。
 
 ## 什么是飞书卡片
 
