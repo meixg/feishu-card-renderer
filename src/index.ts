@@ -22,6 +22,7 @@ export type {
 } from "./schema/components";
 export type {
   Card,
+  Card as CardJsonV2,
   CardBody,
   CardConfig,
   CardHeader,

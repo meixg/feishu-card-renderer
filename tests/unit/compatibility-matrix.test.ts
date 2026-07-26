@@ -7,11 +7,26 @@ import {
 } from "../../src";
 import {
   cardInNestingContext,
+  completeFieldEvidenceByTag,
   compatibilityFixturesByTag,
   findFixtureTarget,
 } from "../../src/fixtures/compatibility-matrix";
 
 describe("1.0 executable per-tag compatibility matrix", () => {
+  const unsupportedPassthroughFields = {
+    column_set: ["direction", "flex_mode", "background_style"],
+    div: ["width", "icon"],
+    markdown: ["text_size", "text_align", "icon"],
+    img: ["scale_type", "size", "transparent", "preview"],
+    img_combination: ["combination_transparent"],
+    person: ["style"],
+    person_list: ["drop_invalid_user_id"],
+    chart: ["color_theme"],
+    table: ["freeze_first_column", "header_style"],
+    button: ["type", "size", "width"],
+    checker: ["checked_style", "button_area"],
+  } as const;
+
   it("has one deliberate contract for every registered runtime tag", () => {
     expect(Object.keys(compatibilityFixturesByTag)).toEqual(
       [...CARD_COMPONENT_TAGS],
@@ -32,6 +47,9 @@ describe("1.0 executable per-tag compatibility matrix", () => {
       expect(target).toBeDefined();
       expect(fixture.completeFields.length).toBeGreaterThan(0);
       for (const field of fixture.completeFields) {
+        const evidence = completeFieldEvidenceByTag[tag][field];
+        expect(evidence, `${tag}.${field} must name executable evidence`)
+          .toMatch(/^(dom-difference|identity-diagnostic|required-diagnostic|explicit-interaction)$/);
         expect(
           Object.prototype.hasOwnProperty.call(target, field),
           `${tag}.${field}`,
@@ -41,6 +59,20 @@ describe("1.0 executable per-tag compatibility matrix", () => {
       const normalized = normalizeCard(fixture.complete);
       const normalizedTarget = findFixtureTarget(normalized.card, tag);
       expect(normalizedTarget).toMatchObject(target!);
+    },
+  );
+
+  it.each(Object.entries(unsupportedPassthroughFields))(
+    "%s: passthrough-only fields are not advertised as supported",
+    (tag, fields) => {
+      const fixture = compatibilityFixturesByTag[
+        tag as keyof typeof compatibilityFixturesByTag
+      ];
+      const target = findFixtureTarget(fixture.complete, fixture.tag);
+      for (const field of fields) {
+        expect(fixture.completeFields, `${tag}.${field}`).not.toContain(field);
+        expect(target, `${tag}.${field}`).not.toHaveProperty(field);
+      }
     },
   );
 

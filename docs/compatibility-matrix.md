@@ -19,8 +19,12 @@ light/dark 视觉用例独立覆盖。
 ## Fixture 六类定义
 
 - 最小：允许上下文中的最小合法结构，必须无诊断。
-- 完整：每个 tag 的聚焦卡显式填入全部已支持字段；逐字段验证输入与
-  normalization 保留，并要求整卡无诊断。
+- 完整：每个 tag 的聚焦卡只填入已具有类型与 normalization、视图、资源或交互
+  语义证据的字段；未知字段透传不计为支持。字段级测试验证具体 DOM/ARIA/样式、
+  默认值、资源或动作结果，并要求整卡无诊断。`completeFieldEvidenceByTag` 以
+  `tag.field` 为键绑定实际执行的 DOM 差分、身份诊断或交互 verifier，
+  `completeFields` 从该证据表生成；因此同名字段不能跨 tag 借用证据，也不能仅
+  指向一个存在但未执行对应断言的测试文件。
 - 默认：每个 tag 省略可选字段，逐项断言该 tag 的 normalization 默认；没有
   tag-specific 默认的组件显式使用空默认契约。
 - 非法：每个 tag 使用自身相关的非法枚举、长度、格式或结构并断言对应诊断；

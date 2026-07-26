@@ -36,6 +36,17 @@ React 与 ReactDOM 保持 peer dependencies，宿主无需安装或配置 Tailwi
 [集成指南](docs/integration.md)。逐 tag 验收情况见
 [1.0 兼容矩阵](docs/compatibility-matrix.md)。
 
+稳定协议类型从包根导入；纯 schema API 也保留独立子路径：
+
+```ts
+import type { CardJsonV2 } from "@meixg/feishu-card-renderer";
+import {
+  normalizeCard,
+  validateCard,
+  type CardJsonV2 as SchemaCardJsonV2,
+} from "@meixg/feishu-card-renderer/schema";
+```
+
 ## 什么是飞书卡片
 
 飞书卡片是一种由 JSON 描述、由飞书客户端渲染的结构化消息。它介于普通消息和完整 Web 应用之间：

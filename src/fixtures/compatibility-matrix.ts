@@ -12,6 +12,25 @@ export type NestingContext =
   | "interactive_container"
   | "collapsible_panel";
 export type ResourceFixtureKind = "image" | "person" | "chart" | "none";
+export type CompleteFieldEvidence =
+  | "dom-difference"
+  | "identity-diagnostic"
+  | "required-diagnostic"
+  | "explicit-interaction";
+
+function evidenced(
+  fields: readonly string[],
+  interactions: readonly string[] = [],
+  diagnostics: readonly string[] = [],
+): Readonly<Record<string, CompleteFieldEvidence>> {
+  return Object.fromEntries(fields.map((field) => [
+    field,
+    field === "element_id" ? "identity-diagnostic"
+      : diagnostics.includes(field) ? "required-diagnostic"
+      : interactions.includes(field) ? "explicit-interaction"
+        : "dom-difference",
+  ]));
+}
 
 export type TagCompatibilityFixture = {
   tag: CardComponentTag;
@@ -46,8 +65,7 @@ const option = (content: string, value: string) => ({
 const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
   column_set: {
     element_id: "complete_columns", horizontal_spacing: "12px",
-    horizontal_align: "center", flex_mode: "none",
-    background_style: "default", direction: "horizontal",
+    horizontal_align: "center",
   },
   column: {
     element_id: "complete_column", width: "weighted", weight: 2,
@@ -61,7 +79,7 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
     horizontal_align: "center", vertical_align: "bottom",
   },
   interactive_container: {
-    element_id: "complete_interactive", width: "fill", height: "auto",
+    element_id: "complete_interactive",
     direction: "horizontal", horizontal_spacing: "8px",
     vertical_spacing: "4px", horizontal_align: "center",
     vertical_align: "bottom", padding: "8px", has_border: true,
@@ -77,38 +95,34 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
     border: { color: "grey", corner_radius: "8px" },
   },
   div: {
-    element_id: "complete_div", width: "fill", margin: "-4px 0px",
-    text: { ...plain("Complete div"), text_size: "normal", lines: 2 },
-    icon: { tag: "standard_icon", token: "chat-forbidden_outlined" },
+    element_id: "complete_div", margin: "-4px 0px",
+    text: plain("Complete div"),
   },
   markdown: {
     element_id: "complete_markdown", content: "**Complete**",
-    text_size: "normal", text_align: "center",
-    icon: { tag: "standard_icon", token: "chat-forbidden_outlined" },
   },
   img: {
     element_id: "complete_img", img_key: "complete-image",
     alt: plain("Complete image"), title: plain("Image title"),
-    scale_type: "crop_center", size: "300px 180px", margin: "4px 0px",
-    corner_radius: "8px", transparent: false, preview: true,
+    margin: "4px 0px", corner_radius: "8px",
   },
   img_combination: {
     element_id: "complete_gallery", combination_mode: "triple",
-    combination_transparent: false, corner_radius: "8px",
+    corner_radius: "8px",
     img_list: [
-      { img_key: "one", alt: plain("One"), transparent: false },
-      { img_key: "two", alt: plain("Two"), transparent: true },
+      { img_key: "one", alt: plain("One") },
+      { img_key: "two", alt: plain("Two") },
       { img_key: "three", alt: plain("Three") },
     ],
   },
   person: {
     element_id: "complete_person", user_id: "person-a", size: "large",
-    show_avatar: true, show_name: true, style: "capsule",
+    show_avatar: true, show_name: true,
   },
   person_list: {
     element_id: "complete_people",
     persons: [{ id: "person-a" }, { id: "person-b" }],
-    drop_invalid_user_id: true, lines: 2, size: "small",
+    lines: 2, size: "small",
     show_avatar: true, show_name: true,
   },
   chart: {
@@ -117,13 +131,11 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
         { category: "A", value: 1 },
       ] }], xField: "category", yField: "value", media: [],
     },
-    aspect_ratio: "16:9", color_theme: "brand", height: "240px",
+    aspect_ratio: "16:9", height: "240px",
     margin: "4px 0px", preview: true,
   },
   table: {
     element_id: "complete_table", page_size: 1, row_height: "high",
-    freeze_first_column: true,
-    header_style: { text_align: "center", text_size: "normal" },
     columns: [{
       name: "amount", display_name: "Amount", data_type: "number",
       width: "120px", format: { symbol: "¥", precision: 2, separator: true },
@@ -141,8 +153,8 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
   },
   button: {
     element_id: "complete_button", name: "button", text: plain("Button"),
-    type: "primary", size: "medium", width: "fill", value: { complete: true },
-    disabled: false, required: false, hover_tips: plain("Hover"),
+    value: { complete: true },
+    disabled: false, hover_tips: plain("Hover"),
     disabled_tips: plain("Disabled"),
     confirm: { title: plain("Confirm"), text: plain("Continue?") },
     behaviors: [{ type: "callback", value: { complete: true } }],
@@ -151,7 +163,7 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
     element_id: "complete_overflow", name: "overflow",
     options: [{ ...option("Option", "option"),
       behaviors: [{ type: "callback", value: { complete: true } }] }],
-    disabled: false, required: false, hover_tips: plain("Hover"),
+    disabled: false, hover_tips: plain("Hover"),
     disabled_tips: plain("Disabled"),
   },
   select_static: {
@@ -162,7 +174,7 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
   },
   multi_select_static: {
     element_id: "complete_mstatic", name: "field",
-    label: plain("Static multi"), placeholder: plain("Choose"),
+    label: plain("Static multi"),
     options: [option("A", "a"), option("B", "b")],
     selected_values: ["a"], disabled: false, required: true,
   },
@@ -174,23 +186,23 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
   },
   multi_select_person: {
     element_id: "complete_mperson", name: "field",
-    label: plain("People"), placeholder: plain("Choose"),
+    label: plain("People"),
     options: [option("A", "person-a"), option("B", "person-b")],
     selected_values: ["person-a"], disabled: false, required: true,
   },
   date_picker: {
     element_id: "complete_date", name: "date", label: plain("Date"),
-    placeholder: plain("Choose date"), initial_date: "2026-07-27",
+    initial_date: "2026-07-27",
     disabled: false, required: true,
   },
   picker_time: {
     element_id: "complete_time", name: "time", label: plain("Time"),
-    placeholder: plain("Choose time"), initial_time: "09:30",
+    initial_time: "09:30",
     disabled: false, required: true,
   },
   picker_datetime: {
     element_id: "complete_datetime", name: "datetime",
-    label: plain("Datetime"), placeholder: plain("Choose datetime"),
+    label: plain("Datetime"),
     initial_datetime: "2026-07-27 09:30", disabled: false, required: true,
   },
   select_img: {
@@ -199,45 +211,47 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
       { ...option("One", "one"), img_key: "one" },
       { ...option("Two", "two"), img_key: "two" },
     ],
-    selected_values: ["one"], disabled: false, required: true,
+    selected_values: ["one"], disabled: false,
   },
   checker: {
     element_id: "complete_checker", name: "checker", checked: true,
-    text: plain("Checked"), checked_style: { text_color: "green" },
-    button_area: "all", disabled: false, required: true,
+    text: plain("Checked"), disabled: false, required: true,
   },
 };
 
 // This contract is intentionally independent from completePatchByTag. A new
 // public field must update both the fixture and this reviewable acceptance list.
-const supportedFieldsByTag: Record<CardComponentTag, readonly string[]> = {
-  column_set: ["tag", "element_id", "columns", "direction", "horizontal_spacing", "horizontal_align", "flex_mode", "background_style"],
-  column: ["tag", "element_id", "elements", "width", "weight", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding"],
-  form: ["tag", "element_id", "name", "elements", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align"],
-  interactive_container: ["tag", "element_id", "elements", "width", "height", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding", "has_border", "corner_radius", "behaviors"],
-  collapsible_panel: ["tag", "element_id", "elements", "expanded", "header", "border"],
-  div: ["tag", "element_id", "width", "margin", "text", "icon"],
-  markdown: ["tag", "element_id", "content", "text_size", "text_align", "icon"],
-  img: ["tag", "element_id", "img_key", "alt", "title", "scale_type", "size", "margin", "corner_radius", "transparent", "preview"],
-  img_combination: ["tag", "element_id", "combination_mode", "combination_transparent", "corner_radius", "img_list"],
-  person: ["tag", "element_id", "user_id", "size", "show_avatar", "show_name", "style"],
-  person_list: ["tag", "element_id", "persons", "drop_invalid_user_id", "lines", "size", "show_avatar", "show_name"],
-  chart: ["tag", "element_id", "chart_spec", "aspect_ratio", "color_theme", "height", "margin", "preview"],
-  table: ["tag", "element_id", "page_size", "row_height", "freeze_first_column", "header_style", "columns", "rows"],
-  hr: ["tag", "element_id", "margin"],
-  input: ["tag", "element_id", "name", "label", "placeholder", "default_value", "input_type", "max_length", "rows", "disabled", "required", "hover_tips", "disabled_tips", "behaviors"],
-  button: ["tag", "element_id", "name", "text", "type", "size", "width", "value", "disabled", "required", "hover_tips", "disabled_tips", "confirm", "behaviors"],
-  overflow: ["tag", "element_id", "name", "options", "disabled", "required", "hover_tips", "disabled_tips"],
-  select_static: ["tag", "element_id", "name", "label", "placeholder", "options", "initial_option", "initial_index", "disabled", "required", "behaviors"],
-  multi_select_static: ["tag", "element_id", "name", "label", "placeholder", "options", "selected_values", "disabled", "required"],
-  select_person: ["tag", "element_id", "name", "label", "placeholder", "options", "initial_option", "initial_index", "disabled", "required"],
-  multi_select_person: ["tag", "element_id", "name", "label", "placeholder", "options", "selected_values", "disabled", "required"],
-  date_picker: ["tag", "element_id", "name", "label", "placeholder", "initial_date", "disabled", "required"],
-  picker_time: ["tag", "element_id", "name", "label", "placeholder", "initial_time", "disabled", "required"],
-  picker_datetime: ["tag", "element_id", "name", "label", "placeholder", "initial_datetime", "disabled", "required"],
-  select_img: ["tag", "element_id", "name", "multi_select", "options", "selected_values", "disabled", "required"],
-  checker: ["tag", "element_id", "name", "checked", "text", "checked_style", "button_area", "disabled", "required"],
-};
+export const completeFieldEvidenceByTag = {
+  column_set: evidenced(["tag", "element_id", "columns", "horizontal_spacing", "horizontal_align"]),
+  column: evidenced(["tag", "element_id", "elements", "width", "weight", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding"]),
+  form: evidenced(["tag", "element_id", "name", "elements", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align"], [], ["name"]),
+  interactive_container: evidenced(["tag", "element_id", "elements", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding", "has_border", "corner_radius", "behaviors"]),
+  collapsible_panel: evidenced(["tag", "element_id", "elements", "expanded", "header", "border"]),
+  div: evidenced(["tag", "element_id", "margin", "text"]),
+  markdown: evidenced(["tag", "element_id", "content"]),
+  img: evidenced(["tag", "element_id", "img_key", "alt", "title", "margin", "corner_radius"]),
+  img_combination: evidenced(["tag", "element_id", "combination_mode", "corner_radius", "img_list"]),
+  person: evidenced(["tag", "element_id", "user_id", "size", "show_avatar", "show_name"]),
+  person_list: evidenced(["tag", "element_id", "persons", "lines", "size", "show_avatar", "show_name"]),
+  chart: evidenced(["tag", "element_id", "chart_spec", "aspect_ratio", "height", "margin", "preview"]),
+  table: evidenced(["tag", "element_id", "page_size", "row_height", "columns", "rows"]),
+  hr: evidenced(["tag", "element_id", "margin"]),
+  input: evidenced(["tag", "element_id", "name", "label", "placeholder", "default_value", "input_type", "max_length", "rows", "disabled", "required", "hover_tips", "disabled_tips", "behaviors"], ["behaviors"]),
+  button: evidenced(["tag", "element_id", "name", "text", "value", "disabled", "hover_tips", "disabled_tips", "confirm", "behaviors"], ["name", "value", "confirm", "behaviors"]),
+  overflow: evidenced(["tag", "element_id", "name", "options", "disabled", "hover_tips", "disabled_tips"], ["name", "options"]),
+  select_static: evidenced(["tag", "element_id", "name", "label", "placeholder", "options", "initial_option", "initial_index", "disabled", "required", "behaviors"], ["behaviors"]),
+  multi_select_static: evidenced(["tag", "element_id", "name", "label", "options", "selected_values", "disabled", "required"]),
+  select_person: evidenced(["tag", "element_id", "name", "label", "placeholder", "options", "initial_option", "initial_index", "disabled", "required"]),
+  multi_select_person: evidenced(["tag", "element_id", "name", "label", "options", "selected_values", "disabled", "required"]),
+  date_picker: evidenced(["tag", "element_id", "name", "label", "initial_date", "disabled", "required"]),
+  picker_time: evidenced(["tag", "element_id", "name", "label", "initial_time", "disabled", "required"]),
+  picker_datetime: evidenced(["tag", "element_id", "name", "label", "initial_datetime", "disabled", "required"]),
+  select_img: evidenced(["tag", "element_id", "name", "multi_select", "options", "selected_values", "disabled"]),
+  checker: evidenced(["tag", "element_id", "name", "checked", "text", "disabled", "required"]),
+} satisfies Record<
+  CardComponentTag,
+  Readonly<Record<string, CompleteFieldEvidence>>
+>;
 
 const defaultValuesByTag: Record<CardComponentTag, Record<string, unknown> | null> = {
   column_set: {
@@ -498,7 +512,7 @@ export const compatibilityFixturesByTag = Object.fromEntries(
       tag,
       minimal: clone(minimalCardsByTag[tag]),
       complete: cardWithPatch(tag, completePatchByTag[tag], true),
-      completeFields: supportedFieldsByTag[tag],
+      completeFields: Object.keys(completeFieldEvidenceByTag[tag]),
       defaults: clone(minimalCardsByTag[tag]),
       defaultValues: defaultValuesByTag[tag],
       invalid: cardWithPatch(tag, invalidPatch),

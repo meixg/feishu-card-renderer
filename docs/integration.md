@@ -14,6 +14,7 @@ import {
   CardRenderer,
   type CardAction,
   type CardDiagnostic,
+  type CardJsonV2,
   type Person,
 } from "@meixg/feishu-card-renderer";
 import "@meixg/feishu-card-renderer/styles.css";
@@ -31,7 +32,8 @@ import {
 } from "@meixg/feishu-card-renderer/schema";
 ```
 
-`CardJsonV2` 是与父规格命名对齐的稳定别名，与 `Card` 表示同一个 JSON 2.0 根类型。
+稳定类型 `CardJsonV2` 可从包根导入；纯 schema 使用者也可从
+`@meixg/feishu-card-renderer/schema` 导入。它与 `Card` 表示同一个 JSON 2.0 根类型。
 
 ## 最小集成
 
@@ -61,7 +63,8 @@ recoverable 错误保留稳定占位和诊断，公共 API 不允许逐 tag 绕�
 
 ## 公共 API
 
-1. React 入口：`CardRenderer`、`CardRendererProps`。
+1. 包根 React 入口：`CardRenderer`、`CardRendererProps`，以及稳定协议类型
+   `CardJsonV2`。
 2. `@meixg/feishu-card-renderer/schema` 纯函数：`validateCard`、
    `normalizeCard`、`isCardElement`、`isCardComponentTag`、`childPath`。
 3. 协议与宿主类型：`Card`（别名 `CardJsonV2`）、`CardElement`、`CardComponentTag`、
@@ -110,6 +113,16 @@ chunk。宿主 CSP 应继续禁止非预期脚本来源。不要全局覆盖 `.f
   不复制飞书未公开的默认 media 规则，也不支持其列出的移动端受限图形能力。
 - 资源失败 UI、未知字段降级和 fatal/recoverable 分类是本仓库契约，不代表飞书
   客户端的逐像素行为。
+- 1.0 会透传但不宣称支持尚未形成完整类型与渲染语义的官方视觉字段：
+  `column_set.direction/flex_mode/background_style`、`div.width/icon`、
+  `markdown.text_size/text_align/icon`、`img.scale_type/size/transparent/preview`、
+  `img_combination.combination_transparent` 与图片项 `transparent`、
+  `person.style`、`person_list.drop_invalid_user_id`、`chart.color_theme`、
+  `table.freeze_first_column/header_style`、`button.type/size/width`、
+  `checker.checked_style/button_area`，以及 multi-select/date-time picker 当前
+  未消费的 `placeholder`、`select_img.required`。它们不在 1.0
+  `completeFields` 中；宿主不得把
+  未知字段原样保留误解为渲染兼容。
 
 ## 从 JSON 1.0 或早期占位版迁移
 

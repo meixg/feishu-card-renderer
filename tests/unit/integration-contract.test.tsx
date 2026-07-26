@@ -4,6 +4,7 @@ import { expect, it } from "vitest";
 import type {
   CardAction,
   CardDiagnostic,
+  CardJsonV2,
   CardRendererProps,
 } from "../../src";
 import {
@@ -12,8 +13,12 @@ import {
 } from "../../src/schema";
 
 it("keeps the documented host integration aligned with public types", () => {
+  const typedCard = {
+    schema: "2.0",
+    body: { elements: [] },
+  } satisfies CardJsonV2;
   const props = {
-    card: { schema: "2.0" },
+    card: typedCard,
     locale: "zh_cn",
     colorScheme: "light",
     device: "pc",
