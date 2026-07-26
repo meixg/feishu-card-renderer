@@ -259,7 +259,9 @@ React 与 ReactDOM 保持 peer dependencies，宿主无需安装或配置 Tailwi
 }
 ```
 
-Web 渲染器需要通过可注入的 `resolveImage(imgKey)` 和图标 token 映射表解析资源。解析失败时展示尺寸稳定的占位符，不能让布局坍塌。
+Web 渲染器需要通过可注入的 `resolveImage(imgKey, signal)` 和图标 token
+映射表解析资源。`signal` 用于卸载或 resolver 身份切换时取消旧请求。解析失败时
+展示尺寸稳定的占位符，不能让布局坍塌。
 
 ### 交互行为
 
@@ -595,7 +597,9 @@ type CardAction = {
 }
 ```
 
-人员 ID 可以来自 open_id、user_id 或 union_id。Web 渲染器通过 `resolvePerson(id)` 获取姓名和头像；无解析器时展示脱敏占位，而不是伪造人员。
+人员 ID 可以来自 open_id、user_id 或 union_id。Web 渲染器通过
+`resolvePerson(id, signal)` 获取姓名和头像；无解析器时展示脱敏占位，而不是
+伪造人员。
 
 #### 人员列表 `person_list`
 

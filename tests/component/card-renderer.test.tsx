@@ -112,6 +112,52 @@ describe("CardRenderer", () => {
     expect(secondPerson).toHaveBeenCalledTimes(1);
   });
 
+  it("aborts pending old resolver scopes before accepting new session resources", async () => {
+    let finishOldImage!: (value: string) => void;
+    let finishOldPerson!: (value: { id: string; name: string }) => void;
+    let oldImageSignal: AbortSignal | undefined;
+    let oldPersonSignal: AbortSignal | undefined;
+    const oldImage = vi.fn((_key: string, signal: AbortSignal) => {
+      oldImageSignal = signal;
+      return new Promise<string>((resolve) => { finishOldImage = resolve; });
+    });
+    const oldPerson = vi.fn((_id: string, signal: AbortSignal) => {
+      oldPersonSignal = signal;
+      return new Promise<{ id: string; name: string }>((resolve) => {
+        finishOldPerson = resolve;
+      });
+    });
+    const card = { schema: "2.0", body: { elements: [
+      { tag: "img", img_key: "shared",
+        alt: { tag: "plain_text", content: "Scoped image" } },
+      { tag: "person", user_id: "shared" },
+    ] } };
+    const rendered = render(<CardRenderer card={card}
+      resolveImage={oldImage} resolvePerson={oldPerson} />);
+    expect(oldImageSignal?.aborted).toBe(false);
+    expect(oldPersonSignal?.aborted).toBe(false);
+
+    rendered.rerender(<CardRenderer card={card}
+      resolveImage={() => "https://new.example/image.png"}
+      resolvePerson={() => ({ id: "shared", name: "New session" })} />);
+    await act(async () => {});
+    expect(oldImageSignal?.aborted).toBe(true);
+    expect(oldPersonSignal?.aborted).toBe(true);
+    expect(screen.getByRole("img", { name: "Scoped image" })).toHaveAttribute(
+      "src", "https://new.example/image.png",
+    );
+    expect(screen.getByText("New session")).toBeInTheDocument();
+
+    await act(async () => {
+      finishOldImage("https://old.example/leak.png");
+      finishOldPerson({ id: "shared", name: "Old session" });
+    });
+    expect(screen.queryByText("Old session")).toBeNull();
+    expect(screen.getByRole("img", { name: "Scoped image" })).not.toHaveAttribute(
+      "src", "https://old.example/leak.png",
+    );
+  });
+
   it("aborts pending image work on unmount", () => {
     let signal: AbortSignal | undefined;
     const { unmount } = render(<CardRenderer

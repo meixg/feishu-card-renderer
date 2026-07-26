@@ -9,6 +9,9 @@ import {
 import { completeContainerCard } from "../../src/fixtures/container-cards";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 import { completeInteractiveCard } from "../../src/fixtures/interactive-card";
+import {
+  feishuChartCardsByType,
+} from "../../src/fixtures/chart-compatibility";
 import "../../src/styles.css";
 
 const releaseMatrix = (["light", "dark"] as const).flatMap((colorScheme) =>
@@ -53,6 +56,14 @@ createRoot(document.getElementById("root")!).render(
         card={chartRendererCard} /></section>
       <section id="case-chart-mobile"><CardRenderer device="mobile"
         card={chartRendererCard} /></section>
+      <section id="case-chart-compatibility">
+        {Object.entries(feishuChartCardsByType).map(([type, card]) => (
+          <div data-chart-type={type} key={type}
+            style={{ width: 360, minHeight: 220 }}>
+            <CardRenderer card={card} />
+          </div>
+        ))}
+      </section>
       {releaseMatrix.map(({ name, width, colorScheme, device }) => (
         <section id={`case-matrix-${name}`} key={`matrix-${name}`}
           style={device === "mobile" ? { maxWidth: 390 } : undefined}>

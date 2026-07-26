@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 
 import type { CardDiagnostic } from "../schema/diagnostics";
 import type { CardAction, Person } from "../types";
@@ -76,17 +76,18 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     () => collectUniqueElementIds(safeCard),
     [safeCard],
   );
-  const controllers = useRef(new Set<AbortController>());
   // Resolver identity is part of the cache boundary. A host may switch tenant
   // or session resolvers while reusing the renderer and protocol keys.
-  const imageCache = useMemo(() => ({
+  const imageScope = useMemo(() => ({
     resolver: props.resolveImage,
     cache: new Map(),
-  }), [props.resolveImage]).cache;
-  const personCache = useMemo(() => ({
+    controllers: new Set<AbortController>(),
+  }), [props.resolveImage]);
+  const personScope = useMemo(() => ({
     resolver: props.resolvePerson,
     cache: new Map(),
-  }), [props.resolvePerson]).cache;
+    controllers: new Set<AbortController>(),
+  }), [props.resolvePerson]);
   const diagnostics = useMemo(() => {
     const unique = new Map(result.diagnostics.map((item) => [keyFor(item), item]));
     if (!props.onAction && hasBusinessAction(safeCard)) {
@@ -104,9 +105,13 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     onDiagnostic?.(diagnostics);
   }, [diagnosticKey, diagnostics, onDiagnostic]);
   useEffect(() => () => {
-    controllers.current.forEach((controller) => controller.abort());
-    controllers.current.clear();
-  }, []);
+    imageScope.controllers.forEach((controller) => controller.abort());
+    imageScope.controllers.clear();
+  }, [imageScope]);
+  useEffect(() => () => {
+    personScope.controllers.forEach((controller) => controller.abort());
+    personScope.controllers.clear();
+  }, [personScope]);
 
   if (result.fatal || !result.card) {
     const fallback = typeof props.fallback === "function"
@@ -130,9 +135,10 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     widthMode: width,
     resolveImage: props.resolveImage,
     resolvePerson: props.resolvePerson,
-    imageCache,
-    personCache,
-    controllers: controllers.current,
+    imageCache: imageScope.cache,
+    personCache: personScope.cache,
+    imageControllers: imageScope.controllers,
+    personControllers: personScope.controllers,
     uniqueElementIds,
     onAction: props.onAction,
   } as const;

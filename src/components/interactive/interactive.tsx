@@ -10,6 +10,7 @@ import {
   actionsFor, browserTimezone, serializableValue, sourceFor,
 } from "../../interactions/behaviors";
 import { ConfirmDialog } from "../primitives/ConfirmDialog";
+import { useImageResource } from "../../renderer/resources";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -241,6 +242,17 @@ export function Checker({ element, path }: { element: CheckerElement; path: stri
     {tips.nodes}{field.confirmDialog}</>;
 }
 
+function SelectImageVisual({ option }: { option: SelectOption }) {
+  const resource = useImageResource(option.img_key);
+  if (resource?.status === "ready" && resource.value) {
+    return <img src={resource.value} alt="" />;
+  }
+  return option.img_key
+    ? <span className="fcr-image-placeholder" aria-hidden="true"
+        data-state={resource?.status ?? "missing"} />
+    : null;
+}
+
 export function SelectImage({ element, path }: { element: SelectImageElement; path: string }) {
   const initial = element.multi_select ? element.selected_values ?? [] :
     element.selected_values?.[0] ?? "";
@@ -265,7 +277,7 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
               : [...(field.value as OptionValue[]), value]
             : value;
           field.set(next, path);
-        }} />{optionText(option)}</label>;
+        }} /><SelectImageVisual option={option} />{optionText(option)}</label>;
     })}
   </fieldset>{tips.nodes}{field.confirmDialog}</>;
 }

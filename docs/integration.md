@@ -19,6 +19,17 @@ import {
 import "@meixg/feishu-card-renderer/styles.css";
 ```
 
+不依赖 React 的校验、normalization 和协议类型从独立子路径导入：
+
+```ts
+import {
+  normalizeCard,
+  validateCard,
+  type Card,
+  type CardDiagnostic,
+} from "@meixg/feishu-card-renderer/schema";
+```
+
 ## 最小集成
 
 ```tsx
@@ -48,12 +59,14 @@ recoverable 错误保留稳定占位和诊断，公共 API 不允许逐 tag 绕�
 ## 公共 API
 
 1. React 入口：`CardRenderer`、`CardRendererProps`。
-2. 纯函数：`validateCard`、`normalizeCard`、`isCardElement`、
-   `isCardComponentTag`、`childPath`。
+2. `@meixg/feishu-card-renderer/schema` 纯函数：`validateCard`、
+   `normalizeCard`、`isCardElement`、`isCardComponentTag`、`childPath`。
 3. 协议与宿主类型：`Card`、`CardElement`、`CardComponentTag`、
    `CardDiagnostic`、`ValidationResult`、`CardAction`、`Person`。
-4. 资源 seam：`resolveImage(imgKey)`、`resolvePerson(id)`；允许同步或异步返回，
-   也允许返回 `undefined` 表示不可解析。
+4. 资源 seam：`resolveImage(imgKey, signal)`、
+   `resolvePerson(id, signal)`；允许同步或异步返回，也允许返回 `undefined`
+   表示不可解析。resolver 必须把 `AbortSignal` 传给自身的 fetch/SDK 请求，并在
+   `signal.aborted` 或 `abort` 事件发生后尽快停止工作。
 
 没有公共的鉴权、网络请求、上传、人员目录、消息发送或真实回调 API。
 
@@ -61,8 +74,22 @@ recoverable 错误保留稳定占位和诊断，公共 API 不允许逐 tag 绕�
 
 `img_key` 不是 URL，人员 ID 也不是显示名。只通过宿主 resolver 解析。
 resolver 返回同样按不可信资源处理；失败、缺失和卸载会得到稳定占位，同一卡片按
-key 缓存解析结果。`CardAction` 是可序列化的本地动作，不包含租户、操作者、消息、
+resolver 身份与 key 缓存解析结果。宿主切换 resolver（例如租户/session 变化）时，
+渲染器会隔离新缓存并 abort 旧 resolver 的未完成请求。`CardAction` 是可序列化的本地动作，不包含租户、操作者、消息、
 token 等飞书平台上下文。`open_url` 已通过协议白名单，但最终导航仍由宿主决定。
+
+```tsx
+<CardRenderer
+  card={payload}
+  resolveImage={async (imgKey, signal) => {
+    const response = await fetch(`/card-images/${imgKey}`, { signal });
+    return response.ok ? response.url : undefined;
+  }}
+  resolvePerson={async (id, signal) => {
+    return directoryClient.lookup(id, { signal });
+  }}
+/>
+```
 
 ## SSR 与构建
 

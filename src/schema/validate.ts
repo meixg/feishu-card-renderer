@@ -129,6 +129,81 @@ function validateEnums(
   }
 }
 
+function validateTagSpecificFields(
+  tag: string,
+  value: Readonly<Record<string, unknown>>,
+  path: ProtocolPath,
+  state: WalkState,
+): void {
+  const invalidStructure = (field: string, message: string) => {
+    state.diagnostics.push(diagnostic(
+      "invalid_structure",
+      childPath(path, field),
+      message,
+    ));
+  };
+  if ((tag === "person" || tag === "person_list") &&
+    value.size !== undefined &&
+    !["small", "medium", "large"].includes(String(value.size))) {
+    state.diagnostics.push(diagnostic(
+      "invalid_enum", childPath(path, "size"),
+      `${tag}.size must be small, medium, or large.`,
+    ));
+  }
+  if (tag === "markdown" && value.content !== undefined &&
+    typeof value.content !== "string") {
+    invalidStructure("content", "markdown.content must be a string.");
+  }
+  if (tag === "input" && value.max_length !== undefined &&
+    (!Number.isInteger(value.max_length) ||
+      Number(value.max_length) < 1 || Number(value.max_length) > 1000)) {
+    invalidStructure("max_length", "input.max_length must be an integer from 1 to 1000.");
+  }
+  if (["overflow", "select_static", "multi_select_static", "select_person",
+    "multi_select_person", "select_img"].includes(tag) &&
+    value.options !== undefined && !Array.isArray(value.options)) {
+    invalidStructure("options", `${tag}.options must be an array.`);
+  }
+  if (["multi_select_static", "multi_select_person", "select_img"].includes(tag) &&
+    value.selected_values !== undefined && !Array.isArray(value.selected_values)) {
+    invalidStructure(
+      "selected_values",
+      `${tag}.selected_values must be an array.`,
+    );
+  }
+  if ((tag === "select_static" || tag === "select_person") &&
+    value.initial_index !== undefined &&
+    (!Number.isInteger(value.initial_index) || Number(value.initial_index) < 0)) {
+    invalidStructure("initial_index", `${tag}.initial_index must be a non-negative integer.`);
+  }
+  const temporalPatterns: Partial<Record<string, RegExp>> = {
+    date_picker: /^\d{4}-\d{2}-\d{2}$/,
+    picker_time: /^(?:[01]\d|2[0-3]):[0-5]\d$/,
+    picker_datetime: /^\d{4}-\d{2}-\d{2}[ T](?:[01]\d|2[0-3]):[0-5]\d$/,
+  };
+  const temporalFields: Partial<Record<string, string>> = {
+    date_picker: "initial_date",
+    picker_time: "initial_time",
+    picker_datetime: "initial_datetime",
+  };
+  const temporalField = temporalFields[tag];
+  const temporalPattern = temporalPatterns[tag];
+  if (temporalField && temporalPattern && value[temporalField] !== undefined &&
+    (typeof value[temporalField] !== "string" ||
+      !temporalPattern.test(value[temporalField] as string))) {
+    invalidStructure(temporalField, `${tag}.${temporalField} has an invalid format.`);
+  }
+  if (tag === "checker" && value.checked !== undefined &&
+    typeof value.checked !== "boolean") {
+    invalidStructure("checked", "checker.checked must be a boolean.");
+  }
+  if (tag === "table" && value.page_size !== undefined &&
+    (!Number.isInteger(value.page_size) ||
+      Number(value.page_size) < 1 || Number(value.page_size) > 10)) {
+    invalidStructure("page_size", "table.page_size must be an integer from 1 to 10.");
+  }
+}
+
 function validateTaggedNode(
   value: unknown,
   path: ProtocolPath,
@@ -194,7 +269,10 @@ function validateTaggedNode(
   }
 
   validateEnums(value, path, state);
-  if (tag) validateTaggedStyleFields(value, path, state);
+  if (tag) {
+    validateTaggedStyleFields(value, path, state);
+    validateTagSpecificFields(tag, value, path, state);
+  }
 
   validateProtocolSlots(componentChildSlots(value), path, nextDepth, state);
 }

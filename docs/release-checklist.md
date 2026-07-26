@@ -8,6 +8,8 @@
 - [x] px、margin、padding、RGBA 和枚举经过范围/白名单解析。
 - [x] 图片和人员仅经 resolver；失败不泄露 key、人员 ID、token 或内部 URL。
 - [x] VChart 拒绝函数、getter、危险原型、脚本/HTML/DOM 扩展和注册入口。
+- [x] 每个声明支持的飞书图表类型都以独立最小 spec 在真实 Chrome/VChart
+  runtime 中进入 ready，并生成 canvas/SVG。
 - [x] 生产组件不记录完整卡片、人员 ID 或 callback value。
 - [x] recoverable 输入保留稳定占位；没有静默放宽安全限制。
 
@@ -16,7 +18,8 @@
 - [x] 版本 `1.0.0`，公开 ESM、声明和 scoped CSS。
 - [x] React/ReactDOM 是 peer dependencies，不打入 bundle。
 - [x] VChart 仅存在于独立懒加载 chunk。
-- [x] 公共导出限于 renderer、纯函数、协议/动作/诊断类型和资源 seam；fixture
+- [x] 根入口提供 renderer，`./schema` 子路径提供纯函数和确认的协议类型；资源
+  resolver 接收 `AbortSignal`；fixture
   验收索引保持内部使用。
 - [x] 安装、集成、SSR、限制和迁移文档已就绪。
 

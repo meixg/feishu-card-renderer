@@ -25,7 +25,8 @@ type RendererContextValue = Readonly<{
   resolvePerson?: ResourceResolver<Person>;
   imageCache: Map<string, ImageCacheEntry>;
   personCache: Map<string, PersonCacheEntry>;
-  controllers: Set<AbortController>;
+  imageControllers: Set<AbortController>;
+  personControllers: Set<AbortController>;
   uniqueElementIds: ReadonlySet<string>;
   onAction?: (action: CardAction) => void;
 }>;

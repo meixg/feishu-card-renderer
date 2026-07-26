@@ -15,8 +15,8 @@ function useResource<T>(
   resolver: ((key: string, signal: AbortSignal) =>
     T | undefined | Promise<T | undefined>) | undefined,
   sanitize: (value: T | undefined) => T | undefined,
+  controllers: Set<AbortController>,
 ): ResourceCacheEntry<T> | undefined {
-  const context = useRendererContext();
   const [, update] = useState(0);
   useEffect(() => {
     if (!key || !resolver) return;
@@ -29,7 +29,7 @@ function useResource<T>(
     entry.listeners.add(listener);
     if (!entry.promise) {
       const controller = new AbortController();
-      context.controllers.add(controller);
+      controllers.add(controller);
       entry.promise = Promise.resolve(resolver(key, controller.signal))
         .then((raw) => {
           if (controller.signal.aborted) return;
@@ -44,13 +44,13 @@ function useResource<T>(
             entry!.listeners.forEach((notify) => notify());
           }
         })
-        .finally(() => context.controllers.delete(controller));
+        .finally(() => controllers.delete(controller));
     }
     listener();
     return () => {
       entry?.listeners.delete(listener);
     };
-  }, [cache, context, key, resolver, sanitize]);
+  }, [cache, controllers, key, resolver, sanitize]);
   return key && resolver
     ? cache.get(key) ?? { status: "loading", listeners: new Set() }
     : undefined;
@@ -70,10 +70,22 @@ function sanitizePerson(value: Person | undefined): Person | undefined {
 
 export function useImageResource(key?: string): ImageCacheEntry | undefined {
   const context = useRendererContext();
-  return useResource(key, context.imageCache, context.resolveImage, sanitizeImage);
+  return useResource(
+    key,
+    context.imageCache,
+    context.resolveImage,
+    sanitizeImage,
+    context.imageControllers,
+  );
 }
 
 export function usePersonResource(key?: string): PersonCacheEntry | undefined {
   const context = useRendererContext();
-  return useResource(key, context.personCache, context.resolvePerson, sanitizePerson);
+  return useResource(
+    key,
+    context.personCache,
+    context.resolvePerson,
+    sanitizePerson,
+    context.personControllers,
+  );
 }

@@ -17,6 +17,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "import": "./dist/schema.js"
+    },
     "./styles.css": "./dist/styles.css"
   },
   "types": "./dist/index.d.ts",

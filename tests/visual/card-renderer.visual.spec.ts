@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";
 
 test("theme, device, and width visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
@@ -47,6 +48,24 @@ test("chart preview dialog visual baseline", async ({ page }) => {
     "ready",
   );
   await expect(dialog).toHaveScreenshot("card-renderer-chart-preview.png");
+});
+
+test("every declared Feishu chart type reaches ready in the real browser runtime", async ({
+  page,
+}) => {
+  const runtimeErrors: string[] = [];
+  page.on("pageerror", (error) => runtimeErrors.push(error.message));
+  await page.goto("/tests/visual/");
+  const cases = page.locator("#case-chart-compatibility [data-chart-type]");
+  await expect(cases).toHaveCount(FEISHU_CHART_TYPES.length);
+  for (const type of FEISHU_CHART_TYPES) {
+    const chart = page.locator(`[data-chart-type="${type}"] .fcr-chart`);
+    await expect(chart, type).toHaveAttribute("data-state", "ready", {
+      timeout: 15_000,
+    });
+    await expect(chart.locator("canvas,svg"), type).not.toHaveCount(0);
+  }
+  expect(runtimeErrors).toEqual([]);
 });
 
 test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", async ({ page }) => {
