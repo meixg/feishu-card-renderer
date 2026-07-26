@@ -9,6 +9,10 @@ export function ComponentRenderer({ element, path }: {
   path: string;
 }): React.JSX.Element {
   const parent = useRecursiveContext();
+  if (typeof element !== "object" || element === null ||
+    typeof (element as { tag?: unknown }).tag !== "string") {
+    return <UnknownComponent tag="invalid" path={path} />;
+  }
   if (element.tag === "__unsupported") {
     return <UnknownComponent tag={element.originalTag} path={path} />;
   }

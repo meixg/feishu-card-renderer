@@ -1,4 +1,5 @@
 import type { CardAction, ActionSource } from "../types";
+import { hasOwnDataProperty, ownDataValue } from "../schema/safe-data";
 
 type RecordValue = Record<string, unknown>;
 const isRecord = (value: unknown): value is RecordValue =>
@@ -13,23 +14,34 @@ export function serializableValue(value: unknown, depth = 0,
   if (seen.has(value)) return undefined;
   seen.add(value);
   if (Array.isArray(value)) {
-    return value.slice(0, 200).map((item) =>
-      serializableValue(item, depth + 1, seen) ?? null);
+    const output: unknown[] = [];
+    for (let index = 0; index < Math.min(value.length, 200); index += 1) {
+      output.push(
+        serializableValue(ownDataValue(value, index), depth + 1, seen) ?? null,
+      );
+    }
+    return output;
   }
   const output: RecordValue = {};
-  for (const [key, child] of Object.entries(value).slice(0, 200)) {
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  for (const key of Object.keys(descriptors).slice(0, 200)) {
     if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
-    const safe = serializableValue(child, depth + 1, seen);
+    const descriptor = descriptors[key];
+    if (!descriptor || !("value" in descriptor)) continue;
+    const safe = serializableValue(descriptor.value, depth + 1, seen);
     if (safe !== undefined) output[key] = safe;
   }
   return output;
 }
 
 export function sourceFor(element: RecordValue, path: string): ActionSource {
+  const tag = ownDataValue(element, "tag");
+  const elementId = ownDataValue(element, "element_id");
+  const name = ownDataValue(element, "name");
   return {
-    tag: String(element.tag),
-    ...(typeof element.element_id === "string" ? { elementId: element.element_id } : {}),
-    ...(typeof element.name === "string" ? { name: element.name } : {}),
+    tag: typeof tag === "string" ? tag : "",
+    ...(typeof elementId === "string" ? { elementId } : {}),
+    ...(typeof name === "string" ? { name } : {}),
     path,
   };
 }
@@ -50,28 +62,36 @@ export function actionsFor(
   behaviorOverride?: unknown,
 ): CardAction[] {
   const source = sourceFor(element, path);
+  const rawBehaviors = ownDataValue(element, "behaviors");
   const behaviors = behaviorOverride === undefined
-    ? (Array.isArray(element.behaviors) ? element.behaviors : [])
+    ? (Array.isArray(rawBehaviors) ? rawBehaviors : [])
     : [behaviorOverride];
+  const elementValue = ownDataValue(element, "value");
   const actions: CardAction[] = [];
   for (const candidate of behaviors) {
     if (!isRecord(candidate)) continue;
-    if (candidate.type === "callback") {
+    const type = ownDataValue(candidate, "type");
+    const candidateValue = ownDataValue(candidate, "value");
+    if (type === "callback") {
       actions.push({ type: "callback", source,
-        ...(candidate.value !== undefined
-          ? { value: serializableValue(candidate.value) }
-          : element.value !== undefined
-            ? { value: serializableValue(element.value) } : {}), ...extra });
+        ...(candidateValue !== undefined
+          ? { value: serializableValue(candidateValue) }
+          : elementValue !== undefined
+            ? { value: serializableValue(elementValue) } : {}), ...extra });
     }
-    if (candidate.type === "open_url") {
-      const url = safeUrl(candidate.pc_url) ?? safeUrl(candidate.default_url) ??
-        safeUrl(candidate.url);
+    if (type === "open_url") {
+      const pcUrl = ownDataValue(candidate, "pc_url");
+      const hasPcUrl = hasOwnDataProperty(candidate, "pc_url");
+      const url = hasPcUrl
+        ? safeUrl(pcUrl)
+        : safeUrl(ownDataValue(candidate, "default_url")) ??
+          safeUrl(ownDataValue(candidate, "url"));
       if (url) actions.push({ type: "open_url", source, url });
     }
   }
-  if (actions.length === 0 && element.value !== undefined) {
+  if (actions.length === 0 && elementValue !== undefined) {
     actions.push({ type: "callback", source,
-      value: serializableValue(element.value), ...extra });
+      value: serializableValue(elementValue), ...extra });
   }
   return actions;
 }

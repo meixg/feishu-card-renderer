@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type {
   ButtonElement, CheckerElement, DatePickerElement, DateTimePickerElement,
   InputElement, MultiSelectPersonElement, MultiSelectStaticElement,
@@ -20,9 +20,32 @@ const empty = (value: unknown) => value === "" || value == null ||
   (Array.isArray(value) && value.length === 0);
 const optionText = (option: SelectOption) => option.text?.content ??
   (typeof option.value === "string" ? option.value : "");
+const checkerMissing = (value: unknown) => value !== true;
+
+function useTips(element: {
+  disabled?: boolean;
+  hover_tips?: { content?: string };
+  disabled_tips?: { content?: string };
+}) {
+  const id = useId().replace(/[^A-Za-z0-9_-]/g, "");
+  const tips = [
+    element.hover_tips?.content,
+    element.disabled ? element.disabled_tips?.content : undefined,
+  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+  const describedBy = tips.length > 0 ? `fcr-tips-${id}` : undefined;
+  return {
+    describedBy,
+    nodes: tips.length > 0
+      ? <span id={describedBy} className="fcr-field-tips">
+          {tips.map((tip) => <span key={tip}>{tip}</span>)}
+        </span>
+      : null,
+  };
+}
 
 function useField(element: InteractiveElement, initial: unknown,
-  dispatchWithoutBehavior = true, allowLocalWithoutAction = false) {
+  dispatchWithoutBehavior = true, allowLocalWithoutAction = false,
+  isMissing: (value: unknown) => boolean = empty) {
   const { form } = useRecursiveContext();
   const { onAction } = useRendererContext();
   const name = element.name;
@@ -30,22 +53,30 @@ function useField(element: InteractiveElement, initial: unknown,
   const [pending, setPending] = useState<unknown>();
   const [confirming, setConfirming] = useState(false);
   const trigger = useRef<HTMLElement>(null);
+  const latestInitial = useRef(initial);
+  latestInitial.current = initial;
+  const registerField = form?.registerField;
+  const updateField = form?.updateField;
   useEffect(() => {
-    if (!form || !name) return;
-    form.registerInitialValue(name, initial);
-    form.registerRequired(name, element.required === true);
-  }, [element.required, form, initial, name]);
+    if (!registerField || !name) return;
+    return registerField(name, element.tag, latestInitial.current, isMissing);
+  }, [element.tag, isMissing, name, registerField]);
+  useEffect(() => {
+    if (!updateField || !name) return;
+    updateField(name, element.tag, initial, element.required === true, isMissing);
+  }, [element.required, element.tag, initial, isMissing, name, updateField]);
   const value = form && name && Object.hasOwn(form.values, name)
     ? form.values[name] : local;
   const apply = (next: unknown, path: string, timezone = false) => {
     if (form && name) form.setValue(name, next);
     else {
       setLocal(next);
-      actionsFor(element, path, {
+      const actions = actionsFor(element, path, {
         value: element.value ?? next,
         ...(timezone ? { timezone: browserTimezone() } : {}),
-      }).forEach((action) => onAction?.(action));
-      if (dispatchWithoutBehavior && actionsFor(element, path).length === 0) onAction?.({
+      });
+      actions.forEach((action) => onAction?.(action));
+      if (dispatchWithoutBehavior && actions.length === 0) onAction?.({
         type: "callback", source: sourceFor(element, path),
         value: element.value ?? next,
         ...(timezone ? { timezone: browserTimezone() } : {}),
@@ -73,8 +104,10 @@ function useField(element: InteractiveElement, initial: unknown,
 
 export function Input({ element, path }: { element: InputElement; path: string }) {
   const field = useField(element, element.default_value ?? "");
+  const tips = useTips(element);
   const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
   const shared = { id, disabled: field.disabled, required: element.required,
+    "aria-describedby": tips.describedBy,
     maxLength: element.max_length, value: String(field.value ?? ""),
     placeholder: element.placeholder?.content,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -84,7 +117,7 @@ export function Input({ element, path }: { element: InputElement; path: string }
     {element.input_type === "multiline_text"
       ? <textarea {...shared} rows={element.rows ?? 5} />
       : <input {...shared} type={element.input_type === "password" ? "password" : "text"} />}
-  </label>{field.confirmDialog}</>;
+  </label>{tips.nodes}{field.confirmDialog}</>;
 }
 
 type Single = SelectStaticElement | SelectPersonElement;
@@ -93,10 +126,12 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
     ? element.options?.[element.initial_index]?.value : undefined;
   const initial = element.initial_option ?? (typeof indexed === "string" ? indexed : "");
   const field = useField(element, initial);
+  const tips = useTips(element);
   return <><label className="fcr-field">{element.label?.content ??
     element.placeholder?.content ?? element.name ?? "选择"}
     <select aria-label={element.label?.content ?? element.placeholder?.content ??
       element.name ?? "选择"} value={String(field.value ?? "")}
+      aria-describedby={tips.describedBy}
       disabled={field.disabled} required={element.required}
       onChange={(event) => field.set(event.target.value, path)}>
       <option value="">{element.placeholder?.content ?? "请选择"}</option>
@@ -104,22 +139,24 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
         <option key={`${option.value ?? index}`} value={String(option.value ?? "")}
           disabled={option.disabled}>{optionText(option)}</option>)}
     </select>
-  </label>{field.confirmDialog}</>;
+  </label>{tips.nodes}{field.confirmDialog}</>;
 }
 
 type Multi = MultiSelectStaticElement | MultiSelectPersonElement;
 export function MultiSelect({ element, path }: { element: Multi; path: string }) {
   const field = useField(element, element.selected_values ?? []);
+  const tips = useTips(element);
   return <><label className="fcr-field">{element.label?.content ?? element.name ?? "多选"}
     <select multiple aria-label={element.label?.content ?? element.name ?? "多选"}
       value={Array.isArray(field.value) ? field.value.map(String) : []}
+      aria-describedby={tips.describedBy}
       disabled={field.disabled} required={element.required}
       onChange={(event) => field.set([...event.target.selectedOptions].map(({ value }) => value), path)}>
       {(element.options ?? []).map((option, index) =>
         <option key={`${option.value ?? index}`} value={String(option.value ?? "")}
           disabled={option.disabled}>{optionText(option)}</option>)}
     </select>
-  </label>{field.confirmDialog}</>;
+  </label>{tips.nodes}{field.confirmDialog}</>;
 }
 
 type Picker = DatePickerElement | TimePickerElement | DateTimePickerElement;
@@ -129,31 +166,38 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
     tag === "picker_time" ? element.initial_time :
     element.initial_datetime?.replace(" ", "T");
   const field = useField(element, initial ?? "");
+  const tips = useTips(element);
   const type = tag === "date_picker" ? "date" : tag === "picker_time" ? "time" :
     "datetime-local";
   return <><label className="fcr-field">{element.label?.content ?? element.name ?? "日期时间"}
     <input aria-label={element.label?.content ?? element.name ?? "日期时间"}
       type={type} value={String(field.value ?? "")} disabled={field.disabled}
+      aria-describedby={tips.describedBy}
       required={element.required}
       onChange={(event) => field.set(event.target.value, path, true)} />
-  </label>{field.confirmDialog}</>;
+  </label>{tips.nodes}{field.confirmDialog}</>;
 }
 
 export function Checker({ element, path }: { element: CheckerElement; path: string }) {
-  const field = useField(element, element.checked ?? false, false, true);
+  const field = useField(element, element.checked ?? false, false, true,
+    checkerMissing);
+  const tips = useTips(element);
   return <><label className="fcr-checker"><input type="checkbox"
     checked={Boolean(field.value)} disabled={field.disabled}
+    aria-describedby={tips.describedBy}
     required={element.required}
     onChange={(event) => field.set(event.target.checked, path)} />
     {element.text?.content ?? element.label?.content ?? element.name ?? "确认"}</label>
-    {field.confirmDialog}</>;
+    {tips.nodes}{field.confirmDialog}</>;
 }
 
 export function SelectImage({ element, path }: { element: SelectImageElement; path: string }) {
   const initial = element.multi_select ? element.selected_values ?? [] :
     element.selected_values?.[0] ?? "";
   const field = useField(element, initial);
-  return <><fieldset className="fcr-select-image" disabled={field.disabled}>
+  const tips = useTips(element);
+  return <><fieldset className="fcr-select-image" disabled={field.disabled}
+    aria-describedby={tips.describedBy}>
     <legend>{element.label?.content ?? element.name ?? "选择图片"}</legend>
     {(element.options ?? []).map((option, index) => {
       const value = String(option.value ?? index);
@@ -168,7 +212,7 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
           field.set(next, path);
         }} />{optionText(option)}</label>;
     })}
-  </fieldset>{field.confirmDialog}</>;
+  </fieldset>{tips.nodes}{field.confirmDialog}</>;
 }
 
 export function Button({ element, path }: { element: ButtonElement; path: string }) {
@@ -176,29 +220,34 @@ export function Button({ element, path }: { element: ButtonElement; path: string
   const { onAction } = useRendererContext();
   const [error, setError] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const tips = useTips(element);
   const trigger = useRef<HTMLButtonElement>(null);
   const business = element.form_action_type !== "reset";
   const run = () => {
     if (element.form_action_type === "reset") { form?.reset(); setError(false); return; }
-    if (form && [...form.required].some((name) => empty(form.values[name]))) {
+    if (form?.hasMissingRequired()) {
       setError(true); return;
     }
     const extra = form
       ? { formValue: { ...form.values }, timezone: browserTimezone() }
       : {};
-    const actions = actionsFor(element, path, extra);
+    const actions = actionsFor(element, path);
     const dispatch = form
-      ? [...actions.filter(({ type }) => type === "callback").slice(0, 1),
+      ? [...actions.filter(({ type }) => type === "callback").slice(0, 1)
+          .map((action) => ({ ...action, ...extra })),
           ...actions.filter(({ type }) => type === "open_url")]
       : actions;
     if (dispatch.length) dispatch.forEach((action) => onAction?.(action));
-    else onAction?.({ type: "callback", source: sourceFor(element, path),
-      ...(element.value !== undefined
-        ? { value: serializableValue(element.value) } : {}), ...extra });
+    else if (element.form_action_type === "submit" ||
+      !Array.isArray(element.behaviors) || element.behaviors.length === 0) {
+      onAction?.({ type: "callback", source: sourceFor(element, path),
+        ...(element.value !== undefined
+          ? { value: serializableValue(element.value) } : {}), ...extra });
+    }
   };
   const activate = () => {
     if (form && element.form_action_type === "submit" &&
-      [...form.required].some((name) => empty(form.values[name]))) {
+      form.hasMissingRequired()) {
       setError(true);
       return;
     }
@@ -207,9 +256,10 @@ export function Button({ element, path }: { element: ButtonElement; path: string
   };
   return <><button ref={trigger} type={element.form_action_type === "submit" ? "submit" : "button"}
     className="fcr-button" disabled={element.disabled || (business && !onAction)}
+    aria-describedby={tips.describedBy}
     onClick={(event) => { event.stopPropagation(); event.preventDefault(); activate(); }}>
     {element.text?.content ?? "按钮"}</button>
-    {error && <span role="alert">有必填项未填写</span>}
+    {tips.nodes}{error && <span role="alert">有必填项未填写</span>}
     {confirm && <ConfirmDialog title={element.confirm?.title} text={element.confirm?.text}
       trigger={trigger} onCancel={() => setConfirm(false)}
       onConfirm={() => { setConfirm(false); run(); }} />}
@@ -220,6 +270,7 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
   const { onAction } = useRendererContext();
   const [open, setOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const tips = useTips(element);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -231,6 +282,7 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
   };
   return <div className="fcr-overflow"><button ref={trigger} type="button"
     aria-label="更多操作" disabled={element.disabled}
+    aria-describedby={tips.describedBy}
     aria-expanded={open} onClick={(event) => {
       event.stopPropagation(); setOpen(!open);
     }}>⋯</button>
@@ -260,7 +312,7 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
           if (element.confirm) setPendingAction(() => run);
           else run();
         }}>{optionText(option)}</button>)}</div>}
-    {pendingAction && <ConfirmDialog title={element.confirm?.title}
+    {tips.nodes}{pendingAction && <ConfirmDialog title={element.confirm?.title}
       text={element.confirm?.text} trigger={trigger}
       onCancel={() => setPendingAction(null)}
       onConfirm={() => { const run = pendingAction; setPendingAction(null); run(); }} />}

@@ -185,6 +185,8 @@ export type InteractiveBase<T extends CardComponentTag> = BaseElement<T> & {
   confirm?: { title?: TextElement; text?: TextElement };
   label?: TextElement;
   placeholder?: TextElement;
+  hover_tips?: TextElement;
+  disabled_tips?: TextElement;
 };
 export type SelectOption = {
   text?: TextElement;
@@ -199,12 +201,9 @@ export type InputElement = InteractiveBase<"input"> & {
   default_value?: string; input_type?: "text" | "multiline_text" | "password";
   max_length?: number; rows?: number;
 };
-export type ButtonElement = BaseElement<"button"> & {
-  name?: string;
+export type ButtonElement = InteractiveBase<"button"> & {
   form_action_type?: "submit" | "reset";
   text?: TextElement;
-  disabled?: boolean; behaviors?: unknown[]; value?: unknown;
-  confirm?: { title?: TextElement; text?: TextElement };
 };
 export type OverflowElement = InteractiveBase<"overflow"> & {
   options?: SelectOption[];

@@ -15,6 +15,7 @@ import {
   collectUniqueElementIds,
   keyForElement,
 } from "../schema/identity";
+import { ownDataValue, safeDataSnapshot } from "../schema/safe-data";
 
 export type { ResourceResolver } from "./context";
 export type FatalFallback = (
@@ -39,33 +40,48 @@ function keyFor(diagnostic: CardDiagnostic): string {
 }
 
 function hasBusinessAction(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(hasBusinessAction);
-  if (typeof value !== "object" || value === null) return false;
-  const record = value as Record<string, unknown>;
-  if (Array.isArray(record.behaviors) && record.behaviors.length > 0) return true;
-  if (record.tag === "button" && record.form_action_type === "submit") return true;
-  if (["input", "select_static", "select_person", "date_picker",
-    "picker_time", "picker_datetime", "select_img"].includes(String(record.tag))) {
-    return true;
+  const pending = [value];
+  const seen = new WeakSet<object>();
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (typeof current !== "object" || current === null || seen.has(current)) continue;
+    seen.add(current);
+    const behaviors = ownDataValue(current, "behaviors");
+    const tag = ownDataValue(current, "tag");
+    if (Array.isArray(behaviors) && behaviors.length > 0) return true;
+    if (tag === "button" && ownDataValue(current, "form_action_type") === "submit") {
+      return true;
+    }
+    if (["input", "select_static", "select_person", "date_picker",
+      "picker_time", "picker_datetime", "select_img"].includes(String(tag))) {
+      return true;
+    }
+    const options = ownDataValue(current, "options");
+    if (tag === "overflow" && Array.isArray(options) && options.length > 0) return true;
+    const descriptors = Object.getOwnPropertyDescriptors(current);
+    for (const key of Object.keys(descriptors)) {
+      const descriptor = descriptors[key];
+      if (!descriptor) continue;
+      if ("value" in descriptor) pending.push(descriptor.value);
+    }
   }
-  if (record.tag === "overflow" && Array.isArray(record.options) &&
-    record.options.length > 0) return true;
-  return Object.values(record).some(hasBusinessAction);
+  return false;
 }
 
 export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   const { onDiagnostic } = props;
-  const result = useMemo(() => normalizeCard(props.card), [props.card]);
+  const safeCard = useMemo(() => safeDataSnapshot(props.card), [props.card]);
+  const result = useMemo(() => normalizeCard(safeCard), [safeCard]);
   const uniqueElementIds = useMemo(
-    () => collectUniqueElementIds(props.card),
-    [props.card],
+    () => collectUniqueElementIds(safeCard),
+    [safeCard],
   );
   const controllers = useRef(new Set<AbortController>());
   const imageCache = useRef(new Map());
   const personCache = useRef(new Map());
   const diagnostics = useMemo(() => {
     const unique = new Map(result.diagnostics.map((item) => [keyFor(item), item]));
-    if (!props.onAction && hasBusinessAction(props.card)) {
+    if (!props.onAction && hasBusinessAction(safeCard)) {
       const item: CardDiagnostic = {
         code: "missing_on_action", path: "$", classification: "recoverable",
         severity: "warning",
@@ -74,7 +90,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
       unique.set(keyFor(item), item);
     }
     return [...unique.values()];
-  }, [props.card, props.onAction, result.diagnostics]);
+  }, [props.onAction, result.diagnostics, safeCard]);
   const diagnosticKey = diagnostics.map(keyFor).join("|");
   useEffect(() => {
     onDiagnostic?.(diagnostics);

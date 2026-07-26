@@ -11,7 +11,8 @@ export const completeInteractiveCard = {
       name: "profile",
       elements: [
         { tag: "input", name: "note", label: text("备注"), required: true,
-          default_value: "初始值", max_length: 20 },
+          default_value: "初始值", max_length: 20,
+          hover_tips: text("最多二十字"), disabled_tips: text("备注不可编辑") },
         { tag: "select_static", name: "kind", placeholder: text("类型"),
           initial_option: "a", options: [option("A", "a"), option("B", "b")] },
         { tag: "multi_select_static", name: "tags", selected_values: ["x"],
@@ -54,7 +55,24 @@ export const completeInteractiveCard = {
 export const minimalInteractiveCards = [
   { tag: "input" }, { tag: "button", text: text("按钮") },
   { tag: "overflow", options: [] }, { tag: "select_static", options: [] },
-  { tag: "select_person", options: [] }, { tag: "date_picker" },
+  { tag: "multi_select_static", options: [] },
+  { tag: "select_person", options: [] },
+  { tag: "multi_select_person", options: [] }, { tag: "date_picker" },
   { tag: "picker_time" }, { tag: "picker_datetime" },
   { tag: "select_img", options: [] }, { tag: "checker" },
 ] as const;
+
+export const interactiveCoverageByTag = {
+  input: ["default_value", "native change"],
+  button: ["text/value", "pointer + confirm keyboard"],
+  overflow: ["options", "pointer + Enter/Esc"],
+  select_static: ["initial_option", "native select keyboard"],
+  multi_select_static: ["selected_values", "native multi-select keyboard"],
+  select_person: ["initial_option/options", "native select keyboard"],
+  multi_select_person: ["selected_values/options", "native multi-select keyboard"],
+  date_picker: ["initial_date", "native date keyboard"],
+  picker_time: ["initial_time", "native time keyboard"],
+  picker_datetime: ["initial_datetime", "native datetime keyboard"],
+  select_img: ["selected_values", "native radio/checkbox keyboard"],
+  checker: ["checked", "native checkbox keyboard"],
+} as const;

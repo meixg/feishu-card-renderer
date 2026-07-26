@@ -141,6 +141,11 @@ function cloneAndNormalizeComponent(
     "checker"].includes(String(tag))) {
     output.disabled = output.disabled === true;
     output.required = output.required === true;
+    for (const field of ["hover_tips", "disabled_tips"] as const) {
+      const tip = output[field];
+      if (!isRecord(tip) || tip.tag !== "plain_text" ||
+        typeof tip.content !== "string") delete output[field];
+    }
   }
   if (["multi_select_static", "multi_select_person", "select_img"]
     .includes(String(tag))) {

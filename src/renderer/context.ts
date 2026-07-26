@@ -36,11 +36,13 @@ export type FormScope = Readonly<{
   name: string;
   path: string;
   values: Readonly<Record<string, unknown>>;
-  registerInitialValue: (name: string, value: unknown) => void;
+  registerField: (name: string, fieldType: string, initialValue: unknown,
+    isMissing: (value: unknown) => boolean) => () => void;
+  updateField: (name: string, fieldType: string, initialValue: unknown,
+    required: boolean, isMissing: (value: unknown) => boolean) => void;
   setValue: (name: string, value: unknown) => void;
   reset: () => void;
-  required: ReadonlySet<string>;
-  registerRequired: (name: string, required: boolean) => void;
+  hasMissingRequired: () => boolean;
 }>;
 
 export type RecursiveContextValue = Readonly<{
