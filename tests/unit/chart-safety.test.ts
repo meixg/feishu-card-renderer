@@ -37,13 +37,33 @@ describe("chart spec safety boundary", () => {
   it.each([
     { type: "bar", tooltip: { renderMode: "html" } },
     { type: "html", data: [] },
+    { type: "DOM", data: [] },
+    { type: "react_dom", data: [] },
     { type: "bar", label: { renderMode: "dom" } },
     { type: "bar", tooltip: { renderMode: "react-dom" } },
+    { type: "bar", tooltip: { render_mode: "HTML" } },
+    { type: "bar", renderer: "DOM" },
+    { type: "bar", renderer_type: "React_DOM" },
   ])("rejects HTML and DOM rendering modes %#", (input) => {
     expect(sanitizeChartSpec(input)).toMatchObject({
       ok: false,
       reason: "unsafe",
     });
+  });
+
+  it("allows HTML and DOM words in pure business text and data values", () => {
+    expect(sanitizeChartSpec({
+      type: "bar",
+      title: { text: "HTML 与 DOM 趋势" },
+      axes: [{ label: { text: "react-dom" } }],
+      data: [{
+        id: "data",
+        values: [
+          { category: "HTML", renderer: "DOM", value: 1 },
+          { category: "react-dom", value: 2 },
+        ],
+      }],
+    })).toMatchObject({ ok: true });
   });
 
   it.each([undefined, null, [], new Date(), { value: NaN }])(

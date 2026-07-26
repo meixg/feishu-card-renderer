@@ -23,7 +23,13 @@ const FORBIDDEN_KEYS = new Set([
 
 const EXECUTABLE_KEY = /^(?:on.*|.*(?:callback|handler|formatter|function|script|register).*)$/i;
 const EXECUTABLE_STRING = /(?:javascript\s*:|<\s*script\b|<\/\s*script\s*>)/i;
-const FORBIDDEN_RENDER_MODE = /^(?:html|dom|reactdom)$/;
+const FORBIDDEN_RENDER_MODES = new Set(["html", "dom", "reactdom"]);
+const RENDER_MODE_KEYS = new Set([
+  "renderer",
+  "renderertype",
+  "renderermode",
+  "rendermode",
+]);
 
 export type SafeChartSpecResult =
   | { ok: true; spec: Record<string, unknown> }
@@ -36,11 +42,37 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
+function normalizedIdentifier(value: string): string {
+  return value.toLowerCase().replace(/[\s_-]/g, "");
+}
+
+function isBusinessDataPath(path: readonly string[]): boolean {
+  const dataIndex = path.indexOf("data");
+  const valuesIndex = path.lastIndexOf("values");
+  return dataIndex >= 0 && valuesIndex > dataIndex &&
+    path.length > valuesIndex + 1;
+}
+
+function isForbiddenRenderMode(
+  value: string,
+  path: readonly string[],
+): boolean {
+  if (!FORBIDDEN_RENDER_MODES.has(normalizedIdentifier(value))) return false;
+  if (path.length === 1 && path[0] === "type") return true;
+  const key = path.at(-1);
+  return key !== undefined && !isBusinessDataPath(path) &&
+    RENDER_MODE_KEYS.has(normalizedIdentifier(key));
+}
+
 export function sanitizeChartSpec(input: unknown): SafeChartSpecResult {
   let nodes = 0;
   let failure: ChartSpecFailure | undefined;
 
-  const visit = (value: unknown, depth: number): unknown => {
+  const visit = (
+    value: unknown,
+    depth: number,
+    path: readonly string[],
+  ): unknown => {
     nodes += 1;
     if (nodes > MAX_SPEC_NODES || depth > MAX_SPEC_DEPTH) {
       failure = "too_complex";
@@ -52,9 +84,8 @@ export function sanitizeChartSpec(input: unknown): SafeChartSpecResult {
       (typeof value === "number" && Number.isFinite(value))
     ) return value;
     if (typeof value === "string") {
-      const normalizedMode = value.toLowerCase().replace(/[\s_-]/g, "");
       if (EXECUTABLE_STRING.test(value) ||
-        FORBIDDEN_RENDER_MODE.test(normalizedMode)) {
+        isForbiddenRenderMode(value, path)) {
         failure = "unsafe";
       }
       return value;
@@ -83,7 +114,11 @@ export function sanitizeChartSpec(input: unknown): SafeChartSpecResult {
           failure = descriptor ? "unsafe" : "invalid";
           return undefined;
         }
-        const safeItem = visit(descriptor.value, depth + 1);
+        const safeItem = visit(
+          descriptor.value,
+          depth + 1,
+          [...path, String(index)],
+        );
         if (failure) return undefined;
         copy.push(safeItem);
       }
@@ -116,7 +151,7 @@ export function sanitizeChartSpec(input: unknown): SafeChartSpecResult {
         failure = "unsafe";
         return undefined;
       }
-      const safeValue = visit(descriptor.value, depth + 1);
+      const safeValue = visit(descriptor.value, depth + 1, [...path, key]);
       if (failure) return undefined;
       copy[key] = safeValue;
     }
@@ -125,7 +160,7 @@ export function sanitizeChartSpec(input: unknown): SafeChartSpecResult {
 
   try {
     if (!isPlainRecord(input)) return { ok: false, reason: "invalid" };
-    const spec = visit(input, 0);
+    const spec = visit(input, 0, []);
     if (failure) return { ok: false, reason: failure };
     return { ok: true, spec: spec as Record<string, unknown> };
   } catch {

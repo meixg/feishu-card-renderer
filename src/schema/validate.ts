@@ -164,24 +164,31 @@ function validateTaggedNode(
     }
   }
 
-  if (tag && "element_id" in value) {
+  const elementIdDescriptor = Object.getOwnPropertyDescriptor(
+    value,
+    "element_id",
+  );
+  if (tag && elementIdDescriptor) {
     const idPath = childPath(path, "element_id");
-    if (!isValidElementId(value.element_id)) {
+    const elementId = "value" in elementIdDescriptor
+      ? elementIdDescriptor.value
+      : undefined;
+    if (!isValidElementId(elementId)) {
       state.diagnostics.push(diagnostic(
         "invalid_element_id",
         idPath,
         "element_id must start with a letter, contain only letters, digits, or underscores, and be at most 20 characters.",
       ));
     } else {
-      const previous = state.elementIds.get(value.element_id);
+      const previous = state.elementIds.get(elementId);
       if (previous) {
         state.diagnostics.push(diagnostic(
           "duplicate_element_id",
           idPath,
-          `element_id "${value.element_id}" duplicates ${previous}.`,
+          `element_id "${elementId}" duplicates ${previous}.`,
         ));
       } else {
-        state.elementIds.set(value.element_id, idPath);
+        state.elementIds.set(elementId, idPath);
       }
     }
   }

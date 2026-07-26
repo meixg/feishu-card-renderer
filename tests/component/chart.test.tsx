@@ -83,6 +83,11 @@ describe("Chart lifecycle", () => {
       enumerable: true,
       get: chartSpecGetter,
     });
+    const elementIdGetter = vi.fn(() => "unsafeGetter");
+    Object.defineProperty(accessorChart, "element_id", {
+      enumerable: true,
+      get: elementIdGetter,
+    });
 
     const { container } = render(<CardRenderer card={{
       schema: "2.0",
@@ -97,6 +102,7 @@ describe("Chart lifecycle", () => {
 
     expect(nestedGetter).not.toHaveBeenCalled();
     expect(chartSpecGetter).not.toHaveBeenCalled();
+    expect(elementIdGetter).not.toHaveBeenCalled();
     expect(runtime.load).not.toHaveBeenCalled();
     const chartResults = [...container.querySelectorAll(".fcr-chart")];
     expect(chartResults).toHaveLength(2);

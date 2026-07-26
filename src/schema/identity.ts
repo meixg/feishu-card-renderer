@@ -45,9 +45,13 @@ export function keyForElement(
   path: string,
   uniqueElementIds: ReadonlySet<string>,
 ): string {
-  if (isRecord(element) && isValidElementId(element.element_id) &&
-    uniqueElementIds.has(element.element_id)) {
-    return element.element_id;
+  if (!isRecord(element)) return path;
+  const descriptor = Object.getOwnPropertyDescriptor(element, "element_id");
+  const elementId = descriptor && "value" in descriptor
+    ? descriptor.value
+    : undefined;
+  if (isValidElementId(elementId) && uniqueElementIds.has(elementId)) {
+    return elementId;
   }
   return path;
 }
