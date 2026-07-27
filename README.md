@@ -4,6 +4,9 @@
 
 适合在管理后台、消息归档、卡片编辑器或 Web 预览页中展示飞书卡片，提供运行时校验、组件渲染、主题适配、表单状态和本地交互能力。你只需要传入卡片 JSON。
 
+项目主页与全部组件实时演示：
+[meixg.github.io/feishu-card-renderer](https://meixg.github.io/feishu-card-renderer/)
+
 > 本项目是 Web 渲染器，不是飞书消息 SDK。它不会发送消息、上传图片、查询人员目录或调用飞书业务回调；这些能力由你的应用接入。
 
 ## 安装
@@ -218,4 +221,8 @@ pnpm install
 pnpm check
 ```
 
-`pnpm check` 会依次执行类型检查、lint、单元测试、组件测试、可访问性测试、视觉测试和构建。视觉测试需要本机安装 Google Chrome。
+`pnpm check` 会依次执行类型检查、lint、单元测试、组件测试、可访问性测试、视觉测试、库构建和项目主页构建。视觉测试需要本机安装 Google Chrome。
+
+本地查看项目主页使用 `pnpm site:dev`；只验证 GitHub Pages 静态构建可使用
+`pnpm site:build`。`main` 分支更新后由 `.github/workflows/pages.yml` 自动发布，
+Pull Request 只执行站点构建检查。
