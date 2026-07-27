@@ -7,6 +7,9 @@
 项目主页与全部组件实时演示：
 [meixg.github.io/feishu-card-renderer](https://meixg.github.io/feishu-card-renderer/)
 
+主页内置 Playground，可直接粘贴卡片 JSON，实时查看 Light/Dark、PC/Mobile
+渲染效果、协议诊断和本地交互结果。输入只在当前浏览器中处理，不会上传。
+
 > 本项目是 Web 渲染器，不是飞书消息 SDK。它不会发送消息、上传图片、查询人员目录或调用飞书业务回调；这些能力由你的应用接入。
 
 ## 安装
