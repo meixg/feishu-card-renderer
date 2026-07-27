@@ -198,6 +198,68 @@ export function OverlayCases(): React.JSX.Element {
   );
 }
 
+const portalLifecycleCard = (owner: "first" | "second", title: string) => ({
+  schema: "2.0" as const,
+  body: {
+    elements: [{
+      tag: "interactive_container" as const,
+      behaviors: [{
+        type: "callback" as const,
+        value: { owner: `${owner}-parent` },
+      }],
+      elements: [{
+        tag: "button" as const,
+        text: { tag: "plain_text" as const, content: `打开${title}` },
+        confirm: {
+          title: { tag: "plain_text" as const, content: title },
+          text: { tag: "plain_text" as const, content: `${title}内容` },
+        },
+        behaviors: [{
+          type: "callback" as const,
+          value: { owner },
+        }],
+      }],
+    }],
+  },
+});
+
+export function PortalLifecycleCases(): React.JSX.Element {
+  const [showFirst, setShowFirst] = useState(true);
+  const [showSecond, setShowSecond] = useState(true);
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id="case-portal-lifecycle">
+      <button id="remove-first-card" type="button"
+        onClick={() => setShowFirst(false)}>
+        卸载第一张卡
+      </button>
+      <button id="remove-second-card" type="button"
+        onClick={() => setShowSecond(false)}>
+        卸载第二张卡
+      </button>
+      {showFirst && (
+        <div data-portal-card="first">
+          <CardRenderer
+            card={portalLifecycleCard("first", "第一张卡确认")}
+            colorScheme="dark"
+            onAction={(action) => setActions((current) => [...current, action])}
+          />
+        </div>
+      )}
+      {showSecond && (
+        <div data-portal-card="second">
+          <CardRenderer
+            card={portalLifecycleCard("second", "第二张卡确认")}
+            colorScheme="light"
+            onAction={(action) => setActions((current) => [...current, action])}
+          />
+        </div>
+      )}
+      <output hidden data-portal-actions="">{JSON.stringify(actions)}</output>
+    </section>
+  );
+}
+
 export function FormControlCases({
   colorScheme = "light",
   device = "pc",
@@ -304,6 +366,7 @@ createRoot(document.getElementById("root")!).render(
         </section>
       ))}
       <OverlayCases />
+      <PortalLifecycleCases />
       <section id="case-choices-pc" style={{ width: 400 }}>
         <CardRenderer
           card={choiceVisualCard}

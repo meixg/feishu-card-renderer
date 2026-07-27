@@ -69,11 +69,32 @@ await runFile("node_modules/.bin/tsc", [
 if (entry.includes("react.production.min") || entry.includes("react.development")) {
   throw new Error("React implementation was bundled into the library output.");
 }
-if (packageManifest.dependencies?.["@base-ui/react"] !== "^1.6.0") {
-  throw new Error("@base-ui/react must remain a verified 1.x runtime dependency.");
+if (packageManifest.peerDependencies?.react !== ">=18.2.0 <20" ||
+  packageManifest.peerDependencies?.["react-dom"] !== ">=18.2.0 <20" ||
+  packageManifest.dependencies?.react ||
+  packageManifest.dependencies?.["react-dom"]) {
+  throw new Error("React and ReactDOM must remain external peer dependencies.");
 }
-if (packageManifest.dependencies?.["react-day-picker"] !== "^9.7.0") {
-  throw new Error("react-day-picker must remain the verified shadcn Calendar dependency.");
+const expectedRuntimeDependencies = {
+  "@base-ui/react": "^1.6.0",
+  "class-variance-authority": "^0.7.1",
+  clsx: "^2.1.1",
+  "react-day-picker": "^9.7.0",
+  "tailwind-merge": "^3.6.0",
+};
+for (const [dependency, range] of Object.entries(expectedRuntimeDependencies)) {
+  if (packageManifest.dependencies?.[dependency] !== range) {
+    throw new Error(`${dependency} must remain a verified runtime dependency (${range}).`);
+  }
+  if (!entry.includes(`from "${dependency}`)) {
+    throw new Error(`${dependency} must remain external in the renderer entry.`);
+  }
+}
+if (packageManifest.dependencies?.tailwindcss ||
+  packageManifest.dependencies?.["@tailwindcss/postcss"] ||
+  !packageManifest.devDependencies?.tailwindcss ||
+  !packageManifest.devDependencies?.["@tailwindcss/postcss"]) {
+  throw new Error("Tailwind must remain build-only; consumers receive precompiled CSS.");
 }
 if (entry.includes("@base-ui/utils") || entry.includes("BaseUI")) {
   throw new Error("Base UI implementation code was bundled into the renderer entry.");
@@ -82,7 +103,7 @@ if (!entry.includes('from "react-day-picker"') ||
   !entry.includes('from "react-day-picker/locale"')) {
   throw new Error("The private Calendar must retain external react-day-picker imports.");
 }
-if (/(?:from|import\()\s*["']@\//.test(entry)) {
+if (/(?:from|import\()\s*["'](?:@\/|#)/.test(entry)) {
   throw new Error("A source alias leaked into the built renderer entry.");
 }
 if (/components\/ui|ButtonProps|buttonVariants/.test(entryTypes)) {

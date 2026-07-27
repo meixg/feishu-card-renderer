@@ -2,14 +2,12 @@ import {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
   type RefObject,
 } from "react";
 
 export type UiPortalContextValue = Readonly<{
   hostRef: RefObject<HTMLDivElement | null>;
-  registerCleanup: (cleanup: () => void) => () => void;
 }>;
 
 export const UiPortalContext = createContext<UiPortalContextValue | null>(null);
@@ -31,23 +29,4 @@ export function useUiPortalHost(): HTMLElement | null {
     setHost(hostRef.current);
   }, [hostRef]);
   return host;
-}
-
-export function useUiPortalCleanup(cleanup: () => void): void {
-  const { registerCleanup } = useUiPortalContext();
-  const latestCleanup = useRef(cleanup);
-  latestCleanup.current = cleanup;
-  useEffect(() => {
-    let active = true;
-    const run = () => {
-      if (!active) return;
-      active = false;
-      latestCleanup.current();
-    };
-    const unregister = registerCleanup(run);
-    return () => {
-      unregister();
-      run();
-    };
-  }, [registerCleanup]);
 }

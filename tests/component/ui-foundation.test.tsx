@@ -1,14 +1,16 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { CardRenderer } from "../../src";
-import {
-  UiPortal,
-  UiPortalProvider,
-} from "../../src/renderer/portal";
-import { useUiPortalCleanup } from "../../src/renderer/portal-context";
 
 const emptyCard = { schema: "2.0" };
 const closedOverlayCard = {
@@ -83,51 +85,96 @@ describe("per-card UI foundation", () => {
     expect(secondHost?.isConnected).toBe(false);
   });
 
+  it("removes an open card portal without disturbing another card", async () => {
+    const firstAction = vi.fn();
+    const secondAction = vi.fn();
+    const card = (owner: "first" | "second", title: string) => ({
+      schema: "2.0" as const,
+      body: {
+        elements: [{
+          tag: "interactive_container",
+          behaviors: [{ type: "callback", value: { owner: `${owner}-parent` } }],
+          elements: [{
+            tag: "button",
+            text: { tag: "plain_text", content: `打开${title}` },
+            confirm: {
+              title: { tag: "plain_text", content: title },
+              text: { tag: "plain_text", content: `${title}内容` },
+            },
+            behaviors: [{ type: "callback", value: { owner } }],
+          }],
+        }],
+      },
+    });
+    const first = render(
+      <CardRenderer
+        card={card("first", "第一张卡确认")}
+        colorScheme="dark"
+        onAction={firstAction}
+      />,
+    );
+    const second = render(
+      <CardRenderer
+        card={card("second", "第二张卡确认")}
+        colorScheme="light"
+        onAction={secondAction}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "打开第一张卡确认" }));
+    const firstDialog = first.container.querySelector("[role='alertdialog']");
+    if (!firstDialog) throw new Error("Expected the first card dialog.");
+    const firstHost = first.container.querySelector("[data-fcr-portal-host]");
+    const secondHost = second.container.querySelector("[data-fcr-portal-host]");
+
+    expect(firstDialog.closest("[data-fcr-portal-host]")).toBe(firstHost);
+    expect(firstDialog.closest(".fcr-theme-dark")).toBe(
+      first.container.querySelector(".fcr-root"),
+    );
+
+    first.unmount();
+
+    expect(firstHost?.isConnected).toBe(false);
+    expect(firstDialog.isConnected).toBe(false);
+    expect(secondHost?.isConnected).toBe(true);
+    const secondTrigger = await screen.findByRole("button", {
+      name: "打开第二张卡确认",
+    });
+    expect(secondTrigger.closest("[data-base-ui-inert]")).toBeNull();
+
+    fireEvent.click(secondTrigger);
+    const secondDialog = screen.getByRole("alertdialog", {
+      name: "第二张卡确认",
+    });
+
+    expect(secondDialog.closest("[data-fcr-portal-host]")).toBe(secondHost);
+    expect(secondDialog.closest(".fcr-theme-light")).toBe(
+      second.container.querySelector(".fcr-root"),
+    );
+    expect(secondDialog).toBeInTheDocument();
+    await waitFor(() => {
+      expect(secondDialog.contains(document.activeElement)).toBe(true);
+    });
+
+    fireEvent.click(
+      within(secondDialog).getByRole("button", { name: "确认" }),
+    );
+    await waitFor(() => expect(secondDialog).not.toBeInTheDocument());
+    expect(firstAction).not.toHaveBeenCalled();
+    expect(secondAction.mock.calls.map(([action]) => action)).toEqual([
+      expect.objectContaining({
+        type: "callback",
+        value: { owner: "second" },
+      }),
+    ]);
+
+    second.unmount();
+  });
+
   it("does not create a portal host for a fatal card", () => {
     const { container } = render(<CardRenderer card={null} />);
 
     expect(container.querySelector("[data-fcr-portal-host]")).toBeNull();
-  });
-
-  it("isolates portal events and cleans registered tasks on unmount", () => {
-    const onParentClick = vi.fn();
-    const onParentPointerDown = vi.fn();
-    const onParentKeyDown = vi.fn();
-    const onPortalClick = vi.fn();
-    const onCleanup = vi.fn();
-
-    function PortalContent() {
-      useUiPortalCleanup(onCleanup);
-      return <button type="button" onClick={onPortalClick}>Portal action</button>;
-    }
-
-    const rendered = render(
-      <div
-        onClick={onParentClick}
-        onPointerDown={onParentPointerDown}
-        onKeyDown={onParentKeyDown}
-      >
-        <UiPortalProvider>
-          <UiPortal><PortalContent /></UiPortal>
-        </UiPortalProvider>
-      </div>,
-    );
-
-    const button = screen.getByRole("button", { name: "Portal action" });
-    expect(button.closest("[data-fcr-portal-host]")).toBeInTheDocument();
-
-    fireEvent.pointerDown(button);
-    fireEvent.keyDown(button, { key: "Enter" });
-    fireEvent.click(button);
-
-    expect(onPortalClick).toHaveBeenCalledTimes(1);
-    expect(onParentPointerDown).not.toHaveBeenCalled();
-    expect(onParentKeyDown).not.toHaveBeenCalled();
-    expect(onParentClick).not.toHaveBeenCalled();
-
-    rendered.unmount();
-    expect(onCleanup).toHaveBeenCalledTimes(1);
-    expect(button.isConnected).toBe(false);
   });
 
   it("hydrates the server portal host without replacing it", async () => {

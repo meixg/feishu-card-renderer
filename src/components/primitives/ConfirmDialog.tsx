@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { TextElement } from "../../schema/components";
 import {
   AlertDialog,
@@ -10,6 +10,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+
+type ActiveModal = {
+  cancel: () => void;
+  id: symbol;
+};
+
+const activeModalByDocument = new WeakMap<Document, ActiveModal>();
 
 export function ConfirmDialog({
   open,
@@ -24,12 +31,44 @@ export function ConfirmDialog({
   onCancel: () => void; trigger: React.RefObject<HTMLElement | null>;
 }): React.JSX.Element {
   const confirmed = useRef(false);
+  const cancelRef = useRef(onCancel);
+  const modalRef = useRef<ActiveModal | null>(null);
+  const [modalActive, setModalActive] = useState(false);
+  cancelRef.current = onCancel;
+  if (!modalRef.current) {
+    modalRef.current = {
+      cancel: () => cancelRef.current(),
+      id: Symbol("fcr-confirm-dialog"),
+    };
+  }
+  const modal = modalRef.current;
+
   useEffect(() => {
     if (!open) confirmed.current = false;
   }, [open]);
+  useLayoutEffect(() => {
+    const document = trigger.current?.ownerDocument;
+    if (!open || !document) {
+      setModalActive(false);
+      return undefined;
+    }
+
+    const previous = activeModalByDocument.get(document);
+    if (previous && previous.id !== modal.id) previous.cancel();
+    activeModalByDocument.set(document, modal);
+    setModalActive(true);
+
+    return () => {
+      if (activeModalByDocument.get(document)?.id === modal.id) {
+        activeModalByDocument.delete(document);
+      }
+    };
+  }, [modal, open, trigger]);
+
+  const effectiveOpen = open && modalActive;
   return (
     <AlertDialog
-      open={open}
+      open={effectiveOpen}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onCancel();
       }}
