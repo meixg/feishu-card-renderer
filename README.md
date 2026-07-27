@@ -2,6 +2,9 @@
 
 一个面向 Web 的飞书卡片 JSON 2.0 渲染器。项目计划使用 React + Tailwind CSS，把飞书会话流中的卡片 JSON 转换成尽可能接近飞书客户端的可视界面，并在浏览器中模拟卡片交互。
 
+项目主页与全部组件实时演示：
+[meixg.github.io/feishu-card-renderer](https://meixg.github.io/feishu-card-renderer/)
+
 > 1.0 实现覆盖本文列出的 JSON 2.0 运行时组件。协议兼容不等于飞书
 > 服务端能力：鉴权、消息发送、图片上传、人员目录和业务回调均由宿主负责。
 
@@ -17,6 +20,10 @@ pnpm check
 也可独立运行 `pnpm typecheck`、`pnpm lint`、`pnpm unit`、
 `pnpm component`、`pnpm accessibility`、`pnpm visual` 和 `pnpm build`。
 视觉快照需要本机安装 Google Chrome；基线更新使用 `pnpm visual:update`。
+
+本地查看项目主页使用 `pnpm site:dev`，验证 GitHub Pages 静态构建使用
+`pnpm site:build`。`main` 分支更新后由
+`.github/workflows/pages.yml` 自动发布，Pull Request 只执行站点构建检查。
 
 安装并在宿主入口引入预编译样式：
 
