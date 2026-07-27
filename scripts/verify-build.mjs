@@ -2,6 +2,7 @@ import { access, readFile, readdir, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
+import postcss from "postcss";
 
 const requiredArtifacts = [
   "dist/index.js",
@@ -16,7 +17,37 @@ const runFile = promisify(execFile);
 
 const entry = await readFile("dist/index.js", "utf8");
 const entryTypes = await readFile("dist/index.d.ts", "utf8");
+const css = await readFile("dist/styles.css", "utf8");
 const files = await readdir("dist");
+const cssFiles = files.filter((file) => file.endsWith(".css"));
+
+if (cssFiles.length !== 1 || cssFiles[0] !== "styles.css") {
+  throw new Error("The build must emit exactly one published CSS artifact: dist/styles.css.");
+}
+if (css.includes("--tw-")) {
+  throw new Error("Tailwind internal variables leaked into the published CSS artifact.");
+}
+
+const stylesheet = postcss.parse(css);
+for (const rule of stylesheet.nodes.flatMap(function walk(node) {
+  if (node.type === "rule") return [node];
+  if ("nodes" in node && Array.isArray(node.nodes)) {
+    return node.nodes.flatMap(walk);
+  }
+  return [];
+})) {
+  let inKeyframes = false;
+  for (let parent = rule.parent; parent; parent = parent.parent) {
+    if (parent.type === "atrule" && /keyframes$/i.test(parent.name)) {
+      inKeyframes = true;
+      break;
+    }
+  }
+  if (inKeyframes) continue;
+  if (!rule.selectors.every((selector) => selector.includes(".fcr"))) {
+    throw new Error(`Unscoped selector leaked into dist/styles.css: ${rule.selector}`);
+  }
+}
 
 if (!entry.includes('from "react/jsx-runtime"')) {
   throw new Error("React JSX runtime must remain an external ESM import.");
@@ -108,7 +139,7 @@ const sharedBytes = (await stat(
 )).size;
 console.log(
   "Build contract verified: ESM, bundled Markdown parser, import-time DOM/network safety, "
-  + "schema subpath, declarations, scoped CSS, React external, lazy VChart chunk.",
+  + "schema subpath, declarations, single scoped CSS artifact, React external, lazy VChart chunk.",
 );
 console.log(
   `Bundle metrics (raw): eager renderer ${entryBytes} B + shared ${sharedBytes} B; `

@@ -20,7 +20,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm vite --host 127.0.0.1 --port 4173",
+    command: "node_modules/.bin/vite --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173/tests/visual/",
     reuseExistingServer: false,
   },
