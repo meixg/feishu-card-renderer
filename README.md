@@ -200,6 +200,13 @@ Markdown 表格保留 `table`、表头、行和单元格语义，并支持 GFM �
 除上述全局上限外，每个 Markdown 内容最多保留 50 个表体行、12 列和 600 个表格
 语法节点；超限时显示安全前缀与截断提示，并报告 recoverable diagnostic。
 
+独立 `markdown` 支持 JSON 2.0 的 `text_size`、`text_align`、`icon` 和 `margin`。
+字号可使用 `normal`、`notation`、`heading`，或引用
+`config.style.text_size` 中经校验的名称；自定义颜色仅接受 light/dark RGBA 配置。
+标准图标使用本地图形映射，未知 token 使用固定占位；自定义图标的 `img_key`
+只经 `resolveImage` 解析。宿主可覆盖 `--fcr-markdown-*` 语义 CSS 变量定制字号、
+行高、块间距、列表缩进、引用、代码和表格主题，卡片 JSON 不能注入任意 CSS。
+
 逐组件和字段级支持情况请查看 [1.0 兼容矩阵](docs/compatibility-matrix.md)。官方协议仍可能演进；如文档存在冲突，以最新的飞书 JSON 2.0 组件子文档为准。
 
 ## 只使用校验和类型

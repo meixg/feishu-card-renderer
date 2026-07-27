@@ -18,7 +18,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-type NormalizeState = { componentCount: number };
+type NormalizeState = {
+  componentCount: number;
+  textSizes: ReadonlySet<string>;
+};
 
 type NestingContext = {
   directBody: boolean;
@@ -124,6 +127,22 @@ function cloneAndNormalizeComponent(
     output.header = header;
   }
   if (tag === "column_set") output.columns ??= [];
+  if (tag === "markdown") {
+    output.content = typeof output.content === "string" ? output.content : "";
+    output.text_align = ["left", "center", "right"].includes(
+      String(output.text_align),
+    ) ? output.text_align : "left";
+    output.text_size = typeof output.text_size === "string" &&
+      state.textSizes.has(output.text_size) ? output.text_size : "normal";
+    if (!isRecord(output.icon) ||
+      !["standard_icon", "custom_icon"].includes(String(output.icon.tag)) ||
+      (output.icon.tag === "standard_icon" &&
+        typeof output.icon.token !== "string") ||
+      (output.icon.tag === "custom_icon" &&
+        typeof output.icon.img_key !== "string")) {
+      delete output.icon;
+    }
+  }
   if (tag === "select_img") output.multi_select ??= false;
   if (tag === "input") {
     output.default_value = typeof output.default_value === "string"
@@ -245,8 +264,15 @@ export function normalizeCard(
     return { ...validation, card: null };
   }
 
-  const state = { componentCount: 0 };
   const cloned = cloneOpaque(validation.card) as Record<string, unknown>;
+  const rawInputConfig = isRecord(cloned.config) ? cloned.config : {};
+  const rawInputStyle = isRecord(rawInputConfig.style) ? rawInputConfig.style : {};
+  const customTextSizes = isRecord(rawInputStyle.text_size)
+    ? Object.keys(rawInputStyle.text_size) : [];
+  const state = {
+    componentCount: 0,
+    textSizes: new Set(["normal", "notation", "heading", ...customTextSizes]),
+  };
   if (isRecord(cloned.header)) {
     normalizeSlots(headerChildSlots(cloned.header), "$.header", 0, state);
   }

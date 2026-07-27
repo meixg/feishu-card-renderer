@@ -31,6 +31,7 @@ type RendererContextValue = Readonly<{
   uniqueElementIds: ReadonlySet<string>;
   onAction?: (action: CardAction) => void;
   markdownAnalyses: ReadonlyMap<string, MarkdownAnalysis>;
+  cardStyle: Readonly<Record<string, unknown>>;
 }>;
 
 export const RendererContext = createContext<RendererContextValue | null>(null);

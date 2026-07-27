@@ -61,7 +61,9 @@ describe("bounded markdown semantics through CardRenderer", () => {
     ].join("\n"))} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Heading" })).toBeVisible();
-    const paragraph = container.querySelector<HTMLElement>(".fcr-markdown > p");
+    const paragraph = container.querySelector<HTMLElement>(
+      ".fcr-markdown-content > p",
+    );
     expect(paragraph).not.toBeNull();
     expect(within(paragraph!).getByText("gentle").tagName).toBe("EM");
     expect(within(paragraph!).getByText("strong").tagName).toBe("STRONG");
@@ -71,7 +73,7 @@ describe("bounded markdown semantics through CardRenderer", () => {
     );
     expect(container.querySelector("ul ol")).not.toBeNull();
     expect(container.querySelector("blockquote")).toHaveTextContent("quoted");
-    expect(container.querySelector(".fcr-markdown > hr")).not.toBeNull();
+    expect(container.querySelector(".fcr-markdown-content > hr")).not.toBeNull();
   });
 
   it("keeps raw HTML and unknown Feishu extensions visible and inert", async () => {

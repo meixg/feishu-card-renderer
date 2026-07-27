@@ -6,6 +6,7 @@ import {
   chartRendererCard,
   completeMarkdownCodeTasksCard,
   completeMarkdownTableCard,
+  completeMarkdownThemeCard,
   completeRendererCard,
 } from "../../src/fixtures/renderer-cards";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
@@ -53,6 +54,16 @@ createRoot(document.getElementById("root")!).render(
       <section id="case-markdown-code-tasks" style={{ width: 280 }}>
         <CardRenderer device="mobile" card={completeMarkdownCodeTasksCard} />
       </section>
+      {releaseMatrix.map(({ name, width, colorScheme, device }) => (
+        <section id={`case-markdown-theme-${name}`}
+          key={`markdown-theme-${name}`}
+          style={device === "mobile" ? { maxWidth: 390 } : undefined}>
+          <CardRenderer colorScheme={colorScheme} device={device}
+            card={{ ...completeMarkdownThemeCard,
+              config: { ...completeMarkdownThemeCard.config,
+                width_mode: width } }} />
+        </section>
+      ))}
       <section id="case-containers"><CardRenderer
         card={completeContainerCard} /></section>
       {([

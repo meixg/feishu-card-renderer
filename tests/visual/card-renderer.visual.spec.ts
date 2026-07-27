@@ -72,6 +72,25 @@ test("Markdown tables scroll locally without widening 400/600/fill cards", async
   }
 });
 
+test("Markdown native theme covers light/dark, PC/mobile, and every width", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  for (const colorScheme of ["light", "dark"]) {
+    for (const device of ["pc", "mobile"]) {
+      for (const width of ["compact", "default", "fill"]) {
+        const name = `${colorScheme}-${device}-${width}`;
+        const host = page.locator(`#case-markdown-theme-${name}`);
+        const root = host.locator(".fcr-root");
+        await expect(root).toBeVisible();
+        expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+          .toBe(true);
+        await expect(host).toHaveScreenshot(`markdown-theme-${name}.png`);
+      }
+    }
+  }
+});
+
 test("chart light, dark, and mobile visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
   for (const name of ["chart-light", "chart-dark", "chart-mobile"]) {

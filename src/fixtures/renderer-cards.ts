@@ -122,6 +122,59 @@ export const completeMarkdownTableCard: Card = {
   },
 };
 
+export const completeMarkdownThemeCard: Card = {
+  schema: "2.0",
+  config: {
+    update_multi: true,
+    style: {
+      text_size: {
+        card_body: { default: "normal", pc: "normal", mobile: "notation" },
+      },
+      color: {
+        accent: {
+          light_mode: "rgba(51,112,255,1)",
+          dark_mode: "rgba(130,167,255,1)",
+        },
+      },
+    },
+  },
+  body: {
+    padding: "16px",
+    elements: [{
+      tag: "markdown",
+      element_id: "markdown_theme",
+      text_size: "card_body",
+      text_align: "left",
+      icon: { tag: "standard_icon", token: "info_outlined", color: "accent" },
+      margin: "4px 0px",
+      content: [
+        "# 卡片原生标题",
+        "",
+        "段落包含 *强调*、**重点**、~~已废弃~~、[安全链接](https://example.com) 与 `inline_code_that_wraps_safely`。",
+        "",
+        "## 紧凑次级标题",
+        "",
+        "- 第一项",
+        "  1. 嵌套有序项",
+        "- [x] 已完成只读任务",
+        "",
+        "> 这是低饱和引用，适合卡片中的补充说明。",
+        "",
+        "---",
+        "",
+        "```ts",
+        "const compactCard = { width: '400px', theme: 'native' };",
+        "```",
+        "",
+        "| 范围 | Light | Dark |",
+        "| :--- | :---: | ---: |",
+        "| compact | 可读 | 可读 |",
+        "| fill | 稳定 | 稳定 |",
+      ].join("\n"),
+    }],
+  },
+};
+
 const oversizedTableHeader = `| ${Array.from(
   { length: 16 },
   (_, index) => `列 ${index + 1}`,

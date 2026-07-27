@@ -150,6 +150,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     uniqueElementIds,
     onAction: props.onAction,
     markdownAnalyses,
+    cardStyle: card.config.style ?? {},
   } as const;
   const bodyStyle = {
     padding: safeBox(card.body.padding, false),

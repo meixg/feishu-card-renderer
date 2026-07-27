@@ -12,7 +12,20 @@ export type CardConfig = {
   enable_forward?: boolean;
   use_custom_translation?: boolean;
   enable_forward_interaction?: boolean;
-  style?: Record<string, unknown>;
+  style?: {
+    text_size?: Record<string, {
+      default?: string;
+      pc?: string;
+      mobile?: string;
+      [key: string]: unknown;
+    }>;
+    color?: Record<string, {
+      light_mode?: string;
+      dark_mode?: string;
+      [key: string]: unknown;
+    }>;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 };
 

@@ -115,7 +115,7 @@ chunk。宿主 CSP 应继续禁止非预期脚本来源。不要全局覆盖 `.f
   客户端的逐像素行为。
 - 1.0 会透传但不宣称支持尚未形成完整类型与渲染语义的官方视觉字段：
   `column_set.direction/flex_mode/background_style`、`div.width/icon`、
-  `markdown.text_size/text_align/icon`、`img.scale_type/size/transparent/preview`、
+  `img.scale_type/size/transparent/preview`、
   `img_combination.combination_transparent` 与图片项 `transparent`、
   `person.style`、`person_list.drop_invalid_user_id`、`chart.color_theme`、
   `table.freeze_first_column/header_style`、`button.type/size/width`、

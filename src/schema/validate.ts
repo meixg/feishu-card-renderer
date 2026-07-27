@@ -17,7 +17,7 @@ import {
   headerChildSlots,
   type ProtocolChildSlot,
 } from "./traversal-policy";
-import { safePx } from "../styles/safe";
+import { safePx, safeRgba } from "../styles/safe";
 
 const FORM_INTERACTIVE_TAGS = new Set([
   "input",
@@ -91,6 +91,7 @@ type WalkState = {
   elementIds: Map<string, ProtocolPath>;
   formNames: Map<string, ProtocolPath>;
   fieldNames: Map<string, ProtocolPath>;
+  textSizes: ReadonlySet<string>;
 };
 
 function validateProtocolSlots(
@@ -153,6 +154,39 @@ function validateTagSpecificFields(
   if (tag === "markdown" && value.content !== undefined &&
     typeof value.content !== "string") {
     invalidStructure("content", "markdown.content must be a string.");
+  }
+  if (tag === "markdown") {
+    if (value.text_align !== undefined &&
+      !["left", "center", "right"].includes(String(value.text_align))) {
+      state.diagnostics.push(diagnostic(
+        "invalid_enum",
+        childPath(path, "text_align"),
+        "markdown.text_align must be left, center, or right.",
+      ));
+    }
+    if (value.text_size !== undefined && typeof value.text_size !== "string") {
+      invalidStructure("text_size", "markdown.text_size must be a string.");
+    } else if (typeof value.text_size === "string" &&
+      !state.textSizes.has(value.text_size)) {
+      state.diagnostics.push(diagnostic(
+        "invalid_enum",
+        childPath(path, "text_size"),
+        "markdown.text_size must be normal, notation, heading, or a configured text-size name.",
+      ));
+    }
+    if (value.icon !== undefined) {
+      if (!isRecord(value.icon) ||
+        !["standard_icon", "custom_icon"].includes(String(value.icon.tag)) ||
+        (value.icon.tag === "standard_icon" &&
+          typeof value.icon.token !== "string") ||
+        (value.icon.tag === "custom_icon" &&
+          typeof value.icon.img_key !== "string")) {
+        invalidStructure(
+          "icon",
+          "markdown.icon must be a standard_icon with token or custom_icon with img_key.",
+        );
+      }
+    }
   }
   if (tag === "input" && value.max_length !== undefined &&
     (!Number.isInteger(value.max_length) ||
@@ -556,18 +590,56 @@ export function validateCard(input: unknown): ValidationResult<Card> {
     };
   }
 
+  const configuredTextSizes = isRecord(input.config) &&
+    isRecord(input.config.style) && isRecord(input.config.style.text_size)
+    ? Object.keys(input.config.style.text_size)
+    : [];
   const state: WalkState = {
     diagnostics: [],
     componentCount: 0,
     elementIds: new Map(),
     formNames: new Map(),
     fieldNames: new Map(),
+    textSizes: new Set(["normal", "notation", "heading", ...configuredTextSizes]),
   };
   if (isRecord(input.header)) {
     validateProtocolSlots(headerChildSlots(input.header), "$.header", 0, state);
   }
   if (isRecord(input.config)) {
     validateEnums(input.config, "$.config", state, ["width_mode"]);
+    if (isRecord(input.config.style)) {
+      const style = input.config.style;
+      if (isRecord(style.text_size)) {
+        for (const [name, definition] of Object.entries(style.text_size)) {
+          if (!isRecord(definition) || ["default", "pc", "mobile"].some(
+            (device) => definition[device] !== undefined &&
+              !["normal", "notation", "heading"].includes(
+                String(definition[device]),
+              ),
+          )) {
+            state.diagnostics.push(diagnostic(
+              "invalid_enum",
+              `$.config.style.text_size.${name}`,
+              "Custom text sizes may map default, pc, and mobile to normal, notation, or heading.",
+            ));
+          }
+        }
+      }
+      if (isRecord(style.color)) {
+        for (const [name, definition] of Object.entries(style.color)) {
+          if (!isRecord(definition) || ["light_mode", "dark_mode"].some(
+            (mode) => definition[mode] !== undefined &&
+              safeRgba(definition[mode]) === undefined,
+          )) {
+            state.diagnostics.push(diagnostic(
+              "invalid_style",
+              `$.config.style.color.${name}`,
+              "Custom colors must use bounded RGBA light_mode and dark_mode values.",
+            ));
+          }
+        }
+      }
+    }
   }
   if (isRecord(input.body)) {
     validateEnums(input.body, "$.body", state, [
