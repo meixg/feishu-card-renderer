@@ -16,6 +16,7 @@ describe("package entry", () => {
     const html = renderToString(<CardRenderer card={{ schema: "2.0" }} />);
 
     expect(html).toContain('data-fcr-card-renderer="ready"');
+    expect(html).toContain('data-fcr-portal-host=""');
     expect(renderCardToString({ schema: "2.0" })).toBe(html);
   });
 

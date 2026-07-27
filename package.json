@@ -73,11 +73,15 @@
     "vitest-axe": "^0.1.0"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@visactor/vchart": "^2.1.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm-strikethrough": "^2.0.0",
     "mdast-util-gfm-table": "^2.0.0",
     "micromark-extension-gfm-strikethrough": "^2.1.0",
-    "micromark-extension-gfm-table": "^2.1.1"
+    "micromark-extension-gfm-table": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
   }
 }

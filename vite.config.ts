@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
 
@@ -11,10 +12,16 @@ export default defineConfig({
   // The published ESM entry must stay importable in SSR/Node. In particular,
   // do not select decode-named-character-reference's DOM conditional export.
   resolve: {
-    alias: [{
-      find: /^decode-named-character-reference$/,
-      replacement: markdownRequire.resolve("decode-named-character-reference"),
-    }],
+    alias: [
+      {
+        find: "@",
+        replacement: fileURLToPath(new URL("./src", import.meta.url)),
+      },
+      {
+        find: /^decode-named-character-reference$/,
+        replacement: markdownRequire.resolve("decode-named-character-reference"),
+      },
+    ],
   },
   plugins: [
     react(),
@@ -36,7 +43,15 @@ export default defineConfig({
     },
     cssCodeSplit: false,
     rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime"],
+      external: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "class-variance-authority",
+        "clsx",
+        "tailwind-merge",
+        /^@base-ui\/react(?:\/.*)?$/,
+      ],
     },
   },
 });

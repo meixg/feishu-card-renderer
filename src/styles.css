@@ -10,8 +10,11 @@
     --fcr-color-surface: #ffffff;
     --fcr-color-border: #dee0e3;
     --fcr-color-primary: #3370ff;
+    --fcr-color-primary-contrast: #ffffff;
+    --fcr-color-danger: #d83931;
     --fcr-radius-card: 10px;
     --fcr-shadow-card: 0 4px 16px rgb(31 35 41 / 8%);
+    --fcr-z-index-overlay: 1000;
     --fcr-markdown-font-size-notation: 12px;
     --fcr-markdown-font-size: 14px;
     --fcr-markdown-font-size-heading: 16px;
@@ -43,6 +46,11 @@
   .fcr-width-default { max-width: 600px; }
   .fcr-width-compact { max-width: 400px; }
   .fcr-width-fill { max-width: none; }
+  .fcr-portal-host { display: contents; }
+  .fcr-portal-boundary {
+    position: relative;
+    z-index: var(--fcr-z-index-overlay);
+  }
   .fcr-theme-dark {
     --fcr-color-text: #f5f6f7;
     --fcr-color-text-secondary: #a6a9ad;
@@ -283,6 +291,36 @@
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
   .fcr-field { display: grid; gap: 4px; min-width: 0; }
+  .fcr-ui-field { display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 4px; }
+  .fcr-ui-label, .fcr-ui-field-label { font-weight: 500; line-height: 1.35; }
+  .fcr-ui-field-description {
+    margin: 0; color: var(--fcr-color-text-secondary); font-size: 12px;
+  }
+  .fcr-ui-field-error { color: var(--fcr-color-danger); font-size: 12px; }
+  .fcr-ui-button {
+    display: inline-flex; flex: 0 0 auto; align-items: center;
+    justify-content: center; border: 1px solid transparent;
+    font: inherit; font-weight: 500; white-space: nowrap;
+    transition: background-color 120ms ease, border-color 120ms ease;
+  }
+  .fcr-ui-button-default {
+    background: var(--fcr-color-primary); color: var(--fcr-color-primary-contrast);
+  }
+  .fcr-ui-button-outline {
+    border-color: var(--fcr-color-border);
+    background: var(--fcr-color-surface); color: var(--fcr-color-text);
+  }
+  .fcr-ui-button-ghost { background: transparent; color: var(--fcr-color-text); }
+  .fcr-ui-button-destructive {
+    background: var(--fcr-color-danger); color: var(--fcr-color-primary-contrast);
+  }
+  .fcr-ui-button-size-default { min-height: 32px; padding: 6px 10px; border-radius: 6px; }
+  .fcr-ui-button-size-sm { min-height: 28px; padding: 4px 8px; border-radius: 6px; }
+  .fcr-ui-button-size-icon { width: 32px; height: 32px; padding: 0; border-radius: 6px; }
+  .fcr-ui-button:disabled { pointer-events: none; opacity: 0.5; }
+  .fcr-ui-button:focus-visible {
+    outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
+  }
   .fcr-field input, .fcr-field textarea, .fcr-field select, .fcr-button,
   .fcr-overflow button {
     min-height: 32px; border: 1px solid var(--fcr-color-border);
