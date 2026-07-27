@@ -331,6 +331,17 @@ confirm 使用内置可访问对话框：
 - 超长单词、代码块和表格在窄屏内滚动，不撑破卡片。
 - `lines` 截断保留可访问的完整文本说明。
 
+基础 Markdown 路径使用 `mdast-util-from-markdown`（CommonMark）和独立的 GFM
+删除线扩展。选择依据是：该项目由 unified collective 维护、官方包为 ESM-only、
+提供 TypeScript 类型和语法树输出；解析过程不需要 DOM 或网络。没有引入完整 GFM
+扩展，因此任务列表与表格不会在此切片中意外启用。语法树只作为内部实现细节，
+最终由自有 React 白名单渲染。
+
+有界策略按单个 Markdown 组件计算：最多 20,000 字符、12 层语法深度、1,000
+个语法节点，以及合计 200 个链接、图片或列表项。超限保留安全前缀、显示可访问
+提示并产生 `markdown_limit_exceeded`；原始/扩展标记、图片和解析失败分别使用
+recoverable diagnostic。Markdown 图片从不生成 `img`，只保留 alt 文本。
+
 ## 12. VChart
 
 - `chart_spec` 使用 VChart spec，不提供 ECharts 转换。

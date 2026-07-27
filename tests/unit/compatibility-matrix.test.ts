@@ -16,7 +16,7 @@ describe("1.0 executable per-tag compatibility matrix", () => {
   const unsupportedPassthroughFields = {
     column_set: ["direction", "flex_mode", "background_style"],
     div: ["width", "icon"],
-    markdown: ["text_size", "text_align", "icon"],
+    markdown: [],
     img: ["scale_type", "size", "transparent", "preview"],
     img_combination: ["combination_transparent"],
     person: ["style"],

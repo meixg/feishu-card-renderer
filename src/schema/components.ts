@@ -44,6 +44,21 @@ export type TextElement = {
   [key: string]: unknown;
 };
 
+export type StandardIcon = {
+  tag: "standard_icon";
+  token: string;
+  color?: string;
+  [key: string]: unknown;
+};
+
+export type CustomIcon = {
+  tag: "custom_icon";
+  img_key: string;
+  [key: string]: unknown;
+};
+
+export type CardIcon = StandardIcon | CustomIcon;
+
 export type BaseElement<TTag extends CardComponentTag> = {
   tag: TTag;
   element_id?: string;
@@ -109,7 +124,13 @@ export type DivElement = BaseElement<"div"> & {
   text?: TextElement;
   margin?: string;
 };
-export type MarkdownElement = BaseElement<"markdown"> & { content?: string };
+export type MarkdownElement = BaseElement<"markdown"> & {
+  content?: string;
+  text_size?: string;
+  text_align?: "left" | "center" | "right";
+  icon?: CardIcon;
+  margin?: string;
+};
 export type ImageElement = BaseElement<"img"> & {
   img_key?: string;
   alt?: TextElement;

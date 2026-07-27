@@ -41,6 +41,288 @@ export const invalidRendererCard = {
   },
 } as const;
 
+export const minimalMarkdownCard: Card = {
+  schema: "2.0",
+  body: { elements: [{ tag: "markdown", content: "A paragraph." }] },
+};
+
+export const completeMarkdownFoundationCard: Card = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        "# 基础语义",
+        "",
+        "段落包含 *强调*、**粗体**、~~删除线~~和[安全链接](https://example.com)。",
+        "",
+        "- 无序项",
+        "  1. 嵌套有序项",
+        "",
+        "> 引用内容",
+        "",
+        "---",
+      ].join("\n"),
+    }],
+  },
+};
+
+export const completeMarkdownCodeTasksCard: Card = {
+  schema: "2.0",
+  config: { width_mode: "compact", update_multi: true },
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        "行内代码 `a_very_long_identifier_without_breaks_and_without_spaces` 可安全断行。",
+        "",
+        "```typescript",
+        "const veryLongValue = 'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';",
+        "  console.log(veryLongValue);",
+        "```",
+        "",
+        "    indented line",
+        "      preserved indentation",
+        "",
+        "- [ ] 待处理任务",
+        "  - [x] 已完成的嵌套任务",
+        "- 普通列表项",
+      ].join("\n"),
+    }],
+  },
+};
+
+export const invalidMarkdownFoundationCard = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: "<future-tag>可见原文</future-tag>\n\n"
+        + "![替代文本](https://tracker.example/image.png)\n\n"
+        + "[危险链接](javascript:alert(1))",
+    }],
+  },
+} as const;
+
+export const completeMarkdownTableCard: Card = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        "团队排期",
+        "",
+        "| 负责人 | 状态 | 开始时间 | 结束时间 | 说明 |",
+        "| :--- | :---: | ---: | ---: | ---: |",
+        "| Alice | 进行中 | 周一 | 周三 | 包含可读的较长说明 |",
+        "| Bob | 已完成 | 周二 | 周四 | |",
+        "| Carol | 待开始 | 周三 | 周五 | supercalifragilisticexpialidocious-without-breaks |",
+      ].join("\n"),
+    }],
+  },
+};
+
+export const completeMarkdownThemeCard: Card = {
+  schema: "2.0",
+  config: {
+    update_multi: true,
+    style: {
+      text_size: {
+        card_body: { default: "normal", pc: "normal", mobile: "notation" },
+      },
+      color: {
+        accent: {
+          light_mode: "rgba(51,112,255,1)",
+          dark_mode: "rgba(130,167,255,1)",
+        },
+      },
+    },
+  },
+  body: {
+    padding: "16px",
+    elements: [{
+      tag: "markdown",
+      element_id: "markdown_theme",
+      text_size: "card_body",
+      text_align: "left",
+      icon: { tag: "standard_icon", token: "info_outlined", color: "accent" },
+      margin: "4px 0px",
+      content: [
+        "# 卡片原生标题",
+        "",
+        "段落包含 *强调*、**重点**、~~已废弃~~、[安全链接](https://example.com) 与 `inline_code_that_wraps_safely`。",
+        "",
+        "## 紧凑次级标题",
+        "",
+        "- 第一项",
+        "  1. 嵌套有序项",
+        "- [x] 已完成只读任务",
+        "",
+        "> 这是低饱和引用，适合卡片中的补充说明。",
+        "",
+        "---",
+        "",
+        "```ts",
+        "const compactCard = { width: '400px', theme: 'native' };",
+        "```",
+        "",
+        "| 范围 | Light | Dark |",
+        "| :--- | :---: | ---: |",
+        "| compact | 可读 | 可读 |",
+        "| fill | 稳定 | 稳定 |",
+      ].join("\n"),
+    }],
+  },
+};
+
+const oversizedTableHeader = `| ${Array.from(
+  { length: 16 },
+  (_, index) => `列 ${index + 1}`,
+).join(" | ")} |`;
+const oversizedTableDivider = `| ${Array.from(
+  { length: 16 },
+  () => "---",
+).join(" | ")} |`;
+const oversizedTableRows = Array.from({ length: 60 }, (_, row) =>
+  `| ${Array.from(
+    { length: 16 },
+    (_, column) => `R${row + 1}C${column + 1}`,
+  ).join(" | ")} |`);
+
+export const oversizedMarkdownTableCard: Card = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        oversizedTableHeader,
+        oversizedTableDivider,
+        ...oversizedTableRows,
+      ].join("\n"),
+    }],
+  },
+};
+
+const completeMarkdownReleaseContent = [
+  "# 发布验收标题",
+  "",
+  "段落包含 *强调*、**粗体**、~~删除线~~、[安全链接](https://example.com) 和 `inline_code`。",
+  "",
+  "## 次级标题",
+  "",
+  "- 无序项",
+  "  1. 嵌套有序项",
+  "- [ ] 待处理任务",
+  "  - [x] 已完成的嵌套任务",
+  "",
+  "> 引用内容",
+  "",
+  "---",
+  "",
+  "```typescript",
+  "const release = 'bounded';",
+  "```",
+  "",
+  "    indented code",
+  "      preserved whitespace",
+  "",
+  "| 左对齐 | 居中 | 右对齐 |",
+  "| :--- | :---: | ---: |",
+  "| A | B | C |",
+].join("\n");
+
+export const markdownReleaseFixtures = {
+  minimal: minimalMarkdownCard,
+  complete: {
+    schema: "2.0",
+    config: {
+      update_multi: true,
+      style: {
+        text_size: {
+          release_body: {
+            default: "normal",
+            pc: "heading",
+            mobile: "notation",
+          },
+        },
+      },
+    },
+    body: {
+      elements: [{
+        tag: "markdown",
+        element_id: "markdown_release",
+        content: completeMarkdownReleaseContent,
+        text_size: "release_body",
+        text_align: "center",
+        icon: {
+          tag: "standard_icon",
+          token: "info_outlined",
+          color: "blue",
+        },
+        margin: "4px 0px",
+      }],
+    },
+  },
+  defaults: {
+    schema: "2.0",
+    body: { elements: [{ tag: "markdown", content: "Defaults" }] },
+  },
+  invalid: {
+    schema: "2.0",
+    body: {
+      elements: [{
+        tag: "markdown",
+        content: 42,
+        text_size: "giant",
+        text_align: "justify",
+        icon: { tag: "custom_icon" },
+        margin: "100px",
+      }],
+    },
+  },
+  unknown: {
+    schema: "2.0",
+    body: {
+      elements: [{
+        tag: "markdown",
+        content: "Unknown fields stay forward-compatible.",
+        future_markdown_option: { preserved: true },
+      }],
+    },
+  },
+} as const;
+
+const markdownCard = (content: string) => ({
+  schema: "2.0",
+  body: {
+    elements: [
+      { tag: "markdown", content },
+      { tag: "div", text: { tag: "plain_text", content: "safe sibling" } },
+    ],
+  },
+} as const);
+
+export const adversarialMarkdownFixtures = {
+  longInput: markdownCard(`# Safe prefix\n\n${"x".repeat(25_000)}`),
+  deepNesting: markdownCard(`${"> ".repeat(20)}deep value`),
+  largeTable: oversizedMarkdownTableCard,
+  pathologicalDelimiters: markdownCard(
+    `delimiter prefix\n\n${"*_~`[\\".repeat(2_500)}`,
+  ),
+  manyLinks: markdownCard(
+    Array.from(
+      { length: 260 },
+      (_, index) => `[link ${index}](https://example.com/${index})`,
+    ).join(" "),
+  ),
+  hostileContent: markdownCard([
+    "[danger](javascript:alert(1))",
+    "<script src=https://attacker.example/payload.js></script>",
+    "<future-tag>visible extension source</future-tag>",
+    "![remote image](https://tracker.example/pixel.png)",
+  ].join("\n\n")),
+} as const;
+
 export const chartRendererCard: Card = {
   schema: "2.0",
   body: {

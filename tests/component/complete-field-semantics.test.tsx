@@ -266,6 +266,59 @@ describe("complete field semantics", () => {
     });
   });
 
+  it("markdown visual fields drive safe typography, alignment, icon, and spacing", () => {
+    const { container } = render(<CardRenderer
+      card={compatibilityFixturesByTag.markdown.complete}
+    />);
+    const markdown = container.querySelector<HTMLElement>(".fcr-markdown")!;
+    expect(markdown).toHaveAttribute("data-text-size", "heading");
+    expect(markdown).toHaveAttribute("data-text-align", "center");
+    expect(markdown).toHaveStyle({
+      margin: "4px 0px",
+      textAlign: "center",
+      fontSize: "var(--fcr-markdown-font-size-heading)",
+    });
+    expect(markdown.querySelector("[data-icon-token='info_outlined']"))
+      .not.toBeNull();
+  });
+
+  it("markdown resolves device text-size and dark color theme without mutating input", () => {
+    const card = Object.freeze({
+      schema: "2.0",
+      config: Object.freeze({
+        style: Object.freeze({
+          text_size: Object.freeze({
+            compact: Object.freeze({
+              default: "normal", pc: "heading", mobile: "notation",
+            }),
+          }),
+          color: Object.freeze({
+            accent: Object.freeze({
+              light_mode: "rgba(51,112,255,1)",
+              dark_mode: "rgba(130,167,255,1)",
+            }),
+          }),
+        }),
+      }),
+      body: Object.freeze({
+        elements: Object.freeze([Object.freeze({
+          tag: "markdown", content: "Theme", text_size: "compact",
+          icon: Object.freeze({
+            tag: "standard_icon", token: "info_outlined", color: "accent",
+          }),
+        })]),
+      }),
+    });
+    const before = JSON.stringify(card);
+    const { container } = render(<CardRenderer card={card}
+      device="mobile" colorScheme="dark" />);
+    expect(container.querySelector(".fcr-markdown")).toHaveStyle({
+      fontSize: "var(--fcr-markdown-font-size-notation)",
+      "--fcr-markdown-icon-color": "rgba(130,167,255,1)",
+    });
+    expect(JSON.stringify(card)).toBe(before);
+  });
+
   it("button fields drive confirmation and the standardized action", () => {
     const onAction = vi.fn();
     render(<CardRenderer

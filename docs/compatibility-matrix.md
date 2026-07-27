@@ -16,6 +16,21 @@ defaults/invalid 卡、完整字段清单、具体 normalization 默认值、非
 `header` 是顶层结构而非 `body.elements` tag，由 renderer fixture、schema 测试和
 light/dark 视觉用例独立覆盖。
 
+## Markdown 发布证据
+
+`markdownReleaseFixtures` 独立提供 minimal、complete、defaults、invalid 和
+unknown 五类卡。complete 卡同时覆盖全部已支持语法（标题、段落、强调、粗体、
+删除线、安全链接、嵌套有序/无序列表、引用、分隔线、行内/围栏/缩进代码、只读
+任务列表和 GFM 表格）及全部已实现官方字段：`element_id`、`content`、
+`text_size`、`text_align`、`icon`、`margin`。这些字段不再列入透传缺口；
+`completeFieldEvidenceByTag.markdown` 逐字段绑定公共 `CardRenderer` DOM 差分
+证据，默认值和非法值另经公共 schema seam 验证。
+
+`adversarialMarkdownFixtures` 覆盖 20,000 字符边界、20 层嵌套、超限表格、病理
+分隔符、260 个链接、危险 URL、原始 HTML、未知飞书扩展标签和远程 Markdown
+图片。组件验收要求超限保留安全前缀和 sibling、产生 recoverable diagnostic，
+且不出现可执行 HTML、危险链接或网络图片元素。
+
 ## Fixture 六类定义
 
 - 最小：允许上下文中的最小合法结构，必须无诊断。
@@ -41,6 +56,10 @@ Playwright 对包含全部 tag 的发布卡执行全部 12 个组合：light/dar
 compact 400px/default 600px/fill。另有容器、图表 light/dark/mobile 和图表预览
 基线。视觉回归验证协议布局稳定，不宣称逐像素复制飞书私有客户端。
 
+Markdown 完整卡在同一 12 组合中逐项测量：卡片 `scrollWidth` 等于
+`clientWidth`，代码块与表格容器保持自身 `overflow-x: auto` 且不宽于外层卡片。
+compact 夹具另证明宽内容确实只在代码块/表格内部产生横向滚动。
+
 图表兼容不是 sanitizer 名单：line、area、bar、pie、common、funnel、scatter、
 radar、linearProgress、circularProgress、wordCloud 各有类型正确的最小 spec。
 Playwright 在真实 Chrome 中使用正式懒加载 VChart runtime 实例化，要求进入
@@ -55,5 +74,7 @@ Playwright 在真实 Chrome 中使用正式懒加载 VChart runtime 实例化，
   scrolling。
 - axe 覆盖基础、复杂内容、递归容器和表单；light/dark 主次文本及焦点色有 WCAG
   对比度断言。颜色不作为唯一状态表达。
+- Markdown 发布卡显式断言标题、列表、引用、表格、代码、链接、只读任务状态与
+  截断 `role="note"`，并在公共 `CardRenderer` 输出上运行 axe。
 
 明确协议冲突和实现限制见 [集成指南](integration.md#10-限制)。

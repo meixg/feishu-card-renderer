@@ -26,6 +26,9 @@ const STYLE_FIELDS_BY_TAG: Readonly<
   div: {
     margin: (value) => safeBox(value, true),
   },
+  markdown: {
+    margin: (value) => safeBox(value, true),
+  },
   img: {
     margin: (value) => safeBox(value, true),
     corner_radius: safePx,

@@ -4,6 +4,9 @@ import { createRoot } from "react-dom/client";
 import { CardRenderer } from "../../src";
 import {
   chartRendererCard,
+  completeMarkdownCodeTasksCard,
+  completeMarkdownTableCard,
+  completeMarkdownThemeCard,
   completeRendererCard,
 } from "../../src/fixtures/renderer-cards";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
@@ -48,8 +51,34 @@ createRoot(document.getElementById("root")!).render(
         card={completeRendererCard} /></section>
       <section id="case-mobile"><CardRenderer device="mobile"
         card={completeRendererCard} /></section>
+      <section id="case-markdown-code-tasks" style={{ width: 280 }}>
+        <CardRenderer device="mobile" card={completeMarkdownCodeTasksCard} />
+      </section>
+      {releaseMatrix.map(({ name, width, colorScheme, device }) => (
+        <section id={`case-markdown-theme-${name}`}
+          key={`markdown-theme-${name}`}
+          style={device === "mobile" ? { maxWidth: 390 } : undefined}>
+          <CardRenderer colorScheme={colorScheme} device={device}
+            card={{ ...completeMarkdownThemeCard,
+              config: { ...completeMarkdownThemeCard.config,
+                width_mode: width } }} />
+        </section>
+      ))}
       <section id="case-containers"><CardRenderer
         card={completeContainerCard} /></section>
+      {([
+        ["compact", 400],
+        ["default", 600],
+        ["fill", 900],
+      ] as const).map(([width, pixels]) => (
+        <section id={`case-markdown-table-${width}`} key={`table-${width}`}
+          style={{ width: pixels }}>
+          <CardRenderer card={{
+            ...completeMarkdownTableCard,
+            config: { update_multi: true, width_mode: width },
+          }} />
+        </section>
+      ))}
       <section id="case-chart-light"><CardRenderer
         card={chartRendererCard} /></section>
       <section id="case-chart-dark"><CardRenderer colorScheme="dark"
