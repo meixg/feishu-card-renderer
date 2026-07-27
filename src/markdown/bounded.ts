@@ -4,6 +4,7 @@ import { gfmStrikethrough } from "micromark-extension-gfm-strikethrough";
 
 import type { CardDiagnostic, ProtocolPath } from "../schema/diagnostics";
 import { safeUrl } from "../styles/safe";
+import { decorateTaskListItems } from "./task-list";
 
 export const MARKDOWN_LIMITS = {
   characters: 20_000,
@@ -20,6 +21,8 @@ export type MarkdownNode = {
   depth?: number;
   ordered?: boolean;
   start?: number | null;
+  lang?: string | null;
+  checked?: boolean | null;
   children?: MarkdownNode[];
 };
 
@@ -57,6 +60,7 @@ export function analyzeMarkdown(
       extensions: [gfmStrikethrough()],
       mdastExtensions: [gfmStrikethroughFromMarkdown()],
     }) as MarkdownNode;
+    decorateTaskListItems(tree);
     let nodes = 0;
     let complexNodes = 0;
     let structurallyLimited = false;

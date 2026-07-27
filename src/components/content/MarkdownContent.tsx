@@ -51,7 +51,22 @@ function renderNode(
     case "emphasis": return <em>{children(node, budget, depth)}</em>;
     case "strong": return <strong>{children(node, budget, depth)}</strong>;
     case "delete": return <del>{children(node, budget, depth)}</del>;
-    case "inlineCode": return <code>{node.value}</code>;
+    case "inlineCode":
+      return <code className="fcr-markdown-inline-code">{node.value}</code>;
+    case "code": {
+      const language = node.lang?.trim();
+      return (
+        <div className="fcr-markdown-code-block">
+          {language && (
+            <span className="fcr-markdown-code-language"
+              aria-label={`代码语言：${language}`}>
+              {language}
+            </span>
+          )}
+          <pre><code>{node.value ?? ""}</code></pre>
+        </div>
+      );
+    }
     case "break": return <br />;
     case "thematicBreak": return <hr />;
     case "blockquote": return <blockquote>{children(node, budget, depth)}</blockquote>;
@@ -61,7 +76,22 @@ function renderNode(
         ? <ol start={node.start ?? undefined}>{content}</ol>
         : <ul>{content}</ul>;
     }
-    case "listItem": return <li>{children(node, budget, depth)}</li>;
+    case "listItem":
+      return (
+        <li className={typeof node.checked === "boolean"
+          ? "fcr-markdown-task-item"
+          : undefined}>
+          {typeof node.checked === "boolean" && (
+            <span className="fcr-markdown-task-state" role="img"
+              aria-label={node.checked
+                ? "已完成，只读任务"
+                : "未完成，只读任务"}>
+              <span aria-hidden="true">{node.checked ? "✓" : ""}</span>
+            </span>
+          )}
+          {children(node, budget, depth)}
+        </li>
+      );
     case "link": {
       const href = safeUrl(node.url);
       return href

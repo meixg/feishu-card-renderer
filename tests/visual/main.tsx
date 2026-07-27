@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { CardRenderer } from "../../src";
 import {
   chartRendererCard,
+  completeMarkdownCodeTasksCard,
   completeRendererCard,
 } from "../../src/fixtures/renderer-cards";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
@@ -48,6 +49,9 @@ createRoot(document.getElementById("root")!).render(
         card={completeRendererCard} /></section>
       <section id="case-mobile"><CardRenderer device="mobile"
         card={completeRendererCard} /></section>
+      <section id="case-markdown-code-tasks" style={{ width: 280 }}>
+        <CardRenderer device="mobile" card={completeMarkdownCodeTasksCard} />
+      </section>
       <section id="case-containers"><CardRenderer
         card={completeContainerCard} /></section>
       <section id="case-chart-light"><CardRenderer

@@ -192,8 +192,10 @@ import type {
 保持隔离。原始 HTML 和尚未实现的飞书扩展标签显示为可见原文；Markdown 图片
 只显示 alt，不加载网络资源。单个 Markdown 限制为 20,000 字符、12 层语法深度、
 1,000 个语法节点和 200 个链接/图片/列表项，超限时保留安全前缀并通过
-`onDiagnostic` 报告 recoverable diagnostic。代码块、任务列表和 Markdown 表格
-不属于当前基础切片。
+`onDiagnostic` 报告 recoverable diagnostic。行内代码可在窄卡片中安全断行；
+围栏与缩进代码块保留空白并仅在代码块内部横向滚动，围栏语言以文本标签呈现，
+不做语法高亮。GFM 任务列表呈现只读状态，不可编辑且不会产生 `CardAction`。
+Markdown 表格尚未支持。
 
 逐组件和字段级支持情况请查看 [1.0 兼容矩阵](docs/compatibility-matrix.md)。官方协议仍可能演进；如文档存在冲突，以最新的飞书 JSON 2.0 组件子文档为准。
 

@@ -67,6 +67,31 @@ export const completeMarkdownFoundationCard: Card = {
   },
 };
 
+export const completeMarkdownCodeTasksCard: Card = {
+  schema: "2.0",
+  config: { width_mode: "compact", update_multi: true },
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        "行内代码 `a_very_long_identifier_without_breaks_and_without_spaces` 可安全断行。",
+        "",
+        "```typescript",
+        "const veryLongValue = 'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';",
+        "  console.log(veryLongValue);",
+        "```",
+        "",
+        "    indented line",
+        "      preserved indentation",
+        "",
+        "- [ ] 待处理任务",
+        "  - [x] 已完成的嵌套任务",
+        "- 普通列表项",
+      ].join("\n"),
+    }],
+  },
+};
+
 export const invalidMarkdownFoundationCard = {
   schema: "2.0",
   body: {

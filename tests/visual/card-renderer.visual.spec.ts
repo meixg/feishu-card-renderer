@@ -22,6 +22,20 @@ test("container visual baseline", async ({ page }) => {
   await expect(renderer).toHaveScreenshot("card-renderer-containers.png");
 });
 
+test("Markdown code scrolls locally without widening a compact mobile card", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const renderer = page.locator("#case-markdown-code-tasks .fcr-root");
+  const code = renderer.locator(".fcr-markdown-code-block").first();
+  await expect(code).toBeVisible();
+  expect(await code.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+  expect(await renderer.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+  await expect(page.locator("#case-markdown-code-tasks")).toHaveScreenshot(
+    "markdown-code-tasks-mobile-compact.png",
+  );
+});
+
 test("chart light, dark, and mobile visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
   for (const name of ["chart-light", "chart-dark", "chart-mobile"]) {
