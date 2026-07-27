@@ -278,9 +278,9 @@ describe("CardRenderer", () => {
     fireEvent.click(trigger);
     const dialog = within(rendered.container).getByRole("dialog");
     expect(within(dialog).getByText("1 / 3")).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: "ArrowRight" });
+    fireEvent.keyDown(dialog, { key: "ArrowRight" });
     expect(within(dialog).getByText("2 / 3")).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
     expect(within(rendered.container).queryByRole("dialog")).toBeNull();
     expect(trigger).toHaveFocus();
   });

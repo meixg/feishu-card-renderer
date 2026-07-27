@@ -11,6 +11,36 @@ import {
 import { useUiPortalCleanup } from "../../src/renderer/portal-context";
 
 const emptyCard = { schema: "2.0" };
+const closedOverlayCard = {
+  schema: "2.0" as const,
+  body: {
+    elements: [
+      {
+        tag: "button",
+        text: { tag: "plain_text", content: "确认" },
+        confirm: {
+          title: { tag: "plain_text", content: "确认操作" },
+          text: { tag: "plain_text", content: "继续吗？" },
+        },
+        behaviors: [{ type: "callback", value: "confirm" }],
+      },
+      {
+        tag: "overflow",
+        options: [{
+          text: { tag: "plain_text", content: "菜单项" },
+          value: "menu",
+        }],
+      },
+      {
+        tag: "img_combination",
+        img_list: [
+          { img_key: "one", alt: { tag: "plain_text", content: "一" } },
+          { img_key: "two", alt: { tag: "plain_text", content: "二" } },
+        ],
+      },
+    ],
+  },
+};
 
 describe("per-card UI foundation", () => {
   it("keeps one stable, theme-scoped portal host per successful card", () => {
@@ -102,7 +132,7 @@ describe("per-card UI foundation", () => {
 
   it("hydrates the server portal host without replacing it", async () => {
     const serverHtml = renderToString(
-      <CardRenderer card={emptyCard} colorScheme="dark" />,
+      <CardRenderer card={closedOverlayCard} colorScheme="dark" />,
     );
     const container = document.createElement("div");
     container.innerHTML = serverHtml;
@@ -115,7 +145,7 @@ describe("per-card UI foundation", () => {
     await act(async () => {
       root = hydrateRoot(
         container,
-        <CardRenderer card={emptyCard} colorScheme="dark" />,
+        <CardRenderer card={closedOverlayCard} colorScheme="dark" />,
       );
     });
 

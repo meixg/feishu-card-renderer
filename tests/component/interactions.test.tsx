@@ -29,7 +29,7 @@ describe("interactive components and CardAction", () => {
       .selected).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "提交" }));
-    const dialog = screen.getByRole("dialog", { name: "确认提交" });
+    const dialog = screen.getByRole("alertdialog", { name: "确认提交" });
     fireEvent.click(within(dialog).getByRole("button", { name: "确认" }));
     expect(onAction).toHaveBeenCalledTimes(1);
     expect(onAction.mock.calls[0][0]).toMatchObject({
@@ -61,17 +61,19 @@ describe("interactive components and CardAction", () => {
     const menu = screen.getByRole("button", { name: "更多操作" });
     expect(menu).not.toBeDisabled();
     fireEvent.click(menu);
-    expect(screen.getByRole("menuitem", { name: "菜单项" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "菜单项" }))
+      .toHaveAttribute("aria-disabled", "true");
   });
 
   it("opens overflow by keyboard and closes with Esc while restoring focus", async () => {
     render(<CardRenderer card={completeInteractiveCard} onAction={() => {}} />);
     const trigger = screen.getByRole("button", { name: "更多操作" });
     trigger.focus();
-    fireEvent.keyDown(trigger, { key: "Enter" });
-    fireEvent.click(trigger);
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
     const menu = screen.getByRole("menu");
-    expect(screen.getByRole("menuitem", { name: "菜单项" })).toHaveFocus();
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: "菜单项" })).toHaveFocus();
+    });
     fireEvent.keyDown(menu, { key: "End" });
     expect(screen.getByRole("menuitem", { name: "菜单项" })).toHaveFocus();
     fireEvent.keyDown(menu, { key: "Escape" });
@@ -205,7 +207,7 @@ describe("interactive components and CardAction", () => {
     trigger.focus();
     fireEvent.click(trigger);
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
     await waitFor(() => expect(trigger).toHaveFocus());
     fireEvent.click(screen.getByRole("button", { name: "禁用" }));
     expect(onAction).not.toHaveBeenCalled();
@@ -499,7 +501,7 @@ describe("interactive components and CardAction", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "图二" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "同意" }));
     fireEvent.click(screen.getByRole("button", { name: "提交" }));
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", {
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", {
       name: "确认",
     }));
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({

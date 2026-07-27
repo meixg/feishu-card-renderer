@@ -126,7 +126,7 @@ describe("complete field semantics", () => {
         } else {
           fireEvent.click(within(result.container)
             .getByRole("button", { name: "Button" }));
-          const dialog = within(result.container).queryByRole("dialog");
+          const dialog = within(result.container).queryByRole("alertdialog");
           dialogShown = dialog !== null;
           if (dialog) {
             fireEvent.click(within(dialog)
@@ -327,7 +327,7 @@ describe("complete field semantics", () => {
     />);
 
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
-    const dialog = screen.getByRole("dialog");
+    const dialog = screen.getByRole("alertdialog");
     expect(within(dialog).getByText("Continue?")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "确认" }));
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
