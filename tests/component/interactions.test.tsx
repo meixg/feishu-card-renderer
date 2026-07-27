@@ -10,6 +10,14 @@ import {
 
 afterEach(cleanup);
 
+function choose(label: string, option: string) {
+  const trigger = screen.getByRole("combobox", { name: label });
+  fireEvent.click(trigger);
+  const item = screen.getByRole("option", { name: option });
+  fireEvent.pointerDown(item, { pointerType: "mouse" });
+  fireEvent.click(item);
+}
+
 describe("interactive components and CardAction", () => {
   it("delays form fields, restores protocol initial values, validates required, and submits once", () => {
     const onAction = vi.fn();
@@ -21,12 +29,11 @@ describe("interactive components and CardAction", () => {
     expect(onAction).not.toHaveBeenCalled();
 
     fireEvent.change(input, { target: { value: "修改后" } });
-    fireEvent.change(screen.getByLabelText("类型"), { target: { value: "b" } });
+    choose("类型", "B");
     expect(onAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "重置" }));
     expect(input).toHaveValue("初始值");
-    expect((screen.getByRole("option", { name: "A" }) as HTMLOptionElement)
-      .selected).toBe(true);
+    expect(screen.getByRole("combobox", { name: "类型" })).toHaveTextContent("A");
 
     fireEvent.click(screen.getByRole("button", { name: "提交" }));
     const dialog = screen.getByRole("alertdialog", { name: "确认提交" });
@@ -97,11 +104,7 @@ describe("interactive components and CardAction", () => {
         ] },
       ] },
     }} />)).not.toThrow();
-    const select = screen.getByLabelText("unsafe-select");
-    const safeOption = screen.getByRole<HTMLOptionElement>(
-      "option", { name: "安全标签" },
-    );
-    fireEvent.change(select, { target: { value: safeOption.value } });
+    choose("unsafe-select", "安全标签");
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
       value: { toString: "not callable" },
     }));
@@ -155,14 +158,13 @@ describe("interactive components and CardAction", () => {
       ] },
     }} />);
 
-    expect((screen.getByRole("option", { name: "长值 B" }) as HTMLOptionElement)
-      .selected).toBe(true);
-    expect((screen.getByRole("option", { name: "多选 A" }) as HTMLOptionElement)
-      .selected).toBe(true);
-    expect((screen.getByRole("option", { name: "七" }) as HTMLOptionElement)
-      .selected).toBe(true);
-    expect((screen.getByRole("option", { name: "真" }) as HTMLOptionElement)
-      .selected).toBe(true);
+    expect(screen.getByRole("combobox", { name: "长单选" }))
+      .toHaveTextContent("长值 B");
+    expect(screen.getByRole("button", { name: "移除 多选 A" }))
+      .toBeInTheDocument();
+    expect(screen.getByText("七")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "移除 真" }))
+      .toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "图片 B" })).toBeChecked();
     fireEvent.click(screen.getByRole("button", { name: "提交原值" }));
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
@@ -172,13 +174,7 @@ describe("interactive components and CardAction", () => {
       },
     }));
 
-    fireEvent.change(screen.getByLabelText("长单选"), {
-      target: {
-        value: screen.getByRole<HTMLOptionElement>(
-          "option", { name: "长值 A" },
-        ).value,
-      },
-    });
+    choose("长单选", "长值 A");
     fireEvent.click(screen.getByRole("radio", { name: "图片 A" }));
     fireEvent.click(screen.getByRole("button", { name: "提交原值" }));
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
@@ -485,15 +481,12 @@ describe("interactive components and CardAction", () => {
   it("updates person, multi-select, time, datetime, image, and checker controls by keyboard-compatible native seams", () => {
     const onAction = vi.fn();
     render(<CardRenderer card={completeInteractiveCard} onAction={onAction} />);
-    const owner = screen.getByLabelText("owner");
-    fireEvent.change(owner, {
-      target: { value: within(owner).getByRole<HTMLOptionElement>(
-        "option", { name: "甲" }).value },
-    });
-    const members = screen.getByLabelText<HTMLSelectElement>("members");
-    for (const option of members.options) option.selected =
-      option.textContent === "乙";
-    fireEvent.change(members);
+    choose("owner", "甲");
+    const members = screen.getByRole("combobox", { name: "members，打开选项" });
+    fireEvent.click(members);
+    fireEvent.click(screen.getByRole("option", { name: "甲" }));
+    fireEvent.click(screen.getByRole("option", { name: "乙" }));
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
     fireEvent.change(screen.getByLabelText("time"), { target: { value: "10:45" } });
     fireEvent.change(screen.getByLabelText("at"), {
       target: { value: "2026-07-28T11:00" },

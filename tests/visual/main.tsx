@@ -38,6 +38,59 @@ const releaseAllTagsCard = {
   },
 };
 
+const choiceVisualCard = {
+  schema: "2.0" as const,
+  config: { update_multi: true, width_mode: "compact" as const },
+  body: {
+    elements: [{
+      tag: "form",
+      name: "choice-visuals",
+      elements: [
+        {
+          tag: "select_static",
+          name: "small",
+          label: { tag: "plain_text", content: "Small Select" },
+          initial_option: "two",
+          options: ["one", "two", "three"].map((value) => ({
+            text: { tag: "plain_text", content: `Option ${value}` },
+            value,
+          })),
+        },
+        {
+          tag: "select_static",
+          name: "large",
+          label: { tag: "plain_text", content: "Searchable Combobox" },
+          options: Array.from({ length: 12 }, (_, index) => ({
+            text: { tag: "plain_text", content: `Search option ${index + 1}` },
+            value: { index },
+          })),
+        },
+        {
+          tag: "multi_select_static",
+          name: "multi",
+          label: { tag: "plain_text", content: "Multiple choices" },
+          selected_values: ["one", "two", "three", "four", "five"],
+          options: ["one", "two", "three", "four", "five", "six"].map((value) => ({
+            text: { tag: "plain_text", content: `Long ${value} choice` },
+            value,
+          })),
+        },
+        {
+          tag: "select_person",
+          name: "person",
+          label: { tag: "plain_text", content: "Person" },
+          options: [{ value: "ou_ada" }, { value: "ou_grace" }],
+        },
+        {
+          tag: "button",
+          form_action_type: "submit",
+          text: { tag: "plain_text", content: "Submit choices" },
+        },
+      ],
+    }],
+  },
+};
+
 export function OverlayCases(): React.JSX.Element {
   const [actions, setActions] = useState<unknown[]>([]);
   return (
@@ -204,6 +257,27 @@ createRoot(document.getElementById("root")!).render(
         </section>
       ))}
       <OverlayCases />
+      <section id="case-choices-pc" style={{ width: 400 }}>
+        <CardRenderer
+          card={choiceVisualCard}
+          onAction={() => {}}
+          resolvePerson={(id) => ({
+            id,
+            name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+          })}
+        />
+      </section>
+      <section id="case-choices-mobile" style={{ width: 390 }}>
+        <CardRenderer
+          card={choiceVisualCard}
+          device="mobile"
+          onAction={() => {}}
+          resolvePerson={(id) => ({
+            id,
+            name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+          })}
+        />
+      </section>
     </main>
   </React.StrictMode>,
 );

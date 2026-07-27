@@ -352,3 +352,69 @@ test("image Dialog handles arrows, trapped Tab, Escape, and outside press", asyn
   await expect(trigger).toBeFocused();
   expect(await overlayActions(page)).toEqual([]);
 });
+
+test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-pc");
+  const root = host.locator(".fcr-root");
+  await expect(root).toBeVisible();
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  expect(await host.locator(".fcr-choice-chip").count()).toBe(3);
+  await host.getByRole("combobox", { name: "Searchable Combobox" }).click();
+  const popup = host.getByRole("dialog", { name: "Searchable Combobox选项" });
+  await expect(popup).toBeVisible();
+  await expect(host).toHaveScreenshot("card-choices-pc-compact.png");
+});
+
+test("mobile choices use a keyboard-safe Drawer without horizontal overflow", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  const root = host.locator(".fcr-root");
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  await host.getByRole("button", { name: "Multiple choices，打开选项" }).click();
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByRole("combobox", { name: "搜索Multiple choices" }))
+    .toBeFocused();
+  const bounds = await drawer.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
+  await expect(drawer).toHaveScreenshot("card-choices-mobile-drawer.png");
+});
+
+test("Select and Combobox preserve real-browser keyboard selection semantics", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-pc");
+  const select = host.getByRole("combobox", { name: "Small Select" });
+  await select.focus();
+  await select.press("ArrowDown");
+  const selected = host.getByRole("option", { name: "Option two" });
+  await expect(selected).toBeFocused();
+  await selected.press("End");
+  const last = host.getByRole("option", { name: "Option three" });
+  await expect(last).toBeFocused();
+  await last.press("Enter");
+  await expect(select).toBeFocused();
+  await expect(select).toContainText("Option three");
+
+  const combobox = host.getByRole("combobox", { name: "Searchable Combobox" });
+  await combobox.click();
+  const search = host.getByRole("combobox", { name: "搜索Searchable Combobox" });
+  await search.fill("option 12");
+  const match = host.getByRole("option", { name: "Search option 12" });
+  await expect(match).toBeVisible();
+  await search.press("ArrowDown");
+  await search.press("Enter");
+  await expect(host.getByRole("dialog", {
+    name: "Searchable Combobox选项",
+  })).toBeHidden();
+});
