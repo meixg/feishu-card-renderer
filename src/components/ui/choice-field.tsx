@@ -11,6 +11,7 @@ export type ChoiceOption = Readonly<{
   label: string;
   searchText: string;
   disabled: boolean;
+  resourceState?: "loading" | "error";
 }>;
 
 type ChoiceFieldProps = Readonly<{
@@ -68,6 +69,35 @@ function ChoiceStatus({ total }: { total: number }) {
           : `${total} 个匹配项`}
       </ComboboxPrimitive.Status>
     </>
+  );
+}
+
+function ChoiceResourceStatus({
+  label,
+  options,
+}: {
+  label: string;
+  options: readonly ChoiceOption[];
+}) {
+  const loading = options.filter((option) =>
+    option.resourceState === "loading").length;
+  const errors = options.filter((option) =>
+    option.resourceState === "error").length;
+  const messages = [
+    loading > 0 ? `正在加载 ${loading} 个人员选项` : "",
+    errors > 0 ? `${errors} 个人员选项加载失败` : "",
+  ].filter(Boolean);
+  if (messages.length === 0) return null;
+  return (
+    <span
+      aria-atomic="true"
+      aria-label={`${label}人员解析状态`}
+      aria-live="polite"
+      className="fcr-sr-only"
+      role="status"
+    >
+      {messages.join("；")}
+    </span>
   );
 }
 
@@ -520,7 +550,15 @@ function MobileDrawer(props: ChoiceFieldProps) {
 }
 
 export function ChoiceField(props: ChoiceFieldProps) {
-  if (props.mobile) return <MobileDrawer {...props} />;
-  if (!props.multiple && !props.searchable) return <SelectField {...props} />;
-  return <PopupCombobox {...props} />;
+  const field = props.mobile
+    ? <MobileDrawer {...props} />
+    : !props.multiple && !props.searchable
+      ? <SelectField {...props} />
+      : <PopupCombobox {...props} />;
+  return (
+    <>
+      {field}
+      <ChoiceResourceStatus label={props.label} options={props.options} />
+    </>
+  );
 }

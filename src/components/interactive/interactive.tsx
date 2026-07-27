@@ -158,14 +158,23 @@ export function Input({ element, path }: { element: InputElement; path: string }
 
 type Single = SelectStaticElement | SelectPersonElement;
 
-function PersonNameProbe({ id, token, onName }: {
+type PersonResolution = Readonly<{
+  status: "loading" | "ready" | "error";
+  name?: string;
+}>;
+
+function PersonNameProbe({ id, token, onResolution }: {
   id: string;
   token: string;
-  onName: (token: string, name: string | undefined) => void;
+  onResolution: (token: string, resolution: PersonResolution) => void;
 }) {
   const resource = usePersonResource(id);
+  const status = resource?.status ?? "error";
   const name = resource?.status === "ready" ? resource.value?.name : undefined;
-  useEffect(() => onName(token, name), [name, onName, token]);
+  useEffect(
+    () => onResolution(token, { status, ...(name ? { name } : {}) }),
+    [name, onResolution, status, token],
+  );
   return null;
 }
 
@@ -176,31 +185,44 @@ function useChoiceOptions(
   choices: readonly ChoiceOption[];
   probes: React.ReactNode;
 } {
-  const [personNames, setPersonNames] = useState<Record<string, string>>({});
+  const [personResolutions, setPersonResolutions] = useState<
+    Record<string, PersonResolution>
+  >({});
   const isPerson = element.tag === "select_person" ||
     element.tag === "multi_select_person";
-  const onName = useCallback((token: string, name: string | undefined) => {
-    setPersonNames((current) => {
-      if (current[token] === name || (!name && !(token in current))) return current;
-      const next = { ...current };
-      if (name) next[token] = name;
-      else delete next[token];
-      return next;
+  const onResolution = useCallback((
+    token: string,
+    resolution: PersonResolution,
+  ) => {
+    setPersonResolutions((current) => {
+      const previous = current[token];
+      if (previous?.status === resolution.status &&
+        previous.name === resolution.name) return current;
+      return { ...current, [token]: resolution };
     });
   }, []);
   const choices = useMemo(() => (element.options ?? []).map((option, index) => {
     const token = optionToken(path, index);
     const raw = rawOptionValue(option);
-    const supplied = optionText(option);
-    const resolved = personNames[token];
-    const label = option.text?.content ?? resolved ?? (supplied || "未命名选项");
+    const supplied = isPerson ? option.text?.content ?? "" : optionText(option);
+    const resolution = personResolutions[token];
+    const resolved = resolution?.name;
+    const fallback = resolution?.status === "loading"
+      ? "人员信息加载中"
+      : resolution?.status === "error"
+        ? "人员信息不可用"
+        : "未命名选项";
+    const label = option.text?.content ?? resolved ?? (supplied || fallback);
     return {
       token,
       label,
       searchText: [label, supplied, resolved].filter(Boolean).join(" "),
       disabled: option.disabled === true || raw === undefined,
+      ...(resolution?.status === "loading" || resolution?.status === "error"
+        ? { resourceState: resolution.status }
+        : {}),
     };
-  }), [element.options, path, personNames]);
+  }), [element.options, isPerson, path, personResolutions]);
   const probes = isPerson
     ? (element.options ?? []).map((option, index) => {
         const value = rawOptionValue(option);
@@ -208,7 +230,7 @@ function useChoiceOptions(
           ? <PersonNameProbe
               id={value}
               key={optionToken(path, index)}
-              onName={onName}
+              onResolution={onResolution}
               token={optionToken(path, index)}
             />
           : null;

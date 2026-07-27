@@ -262,6 +262,61 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
       .toEqual(["ou_a", "ou_b"]);
   });
 
+  it("exposes person loading and error states without leaking supplied IDs", async () => {
+    let finishLoading: ((person: {
+      id: string;
+      name: string;
+    }) => void) | undefined;
+    const loading = new Promise<{ id: string; name: string }>((resolve) => {
+      finishLoading = resolve;
+    });
+    const resolvePerson = vi.fn((id: string) =>
+      id === "ou_loading"
+        ? loading
+        : Promise.reject(new Error("resolver unavailable")));
+    const { container } = render(
+      <CardRenderer
+        card={{
+          schema: "2.0",
+          body: { elements: [{
+            tag: "select_person",
+            name: "person-status",
+            label: text("Person status"),
+            options: [{ value: "ou_loading" }, { value: "ou_error" }],
+          }] },
+        }}
+        onAction={() => {}}
+        resolvePerson={resolvePerson}
+      />,
+    );
+
+    const status = await screen.findByRole("status", {
+      name: "Person status人员解析状态",
+    });
+    await waitFor(() => {
+      expect(status).toHaveTextContent("正在加载 1 个人员选项");
+      expect(status).toHaveTextContent("1 个人员选项加载失败");
+    });
+    expect(container).not.toHaveTextContent(/ou_loading|ou_error/);
+
+    openChoice("Person status");
+    expect(screen.getByRole("option", { name: "人员信息加载中" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "人员信息不可用" }))
+      .toBeInTheDocument();
+
+    await act(async () => {
+      finishLoading?.({ id: "ou_loading", name: "Ada Lovelace" });
+      await loading;
+    });
+    expect(await screen.findByRole("option", { name: "Ada Lovelace" }))
+      .toBeInTheDocument();
+    expect(status).not.toHaveTextContent("正在加载");
+    expect(status).toHaveTextContent("1 个人员选项加载失败");
+    expect(resolvePerson.mock.calls.map(([id]) => id).sort())
+      .toEqual(["ou_error", "ou_loading"]);
+  });
+
   it("preserves disabled and confirm semantics without search actions", () => {
     const onAction = vi.fn();
     render(<CardRenderer onAction={onAction} card={{
