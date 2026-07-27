@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type {
   ButtonElement, CheckerElement, DatePickerElement, DateTimePickerElement,
   InputElement, MultiSelectPersonElement, MultiSelectStaticElement,
@@ -10,13 +10,17 @@ import {
   actionsFor, browserTimezone, serializableValue, sourceFor,
 } from "../../interactions/behaviors";
 import { ConfirmDialog } from "../primitives/ConfirmDialog";
-import { useImageResource } from "../../renderer/resources";
+import { useImageResource, usePersonResource } from "../../renderer/resources";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import {
+  ChoiceField,
+  type ChoiceOption,
+} from "../ui/choice-field";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -51,7 +55,8 @@ function useTips(element: {
   };
 }
 
-const rawOptionValue = (option: SelectOption): OptionValue | undefined => {
+const rawOptionValue = (option?: SelectOption): OptionValue | undefined => {
+  if (!option) return undefined;
   if (typeof option.value === "number" && !Number.isFinite(option.value)) {
     return undefined;
   }
@@ -152,69 +157,165 @@ export function Input({ element, path }: { element: InputElement; path: string }
 }
 
 type Single = SelectStaticElement | SelectPersonElement;
+
+type PersonResolution = Readonly<{
+  status: "loading" | "ready" | "error";
+  name?: string;
+}>;
+
+function PersonNameProbe({ id, token, onResolution }: {
+  id: string;
+  token: string;
+  onResolution: (token: string, resolution: PersonResolution) => void;
+}) {
+  const resource = usePersonResource(id);
+  const status = resource?.status ?? "error";
+  const name = resource?.status === "ready" ? resource.value?.name : undefined;
+  useEffect(
+    () => onResolution(token, { status, ...(name ? { name } : {}) }),
+    [name, onResolution, status, token],
+  );
+  return null;
+}
+
+function useChoiceOptions(
+  element: Single | Multi,
+  path: string,
+): {
+  choices: readonly ChoiceOption[];
+  probes: React.ReactNode;
+} {
+  const [personResolutions, setPersonResolutions] = useState<
+    Record<string, PersonResolution>
+  >({});
+  const isPerson = element.tag === "select_person" ||
+    element.tag === "multi_select_person";
+  const onResolution = useCallback((
+    token: string,
+    resolution: PersonResolution,
+  ) => {
+    setPersonResolutions((current) => {
+      const previous = current[token];
+      if (previous?.status === resolution.status &&
+        previous.name === resolution.name) return current;
+      return { ...current, [token]: resolution };
+    });
+  }, []);
+  const choices = useMemo(() => (element.options ?? []).map((option, index) => {
+    const token = optionToken(path, index);
+    const raw = rawOptionValue(option);
+    const supplied = isPerson ? option.text?.content ?? "" : optionText(option);
+    const resolution = personResolutions[token];
+    const resolved = resolution?.name;
+    const fallback = resolution?.status === "loading"
+      ? "人员信息加载中"
+      : resolution?.status === "error"
+        ? "人员信息不可用"
+        : "未命名选项";
+    const label = option.text?.content ?? resolved ?? (supplied || fallback);
+    return {
+      token,
+      label,
+      searchText: [label, supplied, resolved].filter(Boolean).join(" "),
+      disabled: option.disabled === true || raw === undefined,
+      ...(resolution?.status === "loading" || resolution?.status === "error"
+        ? { resourceState: resolution.status }
+        : {}),
+    };
+  }), [element.options, isPerson, path, personResolutions]);
+  const probes = isPerson
+    ? (element.options ?? []).map((option, index) => {
+        const value = rawOptionValue(option);
+        return typeof value === "string"
+          ? <PersonNameProbe
+              id={value}
+              key={optionToken(path, index)}
+              onResolution={onResolution}
+              token={optionToken(path, index)}
+            />
+          : null;
+      })
+    : null;
+  return { choices, probes };
+}
+
 export function SingleSelect({ element, path }: { element: Single; path: string }) {
   const indexed = typeof element.initial_index === "number"
-    ? element.options?.[element.initial_index]?.value : undefined;
-  const initial = element.initial_option ??
-    (typeof indexed === "string" || typeof indexed === "boolean" ||
-      typeof indexed === "number" && Number.isFinite(indexed) ? indexed : "");
+    ? rawOptionValue(element.options?.[element.initial_index] as SelectOption)
+    : undefined;
+  const initial = element.initial_option ?? indexed ?? "";
   const field = useField(element, initial);
   const tips = useTips(element);
+  const { device, locale } = useRendererContext();
+  const { choices, probes } = useChoiceOptions(element, path);
   const selectedIndex = (element.options ?? []).findIndex((option) =>
     sameOptionValue(rawOptionValue(option), field.value));
-  return <><label className="fcr-field">{element.label?.content ??
-    element.placeholder?.content ?? element.name ?? "选择"}
-    <select aria-label={element.label?.content ?? element.placeholder?.content ??
-      element.name ?? "选择"} value={selectedIndex < 0
-        ? "" : optionToken(path, selectedIndex)}
-      aria-describedby={tips.describedBy}
-      disabled={field.disabled} required={element.required}
-      onChange={(event) => {
+  const label = element.label?.content ?? element.placeholder?.content ??
+    element.name ?? "选择";
+  return <><div className="fcr-field">
+    <span>{label}</span>
+    <ChoiceField
+      describedBy={tips.describedBy}
+      disabled={field.disabled}
+      label={label}
+      locale={locale}
+      mobile={device === "mobile"}
+      multiple={false}
+      onValueChange={(token) => {
+        if (typeof token !== "string") return;
         const index = (element.options ?? []).findIndex((_, optionIndex) =>
-          optionToken(path, optionIndex) === event.target.value);
+          optionToken(path, optionIndex) === token);
         const value = index < 0 ? "" :
           rawOptionValue(element.options?.[index] as SelectOption);
         if (value !== undefined || index < 0) field.set(value ?? "", path);
-      }}>
-      <option value="">{element.placeholder?.content ?? "请选择"}</option>
-      {(element.options ?? []).map((option, index) =>
-        <option key={optionToken(path, index)} value={optionToken(path, index)}
-          disabled={option.disabled || rawOptionValue(option) === undefined}>
-          {optionText(option)}
-        </option>)}
-    </select>
-  </label>{tips.nodes}{field.confirmDialog}</>;
+      }}
+      options={choices}
+      placeholder={element.placeholder?.content ?? "请选择"}
+      required={element.required}
+      searchable={element.tag === "select_person" || choices.length >= 8}
+      value={selectedIndex < 0 ? "" : optionToken(path, selectedIndex)}
+    />
+  </div>{probes}{tips.nodes}{field.confirmDialog}</>;
 }
 
 type Multi = MultiSelectStaticElement | MultiSelectPersonElement;
 export function MultiSelect({ element, path }: { element: Multi; path: string }) {
   const field = useField(element, element.selected_values ?? []);
   const tips = useTips(element);
+  const { device, locale } = useRendererContext();
+  const { choices, probes } = useChoiceOptions(element, path);
   const selectedTokens = (element.options ?? []).flatMap((option, index) => {
     const value = rawOptionValue(option);
     return value !== undefined && includesOption(field.value, value)
       ? [optionToken(path, index)] : [];
   });
-  return <><label className="fcr-field">{element.label?.content ?? element.name ?? "多选"}
-    <select multiple aria-label={element.label?.content ?? element.name ?? "多选"}
-      value={selectedTokens}
-      aria-describedby={tips.describedBy}
-      disabled={field.disabled} required={element.required}
-      onChange={(event) => field.set([...event.target.selectedOptions]
-        .flatMap(({ value: token }) => {
+  const label = element.label?.content ?? element.name ?? "多选";
+  return <><div className="fcr-field">
+    <span>{label}</span>
+    <ChoiceField
+      describedBy={tips.describedBy}
+      disabled={field.disabled}
+      label={label}
+      locale={locale}
+      mobile={device === "mobile"}
+      multiple
+      onValueChange={(tokens) => {
+        if (!Array.isArray(tokens)) return;
+        field.set(tokens.flatMap((token) => {
           const index = (element.options ?? []).findIndex((_, optionIndex) =>
             optionToken(path, optionIndex) === token);
           const value = index < 0 ? undefined :
             rawOptionValue(element.options?.[index] as SelectOption);
           return value === undefined ? [] : [value];
-        }), path)}>
-      {(element.options ?? []).map((option, index) =>
-        <option key={optionToken(path, index)} value={optionToken(path, index)}
-          disabled={option.disabled || rawOptionValue(option) === undefined}>
-          {optionText(option)}
-        </option>)}
-    </select>
-  </label>{tips.nodes}{field.confirmDialog}</>;
+        }), path);
+      }}
+      options={choices}
+      placeholder="请选择"
+      required={element.required}
+      searchable
+      value={selectedTokens}
+    />
+  </div>{probes}{tips.nodes}{field.confirmDialog}</>;
 }
 
 type Picker = DatePickerElement | TimePickerElement | DateTimePickerElement;

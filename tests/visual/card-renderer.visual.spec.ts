@@ -352,3 +352,159 @@ test("image Dialog handles arrows, trapped Tab, Escape, and outside press", asyn
   await expect(trigger).toBeFocused();
   expect(await overlayActions(page)).toEqual([]);
 });
+
+test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-pc");
+  const root = host.locator(".fcr-root");
+  await expect(root).toBeVisible();
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  expect(await host.locator(".fcr-choice-chip").count()).toBe(3);
+  await host.getByRole("combobox", { name: "Searchable Combobox" }).click();
+  const popup = host.getByRole("dialog", { name: "Searchable Combobox选项" });
+  await expect(popup).toBeVisible();
+  await expect(host).toHaveScreenshot("card-choices-pc-compact.png");
+});
+
+test("mobile choices use a keyboard-safe Drawer without horizontal overflow", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  const root = host.locator(".fcr-root");
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  await host.getByRole("button", { name: "Multiple choices，打开选项" }).click();
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByRole("combobox", { name: "搜索Multiple choices" }))
+    .toBeFocused();
+  const bounds = await drawer.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
+  await expect(drawer).toHaveScreenshot("card-choices-mobile-drawer.png");
+});
+
+test("Select and Combobox preserve real-browser keyboard selection semantics", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-pc");
+  const select = host.getByRole("combobox", { name: "Small Select" });
+  await select.focus();
+  await select.press("Space");
+  const selected = host.getByRole("option", { name: "Option two" });
+  await expect(selected).toBeFocused();
+  await selected.press("Home");
+  const first = host.getByRole("option", { name: "Option one" });
+  await expect(first).toBeFocused();
+  await first.press("Space");
+  await expect(select).toBeFocused();
+  await expect(select).toContainText("Option one");
+
+  await select.press("Space");
+  await first.press("End");
+  const last = host.getByRole("option", { name: "Option three" });
+  await expect(last).toBeFocused();
+  await last.press("Escape");
+  await expect(select).toBeFocused();
+  await expect(select).toContainText("Option one");
+
+  const combobox = host.getByRole("combobox", { name: "Searchable Combobox" });
+  await combobox.click();
+  const search = host.getByRole("combobox", { name: "搜索Searchable Combobox" });
+  await expect(search).toBeFocused();
+  await search.fill("option 12");
+  const match = host.getByRole("option", { name: "Search option 12" });
+  await expect(match).toBeVisible();
+  await search.press("ArrowDown");
+  await search.press("Enter");
+  await expect(host.getByRole("dialog", {
+    name: "Searchable Combobox选项",
+  })).toBeHidden();
+
+  await combobox.click();
+  await host.getByText("Small Select", { exact: true }).click();
+  await expect(host.getByRole("dialog", {
+    name: "Searchable Combobox选项",
+  })).toBeHidden();
+
+  const multi = host.getByRole("combobox", {
+    name: "Multiple choices，打开选项",
+  });
+  await multi.click();
+  const multiSearch = host.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  const done = host.getByRole("button", { name: "完成" });
+  await expect(multiSearch).toBeFocused();
+  await multiSearch.press("Tab");
+  await expect(done).toBeFocused();
+  await done.press("Shift+Tab");
+  await expect(multiSearch).toBeFocused();
+  await multiSearch.press("Escape");
+  await expect(done).toBeHidden();
+  await expect(multi).toBeFocused();
+});
+
+test("mobile Drawer closes by Esc, close button, and downward swipe with focus return", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  const trigger = host.getByRole("button", {
+    name: "Multiple choices，打开选项",
+  });
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  const search = host.getByRole("combobox", { name: "搜索Multiple choices" });
+
+  await trigger.click();
+  await expect(search).toBeFocused();
+  await search.press("Shift+Tab");
+  await expect(host.getByRole("button", { name: "关闭选择器" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(search).toBeFocused();
+  await search.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await host.getByRole("button", { name: "关闭选择器" }).click();
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await expect(drawer).toBeVisible();
+  const handle = host.locator(".fcr-drawer-handle");
+  const bounds = await handle.boundingBox();
+  expect(bounds).not.toBeNull();
+  const x = bounds!.x + bounds!.width / 2;
+  const startY = bounds!.y + bounds!.height / 2;
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x, y: startY }],
+  });
+  for (const offset of [100, 200, 300, 400]) {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x, y: Math.min(startY + offset, 830) }],
+    });
+  }
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await session.detach();
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
