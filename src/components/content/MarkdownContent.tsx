@@ -3,8 +3,9 @@ import { Fragment, type ReactNode } from "react";
 import type { MarkdownAnalysis, MarkdownNode } from "../../markdown/bounded";
 import { MARKDOWN_LIMITS } from "../../markdown/bounded";
 import { safeUrl } from "../../styles/safe";
+import { MarkdownTable } from "./MarkdownTable";
 
-type Budget = { nodes: number; complexNodes: number };
+type Budget = { nodes: number; complexNodes: number; tableNodes: number };
 
 function sourceText(node: MarkdownNode): string {
   if (node.type === "image") return node.alt || "图片";
@@ -104,6 +105,10 @@ function renderNode(
       return <span className="fcr-markdown-image-alt">{node.alt || "图片"}</span>;
     case "html":
       return node.value;
+    case "table": {
+      return <MarkdownTable node={node} budget={budget}
+        renderCell={(cell) => children(cell, budget, depth + 2)} />;
+    }
     default:
       return sourceText(node);
   }
@@ -116,7 +121,11 @@ export function MarkdownContent({
 }): React.JSX.Element {
   const content = analysis.parseFailed
     ? <p>{analysis.fallback}</p>
-    : renderNode(analysis.tree, { nodes: 0, complexNodes: 0 }, 0);
+    : renderNode(
+        analysis.tree,
+        { nodes: 0, complexNodes: 0, tableNodes: 0 },
+        0,
+      );
   return <>
     {content}
     {analysis.limited && (

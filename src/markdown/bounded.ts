@@ -1,6 +1,8 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmStrikethroughFromMarkdown } from "mdast-util-gfm-strikethrough";
+import { gfmTableFromMarkdown } from "mdast-util-gfm-table";
 import { gfmStrikethrough } from "micromark-extension-gfm-strikethrough";
+import { gfmTable } from "micromark-extension-gfm-table";
 
 import type { CardDiagnostic, ProtocolPath } from "../schema/diagnostics";
 import { safeUrl } from "../styles/safe";
@@ -11,6 +13,9 @@ export const MARKDOWN_LIMITS = {
   depth: 12,
   nodes: 1_000,
   complexNodes: 200,
+  tableRows: 50,
+  tableColumns: 12,
+  tableNodes: 600,
 } as const;
 
 export type MarkdownNode = {
@@ -23,6 +28,7 @@ export type MarkdownNode = {
   start?: number | null;
   lang?: string | null;
   checked?: boolean | null;
+  align?: Array<"left" | "right" | "center" | null>;
   children?: MarkdownNode[];
 };
 
@@ -57,8 +63,11 @@ export function analyzeMarkdown(
   let characterLimited = prefix.length !== content.length;
   try {
     const tree = fromMarkdown(prefix, {
-      extensions: [gfmStrikethrough()],
-      mdastExtensions: [gfmStrikethroughFromMarkdown()],
+      extensions: [gfmStrikethrough(), gfmTable()],
+      mdastExtensions: [
+        gfmStrikethroughFromMarkdown(),
+        gfmTableFromMarkdown(),
+      ],
     }) as MarkdownNode;
     decorateTaskListItems(tree);
     let nodes = 0;
@@ -67,13 +76,33 @@ export function analyzeMarkdown(
     let sawMarkup = false;
     let sawImage = false;
     let sawUnsafeUrl = false;
-    const pending: Array<{ node: MarkdownNode; depth: number }> = [
-      { node: tree, depth: 0 },
+    let tableNodes = 0;
+    const pending: Array<{
+      node: MarkdownNode;
+      depth: number;
+      inTable: boolean;
+    }> = [
+      { node: tree, depth: 0, inTable: false },
     ];
     while (pending.length > 0) {
       const current = pending.pop();
       if (!current) break;
       nodes += 1;
+      const inTable = current.inTable || current.node.type === "table";
+      if (inTable && [
+        "table",
+        "tableRow",
+        "tableCell",
+      ].includes(current.node.type)) {
+        tableNodes += 1;
+        if (tableNodes > MARKDOWN_LIMITS.tableNodes) structurallyLimited = true;
+      }
+      if (current.node.type === "table") {
+        const rows = current.node.children ?? [];
+        const columns = rows[0]?.children?.length ?? 0;
+        if (rows.length - 1 > MARKDOWN_LIMITS.tableRows ||
+          columns > MARKDOWN_LIMITS.tableColumns) structurallyLimited = true;
+      }
       if (current.depth > MARKDOWN_LIMITS.depth ||
         nodes > MARKDOWN_LIMITS.nodes) structurallyLimited = true;
       if (["link", "image", "listItem"].includes(current.node.type)) {
@@ -86,7 +115,11 @@ export function analyzeMarkdown(
         sawUnsafeUrl = true;
       }
       for (const child of current.node.children ?? []) {
-        pending.push({ node: child, depth: current.depth + 1 });
+        pending.push({
+          node: child,
+          depth: current.depth + 1,
+          inTable,
+        });
       }
     }
     const limited = characterLimited || structurallyLimited;

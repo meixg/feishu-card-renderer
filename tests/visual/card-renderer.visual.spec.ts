@@ -36,6 +36,42 @@ test("Markdown code scrolls locally without widening a compact mobile card", asy
   );
 });
 
+test("Markdown tables scroll locally without widening 400/600/fill cards", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+
+  for (const width of ["compact", "default", "fill"]) {
+    const host = page.locator(`#case-markdown-table-${width}`);
+    const wrapper = host.locator(".fcr-markdown-table-wrap");
+    await expect(wrapper.getByRole("table")).toBeVisible();
+
+    const measurements = await host.evaluate((element) => {
+      const root = element.querySelector<HTMLElement>(".fcr-root")!;
+      const scroll = element.querySelector<HTMLElement>(
+        ".fcr-markdown-table-wrap",
+      )!;
+      return {
+        hostWidth: element.clientWidth,
+        cardWidth: root.clientWidth,
+        cardScrollWidth: root.scrollWidth,
+        wrapperWidth: scroll.clientWidth,
+        wrapperScrollWidth: scroll.scrollWidth,
+      };
+    });
+    expect(measurements.cardWidth).toBeLessThanOrEqual(measurements.hostWidth);
+    expect(measurements.cardScrollWidth).toBe(measurements.cardWidth);
+    expect(measurements.wrapperWidth).toBeLessThanOrEqual(
+      measurements.cardWidth,
+    );
+    if (width === "compact") {
+      expect(measurements.wrapperScrollWidth).toBeGreaterThan(
+        measurements.wrapperWidth,
+      );
+    }
+  }
+});
+
 test("chart light, dark, and mobile visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
   for (const name of ["chart-light", "chart-dark", "chart-mobile"]) {

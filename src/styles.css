@@ -106,6 +106,30 @@
   .fcr-markdown-truncated {
     display: block; margin-top: 8px; color: var(--fcr-color-text-secondary);
   }
+  .fcr-markdown-table-wrap {
+    max-width: 100%; min-width: 0; margin: 8px 0; overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+  .fcr-markdown-table-wrap:focus-visible {
+    outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
+  }
+  .fcr-markdown-table-wrap table {
+    width: max-content; min-width: 100%; border-collapse: collapse;
+    font-size: 0.93em; line-height: 1.4;
+  }
+  .fcr-markdown-table-wrap th, .fcr-markdown-table-wrap td {
+    min-width: 6rem; max-width: 20rem; padding: 6px 8px;
+    border: 1px solid var(--fcr-color-border); overflow-wrap: anywhere;
+    text-align: left; vertical-align: top;
+  }
+  .fcr-markdown-table-wrap th {
+    background: color-mix(
+      in srgb,
+      var(--fcr-color-surface),
+      var(--fcr-color-border) 30%
+    );
+    font-weight: 600;
+  }
   .fcr-hr { width: 100%; border: 0; border-top: 1px solid var(--fcr-color-border); }
   .fcr-image { margin: 0; overflow: hidden; }
   .fcr-image img { display: block; width: 100%; height: auto; }

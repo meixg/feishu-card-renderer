@@ -5,6 +5,7 @@ import { CardRenderer } from "../../src";
 import {
   chartRendererCard,
   completeMarkdownCodeTasksCard,
+  completeMarkdownTableCard,
   completeRendererCard,
 } from "../../src/fixtures/renderer-cards";
 import { completeContainerCard } from "../../src/fixtures/container-cards";
@@ -54,6 +55,19 @@ createRoot(document.getElementById("root")!).render(
       </section>
       <section id="case-containers"><CardRenderer
         card={completeContainerCard} /></section>
+      {([
+        ["compact", 400],
+        ["default", 600],
+        ["fill", 900],
+      ] as const).map(([width, pixels]) => (
+        <section id={`case-markdown-table-${width}`} key={`table-${width}`}
+          style={{ width: pixels }}>
+          <CardRenderer card={{
+            ...completeMarkdownTableCard,
+            config: { update_multi: true, width_mode: width },
+          }} />
+        </section>
+      ))}
       <section id="case-chart-light"><CardRenderer
         card={chartRendererCard} /></section>
       <section id="case-chart-dark"><CardRenderer colorScheme="dark"

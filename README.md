@@ -195,7 +195,10 @@ import type {
 `onDiagnostic` 报告 recoverable diagnostic。行内代码可在窄卡片中安全断行；
 围栏与缩进代码块保留空白并仅在代码块内部横向滚动，围栏语言以文本标签呈现，
 不做语法高亮。GFM 任务列表呈现只读状态，不可编辑且不会产生 `CardAction`。
-Markdown 表格尚未支持。
+Markdown 表格保留 `table`、表头、行和单元格语义，并支持 GFM 列对齐。表格默认
+使用紧凑布局；宽度不足时只有表格容器横向滚动，不会猜测主列或转换成移动卡片。
+除上述全局上限外，每个 Markdown 内容最多保留 50 个表体行、12 列和 600 个表格
+语法节点；超限时显示安全前缀与截断提示，并报告 recoverable diagnostic。
 
 逐组件和字段级支持情况请查看 [1.0 兼容矩阵](docs/compatibility-matrix.md)。官方协议仍可能演进；如文档存在冲突，以最新的飞书 JSON 2.0 组件子文档为准。
 

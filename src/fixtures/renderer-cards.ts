@@ -104,6 +104,52 @@ export const invalidMarkdownFoundationCard = {
   },
 } as const;
 
+export const completeMarkdownTableCard: Card = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        "团队排期",
+        "",
+        "| 负责人 | 状态 | 开始时间 | 结束时间 | 说明 |",
+        "| :--- | :---: | ---: | ---: | ---: |",
+        "| Alice | 进行中 | 周一 | 周三 | 包含可读的较长说明 |",
+        "| Bob | 已完成 | 周二 | 周四 | |",
+        "| Carol | 待开始 | 周三 | 周五 | supercalifragilisticexpialidocious-without-breaks |",
+      ].join("\n"),
+    }],
+  },
+};
+
+const oversizedTableHeader = `| ${Array.from(
+  { length: 16 },
+  (_, index) => `列 ${index + 1}`,
+).join(" | ")} |`;
+const oversizedTableDivider = `| ${Array.from(
+  { length: 16 },
+  () => "---",
+).join(" | ")} |`;
+const oversizedTableRows = Array.from({ length: 60 }, (_, row) =>
+  `| ${Array.from(
+    { length: 16 },
+    (_, column) => `R${row + 1}C${column + 1}`,
+  ).join(" | ")} |`);
+
+export const oversizedMarkdownTableCard: Card = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        oversizedTableHeader,
+        oversizedTableDivider,
+        ...oversizedTableRows,
+      ].join("\n"),
+    }],
+  },
+};
+
 export const chartRendererCard: Card = {
   schema: "2.0",
   body: {
