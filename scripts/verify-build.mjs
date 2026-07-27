@@ -1,4 +1,4 @@
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
@@ -36,6 +36,32 @@ await runFile("node_modules/.bin/tsc", [
 
 if (entry.includes("react.production.min") || entry.includes("react.development")) {
   throw new Error("React implementation was bundled into the library output.");
+}
+if (!entry.includes("micromark") || !entry.includes("mdast")) {
+  throw new Error(
+    "The ESM renderer entry must contain the bundled Markdown parser implementation.",
+  );
+}
+if (/(?:from|import\()\s*["'](?:mdast-util|micromark-extension)/.test(entry)) {
+  throw new Error("Markdown parser packages leaked as unresolved ESM imports.");
+}
+
+let networkCalls = 0;
+const originalFetch = globalThis.fetch;
+globalThis.fetch = () => {
+  networkCalls += 1;
+  throw new Error("The package entry performed a network request during import.");
+};
+try {
+  const rootModule = await import("@meixg/feishu-card-renderer");
+  if (typeof rootModule.CardRenderer !== "function") {
+    throw new Error("The ESM package root must export CardRenderer.");
+  }
+} finally {
+  globalThis.fetch = originalFetch;
+}
+if (networkCalls !== 0) {
+  throw new Error("The package entry performed network work during import.");
 }
 
 const vchartChunks = files.filter((file) => /^vchart-runtime-.*\.js$/.test(file));
@@ -76,4 +102,15 @@ if (typeof schemaModule.validateCard !== "function" ||
   throw new Error("The schema subpath must export validation and normalization.");
 }
 
-console.log("Build contract verified: ESM, schema subpath, declarations, scoped CSS, React external, lazy VChart chunk.");
+const entryBytes = (await stat("dist/index.js")).size;
+const sharedBytes = (await stat(
+  join("dist", files.find((file) => /^index-.*\.js$/.test(file)) ?? ""),
+)).size;
+console.log(
+  "Build contract verified: ESM, bundled Markdown parser, import-time DOM/network safety, "
+  + "schema subpath, declarations, scoped CSS, React external, lazy VChart chunk.",
+);
+console.log(
+  `Bundle metrics (raw): eager renderer ${entryBytes} B + shared ${sharedBytes} B; `
+  + `lazy VChart ${(await stat(join("dist", vchartChunks[0]))).size} B.`,
+);

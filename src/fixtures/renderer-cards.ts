@@ -203,6 +203,126 @@ export const oversizedMarkdownTableCard: Card = {
   },
 };
 
+const completeMarkdownReleaseContent = [
+  "# 发布验收标题",
+  "",
+  "段落包含 *强调*、**粗体**、~~删除线~~、[安全链接](https://example.com) 和 `inline_code`。",
+  "",
+  "## 次级标题",
+  "",
+  "- 无序项",
+  "  1. 嵌套有序项",
+  "- [ ] 待处理任务",
+  "  - [x] 已完成的嵌套任务",
+  "",
+  "> 引用内容",
+  "",
+  "---",
+  "",
+  "```typescript",
+  "const release = 'bounded';",
+  "```",
+  "",
+  "    indented code",
+  "      preserved whitespace",
+  "",
+  "| 左对齐 | 居中 | 右对齐 |",
+  "| :--- | :---: | ---: |",
+  "| A | B | C |",
+].join("\n");
+
+export const markdownReleaseFixtures = {
+  minimal: minimalMarkdownCard,
+  complete: {
+    schema: "2.0",
+    config: {
+      update_multi: true,
+      style: {
+        text_size: {
+          release_body: {
+            default: "normal",
+            pc: "heading",
+            mobile: "notation",
+          },
+        },
+      },
+    },
+    body: {
+      elements: [{
+        tag: "markdown",
+        element_id: "markdown_release",
+        content: completeMarkdownReleaseContent,
+        text_size: "release_body",
+        text_align: "center",
+        icon: {
+          tag: "standard_icon",
+          token: "info_outlined",
+          color: "blue",
+        },
+        margin: "4px 0px",
+      }],
+    },
+  },
+  defaults: {
+    schema: "2.0",
+    body: { elements: [{ tag: "markdown", content: "Defaults" }] },
+  },
+  invalid: {
+    schema: "2.0",
+    body: {
+      elements: [{
+        tag: "markdown",
+        content: 42,
+        text_size: "giant",
+        text_align: "justify",
+        icon: { tag: "custom_icon" },
+        margin: "100px",
+      }],
+    },
+  },
+  unknown: {
+    schema: "2.0",
+    body: {
+      elements: [{
+        tag: "markdown",
+        content: "Unknown fields stay forward-compatible.",
+        future_markdown_option: { preserved: true },
+      }],
+    },
+  },
+} as const;
+
+const markdownCard = (content: string) => ({
+  schema: "2.0",
+  body: {
+    elements: [
+      { tag: "markdown", content },
+      { tag: "div", text: { tag: "plain_text", content: "safe sibling" } },
+    ],
+  },
+} as const);
+
+export const adversarialMarkdownFixtures = {
+  longInput: markdownCard(`# Safe prefix\n\n${"x".repeat(25_000)}`),
+  deepNesting: markdownCard(`${"> ".repeat(20)}deep value`),
+  largeTable: oversizedMarkdownTableCard,
+  pathologicalDelimiters: markdownCard(
+    `delimiter prefix\n\n${"*_~`[\\".repeat(2_500)}`,
+  ),
+  manyLinks: markdownCard(
+    Array.from(
+      { length: 260 },
+      (_, index) => `[link ${index}](https://example.com/${index})`,
+    ).join(" "),
+  ),
+  hostileContent: markdownCard([
+    "[danger](javascript:alert(1))",
+    "<script src=https://attacker.example/payload.js></script>",
+    "<future-tag>visible extension source</future-tag>",
+    "![remote image](https://tracker.example/pixel.png)",
+  ].join("\n\n")),
+} as const;
+
 export const chartRendererCard: Card = {
   schema: "2.0",
   body: {

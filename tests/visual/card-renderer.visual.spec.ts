@@ -1,6 +1,22 @@
 import { expect, test } from "@playwright/test";
 import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";
 
+async function settleVisualLayout(
+  page: import("@playwright/test").Page,
+  selector: string,
+): Promise<void> {
+  await page.locator(selector).scrollIntoViewIfNeeded();
+  const charts = page.locator(`${selector} .fcr-chart`);
+  const count = await charts.count();
+  for (let index = 0; index < count; index += 1) {
+    await expect(charts.nth(index)).toHaveAttribute("data-state", "ready");
+    await expect(charts.nth(index).locator("canvas,svg")).not.toHaveCount(0);
+  }
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+}
+
 test("theme, device, and width visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
 
@@ -11,6 +27,7 @@ test("theme, device, and width visual baselines", async ({ page }) => {
     if (await chart.count() > 0) {
       await expect(chart).toHaveAttribute("data-state", "ready");
     }
+    await settleVisualLayout(page, `#case-${name}`);
     await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
   }
 });
@@ -19,6 +36,7 @@ test("container visual baseline", async ({ page }) => {
   await page.goto("/tests/visual/");
   const renderer = page.locator("#case-containers");
   await expect(renderer).toBeVisible();
+  await settleVisualLayout(page, "#case-containers");
   await expect(renderer).toHaveScreenshot("card-renderer-containers.png");
 });
 
@@ -83,8 +101,34 @@ test("Markdown native theme covers light/dark, PC/mobile, and every width", asyn
         const host = page.locator(`#case-markdown-theme-${name}`);
         const root = host.locator(".fcr-root");
         await expect(root).toBeVisible();
-        expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
-          .toBe(true);
+        const overflow = await host.evaluate((element) => {
+          const card = element.querySelector<HTMLElement>(".fcr-root")!;
+          const code = element.querySelector<HTMLElement>(
+            ".fcr-markdown-code-block",
+          )!;
+          const table = element.querySelector<HTMLElement>(
+            ".fcr-markdown-table-wrap",
+          )!;
+          return {
+            host: element.clientWidth,
+            card: card.clientWidth,
+            cardScroll: card.scrollWidth,
+            code: code.clientWidth,
+            codeScroll: code.scrollWidth,
+            codeOverflow: getComputedStyle(code).overflowX,
+            table: table.clientWidth,
+            tableScroll: table.scrollWidth,
+            tableOverflow: getComputedStyle(table).overflowX,
+          };
+        });
+        expect(overflow.card).toBeLessThanOrEqual(overflow.host);
+        expect(overflow.cardScroll).toBe(overflow.card);
+        expect(overflow.code).toBeLessThanOrEqual(overflow.card);
+        expect(overflow.table).toBeLessThanOrEqual(overflow.card);
+        expect(overflow.codeScroll).toBeGreaterThanOrEqual(overflow.code);
+        expect(overflow.tableScroll).toBeGreaterThanOrEqual(overflow.table);
+        expect(overflow.codeOverflow).toBe("auto");
+        expect(overflow.tableOverflow).toBe("auto");
         await expect(host).toHaveScreenshot(`markdown-theme-${name}.png`);
       }
     }
@@ -97,6 +141,7 @@ test("chart light, dark, and mobile visual baselines", async ({ page }) => {
     const renderer = page.locator(`#case-${name}`);
     await expect(renderer).toBeVisible();
     await expect(renderer.locator(".fcr-chart")).toHaveAttribute("data-state", "ready");
+    await settleVisualLayout(page, `#case-${name}`);
     await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
   }
 });
@@ -152,6 +197,10 @@ test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", a
         await expect(renderer.locator(".fcr-root")).toHaveClass(
           new RegExp(`fcr-device-${device}`),
         );
+        await settleVisualLayout(page, `#case-matrix-${name}`);
+        expect(await renderer.locator(".fcr-root").evaluate(
+          (node) => node.scrollWidth === node.clientWidth,
+        )).toBe(true);
         await expect(renderer).toHaveScreenshot(`card-matrix-${name}.png`);
       }
     }
