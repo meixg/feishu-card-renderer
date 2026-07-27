@@ -302,7 +302,56 @@
   .fcr-ui-field-description {
     margin: 0; color: var(--fcr-color-text-secondary); font-size: 12px;
   }
-  .fcr-ui-field-error { color: var(--fcr-color-danger); font-size: 12px; }
+  .fcr-ui-field-error {
+    margin: 0; color: var(--fcr-color-danger); font-size: 12px;
+  }
+  .fcr-ui-input, .fcr-ui-textarea {
+    width: 100%; min-width: 0; min-height: 34px;
+    border: 1px solid var(--fcr-color-border); border-radius: 6px;
+    padding: 6px 10px; outline: none; background: var(--fcr-color-surface);
+    color: inherit; color-scheme: light; font: inherit;
+  }
+  .fcr-theme-dark .fcr-ui-input, .fcr-theme-dark .fcr-ui-textarea {
+    color-scheme: dark;
+  }
+  .fcr-ui-textarea { min-height: 72px; resize: vertical; }
+  .fcr-ui-input::placeholder, .fcr-ui-textarea::placeholder {
+    color: var(--fcr-color-text-secondary);
+  }
+  .fcr-ui-input:disabled, .fcr-ui-textarea:disabled {
+    cursor: not-allowed; opacity: 0.55;
+  }
+  .fcr-ui-input:focus-visible, .fcr-ui-textarea:focus-visible {
+    border-color: var(--fcr-color-primary);
+    outline: 2px solid var(--fcr-color-primary); outline-offset: 1px;
+  }
+  .fcr-ui-field[data-invalid] .fcr-ui-input,
+  .fcr-ui-field[data-invalid] .fcr-ui-textarea,
+  .fcr-ui-field[data-invalid] .fcr-choice-control,
+  .fcr-ui-field[data-invalid] .fcr-choice-trigger {
+    border-color: var(--fcr-color-danger);
+  }
+  .fcr-ui-checkbox, .fcr-ui-radio {
+    position: relative; display: inline-grid; width: 18px; height: 18px;
+    flex: 0 0 18px; place-content: center;
+    border: 1px solid var(--fcr-color-border); outline: none;
+    background: var(--fcr-color-surface); color: var(--fcr-color-primary-contrast);
+  }
+  .fcr-ui-checkbox { border-radius: 5px; }
+  .fcr-ui-radio { border-radius: 50%; }
+  .fcr-ui-checkbox[data-checked], .fcr-ui-radio[data-checked] {
+    border-color: var(--fcr-color-primary); background: var(--fcr-color-primary);
+  }
+  .fcr-ui-checkbox[data-disabled], .fcr-ui-radio[data-disabled] {
+    cursor: not-allowed; opacity: 0.55;
+  }
+  .fcr-ui-checkbox:focus-visible, .fcr-ui-radio:focus-visible {
+    outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
+  }
+  .fcr-ui-checkbox-indicator { font-size: 13px; line-height: 1; }
+  .fcr-ui-radio-indicator {
+    width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+  }
   .fcr-ui-button {
     display: inline-flex; flex: 0 0 auto; align-items: center;
     justify-content: center; border: 1px solid transparent;
@@ -500,7 +549,90 @@
     background: transparent; color: inherit; font: inherit;
   }
   .fcr-drawer-content .fcr-choice-list { max-height: min(52dvh, 440px); }
-  .fcr-checker, .fcr-select-image label { display: flex; align-items: center; gap: 6px; }
+  .fcr-checker, .fcr-select-image-option {
+    display: flex; min-width: 0; align-items: center; gap: 7px;
+  }
+  .fcr-checker .fcr-ui-field-label { cursor: pointer; }
+  .fcr-select-image {
+    min-width: 0; margin: 0; border: 0; padding: 0;
+  }
+  .fcr-select-image-options, .fcr-ui-radio-group {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  .fcr-select-image-option {
+    min-height: 44px; border: 1px solid var(--fcr-color-border);
+    border-radius: 8px; padding: 7px; cursor: pointer;
+  }
+  .fcr-select-image-option:has([data-checked]) {
+    border-color: var(--fcr-color-primary);
+    background: color-mix(in srgb, var(--fcr-color-primary), transparent 92%);
+  }
+  .fcr-select-image-option img, .fcr-select-image-option .fcr-image-placeholder {
+    width: 32px; height: 32px; flex: 0 0 32px; border-radius: 5px;
+    object-fit: cover;
+  }
+  .fcr-ui-popover-positioner {
+    z-index: var(--fcr-z-index-overlay); max-width: var(--available-width);
+    outline: none;
+  }
+  .fcr-ui-popover-content {
+    max-width: var(--available-width); padding: 10px;
+    border: 1px solid var(--fcr-color-border); border-radius: 9px;
+    outline: none; background: var(--fcr-color-surface);
+    color: var(--fcr-color-text); box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
+    transform-origin: var(--transform-origin);
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+  .fcr-ui-popover-content[data-starting-style],
+  .fcr-ui-popover-content[data-ending-style] {
+    opacity: 0; transform: scale(0.98);
+  }
+  .fcr-date-icon { width: 16px; height: 16px; flex: 0 0 16px; }
+  .fcr-ui-calendar { width: 252px; font-size: 13px; }
+  .fcr-ui-calendar .rdp-months, .fcr-ui-calendar .rdp-month {
+    position: relative; width: 100%;
+  }
+  .fcr-ui-calendar .rdp-month_caption {
+    display: flex; min-height: 32px; align-items: center;
+    justify-content: center; font-weight: 600;
+  }
+  .fcr-ui-calendar .rdp-nav {
+    position: absolute; z-index: 1; inset: 0 0 auto;
+    display: flex; justify-content: space-between; pointer-events: none;
+  }
+  .fcr-ui-calendar .rdp-button_previous,
+  .fcr-ui-calendar .rdp-button_next {
+    width: 32px; height: 32px; border: 0; border-radius: 6px;
+    pointer-events: auto; background: transparent; color: inherit;
+  }
+  .fcr-ui-calendar .rdp-button_previous:focus-visible,
+  .fcr-ui-calendar .rdp-button_next:focus-visible,
+  .fcr-ui-calendar .rdp-day_button:focus-visible {
+    outline: 2px solid var(--fcr-color-primary); outline-offset: 1px;
+  }
+  .fcr-ui-calendar .rdp-month_grid {
+    width: 100%; border-collapse: collapse; table-layout: fixed;
+  }
+  .fcr-ui-calendar .rdp-weekday {
+    height: 28px; color: var(--fcr-color-text-secondary); font-weight: 400;
+  }
+  .fcr-ui-calendar .rdp-day { width: 36px; height: 34px; padding: 1px; }
+  .fcr-ui-calendar .rdp-day_button {
+    width: 32px; height: 32px; border: 0; border-radius: 6px;
+    background: transparent; color: inherit; font: inherit;
+  }
+  .fcr-ui-calendar .rdp-day_button:hover {
+    background: color-mix(in srgb, var(--fcr-color-primary), transparent 90%);
+  }
+  .fcr-ui-calendar .rdp-selected .rdp-day_button {
+    background: var(--fcr-color-primary); color: var(--fcr-color-primary-contrast);
+  }
+  .fcr-ui-calendar .rdp-today:not(.rdp-selected) .rdp-day_button {
+    color: var(--fcr-color-primary); font-weight: 700;
+  }
+  .fcr-ui-calendar .rdp-outside { opacity: 0.45; }
+  .fcr-ui-calendar .rdp-disabled { pointer-events: none; opacity: 0.35; }
   .fcr-field-tips {
     display: flex; flex-wrap: wrap; gap: 4px 8px;
     color: var(--fcr-color-text-secondary); font-size: 12px;

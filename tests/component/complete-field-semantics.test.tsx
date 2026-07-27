@@ -409,6 +409,6 @@ describe("complete field semantics", () => {
       }] },
     }} />);
     expect(screen.getByRole("checkbox", { name: "Disabled checker" }))
-      .toBeDisabled();
+      .toHaveAttribute("aria-disabled", "true");
   });
 });

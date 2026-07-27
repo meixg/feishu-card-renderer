@@ -51,6 +51,7 @@ export default defineConfig({
         "clsx",
         "tailwind-merge",
         /^@base-ui\/react(?:\/.*)?$/,
+        /^react-day-picker(?:\/.*)?$/,
       ],
     },
   },

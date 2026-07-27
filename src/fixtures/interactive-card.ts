@@ -70,9 +70,9 @@ export const interactiveCoverageByTag = {
   multi_select_static: ["selected_values", "Base UI multiple Combobox + chips"],
   select_person: ["initial_option/options", "resolved-data Combobox"],
   multi_select_person: ["selected_values/options", "resolved-data Combobox + chips"],
-  date_picker: ["initial_date", "native date keyboard"],
+  date_picker: ["initial_date", "PC Calendar + mobile native date keyboard"],
   picker_time: ["initial_time", "native time keyboard"],
   picker_datetime: ["initial_datetime", "native datetime keyboard"],
-  select_img: ["selected_values", "native radio/checkbox keyboard"],
-  checker: ["checked", "native checkbox keyboard"],
+  select_img: ["selected_values", "Base UI radio/checkbox keyboard"],
+  checker: ["checked", "Base UI checkbox keyboard"],
 } as const;

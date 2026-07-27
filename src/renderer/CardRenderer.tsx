@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useId, useMemo } from "react";
 
 import type { CardDiagnostic } from "../schema/diagnostics";
 import type { CardAction, Person } from "../types";
@@ -71,6 +71,7 @@ function hasBusinessAction(value: unknown): boolean {
 }
 
 export function CardRenderer(props: CardRendererProps): React.JSX.Element {
+  const rendererId = useId().replace(/[^A-Za-z0-9_-]/g, "");
   const { onDiagnostic } = props;
   const safeCard = useMemo(() => safeDataSnapshot(props.card), [props.card]);
   const result = useMemo(() => normalizeCard(safeCard), [safeCard]);
@@ -138,6 +139,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   const header = card.header as CardHeader | undefined;
   const width = card.config.width_mode;
   const context = {
+    domIdPrefix: `fcr-${rendererId}`,
     locale: props.locale ?? "zh_cn",
     colorScheme: props.colorScheme ?? "light",
     device: props.device ?? "pc",

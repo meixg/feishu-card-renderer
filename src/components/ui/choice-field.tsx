@@ -26,6 +26,8 @@ type ChoiceFieldProps = Readonly<{
   disabled: boolean;
   required?: boolean;
   describedBy?: string;
+  invalid?: boolean;
+  controlRef?: (control: HTMLElement | null) => void;
   onValueChange: (value: string | string[]) => void;
 }>;
 
@@ -174,7 +176,9 @@ function SelectField(props: ChoiceFieldProps) {
       value={selected || null}
     >
       <SelectPrimitive.Trigger
+        ref={props.controlRef}
         aria-describedby={props.describedBy}
+        aria-invalid={props.invalid || undefined}
         aria-label={props.label}
         aria-required={props.required}
         className="fcr-choice-trigger"
@@ -279,7 +283,9 @@ function PopupCombobox(props: ChoiceFieldProps) {
         value={props.value}
       />
       <ComboboxPrimitive.Trigger
+        ref={props.controlRef}
         aria-describedby={props.describedBy}
+        aria-invalid={props.invalid || undefined}
         aria-label={props.multiple ? `${props.label}，打开选项` : props.label}
         aria-required={props.required}
         className="fcr-choice-open"
@@ -473,7 +479,9 @@ function MobileDrawer(props: ChoiceFieldProps) {
           value={props.value}
         />
         <DrawerPrimitive.Trigger
+          ref={props.controlRef}
           aria-describedby={props.describedBy}
+          aria-invalid={props.invalid || undefined}
           aria-label={`${props.label}，打开选项`}
           aria-required={props.required}
           className="fcr-choice-open"
