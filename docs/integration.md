@@ -114,6 +114,11 @@ chunk。宿主 CSP 应继续禁止非预期脚本来源。不要全局覆盖 `.f
 token，多张卡片不会共享 host。卸载一张打开 overlay 的卡片会同时移除其 portal、
 焦点陷阱和 inert 状态，不影响页面中的其它卡片。
 
+confirm 使用文档级单活动 modal 协调。正常用户输入只能到达当前 modal；若宿主
+程序化请求另一张卡的 confirm，renderer 会先取消旧 confirm（不产生 action），
+再激活新 confirm。退出动画期间两个 portal DOM 可以短暂同时挂载，但只有新
+modal 保持 focus trap，旧 modal 不会把新卡互相设为 inert。
+
 发布构建只有一个 `dist/styles.css`，所有普通选择器均受 `.fcr` 命名空间约束，
 不包含 Tailwind preflight、通用 `:root`、`body` 或未作用域 reset。库构建将
 React/ReactDOM、Base UI、Calendar、CVA、`clsx` 和 `tailwind-merge`
@@ -140,7 +145,13 @@ schema 子路径、协议值和 `CardAction` 才是集成兼容边界。
 - 不模拟 7.20 以前客户端，不支持搭建工具专用循环容器。
 - Web 视觉目标是协议一致，不承诺复制某个飞书客户端版本的私有设计 token。
 - 同一页面只应让最上层 modal 接受用户输入；Base UI 会按标准模态语义把其它内容
-  设为 inert。宿主卸载当前卡片后，其 modal 状态会清理，剩余卡片可继续交互。
+  设为 inert。宿主切换 confirm 时 renderer 会执行单活动 modal handoff；卸载
+  当前卡片后，其 modal 状态会清理，剩余卡片可继续交互。
+- mobile Drawer 自动化用例在桌面 Chrome 中注入可派发 `resize` 的
+  `visualViewport`，验证 390×844 layout viewport 收缩到 390×420 visual
+  viewport 后的 bounds、横向 overflow、焦点保持和关闭后焦点返回。这是确定性的
+  viewport/inset 模拟证据，不会启动真实 iOS/Android 键盘、IME、浏览器地址栏或
+  Safari viewport 行为；发布到移动宿主前仍需真实设备人工验证这些 OS 集成差异。
 - 独立 `markdown` 与 `lark_md` 使用不同解析路径；后者仍仅支持既有有限语法。
   原始 HTML 和未知飞书扩展标签不会执行，而是显示可见原文；远程 Markdown
   图片不会加载，只保留 alt 文本。代码语言仅显示文本标签，不提供语法高亮。

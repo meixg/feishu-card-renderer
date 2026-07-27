@@ -41,8 +41,13 @@
   按规格保留原生输入。
 - 每张卡片拥有独立 portal host。SSR import 不读取 DOM，hydration 复用服务端 host；
   打开 overlay 时卸载卡片会清理 portal、focus trap 和 inert 状态。
+- 多卡 confirm 在 host 程序化切换时执行单活动 modal handoff；真实 Chrome 验证
+  两个 portal DOM 的退出/进入同时挂载窗口、焦点隔离、卸载与 inert 清理。
 - 选择器新增已有选项的本地搜索、100 项展示上限、对象值 opaque token、多选 chips
   和 mobile Drawer；不新增网络查询或业务校验。
+- mobile Drawer 消费 Base UI `--drawer-keyboard-inset`。自动化以 390×844
+  layout viewport 和 390×420 模拟 visual viewport 验证 bounds、overflow 与焦点
+  返回；真实 OS 软键盘、IME 和 Safari viewport 仍是发布前人工设备检查项。
 - 飞书 JSON 2.0、normalization、form state、安全校验和 `CardAction` 契约保持不变。
   内部 DOM、未文档化 class、Base UI `data-*` 和历史视觉快照不兼容，且没有 legacy
   interaction mode。
@@ -55,17 +60,19 @@ Vite 控制台的两位小数仅用于交叉核对。
 
 | 产物 | `main@6f87080` | 集成点 `93ef06e` | #29 验收头 | 基线 → 验收变化 |
 | --- | ---: | ---: | ---: | ---: |
-| eager renderer raw | 192,873 B | 225,734 B | 225,484 B | +32,611 B |
-| eager renderer gzip | 51,194 B | 57,860 B | 57,778 B | +6,584 B |
+| eager renderer raw | 192,873 B | 225,734 B | 226,025 B | +33,152 B |
+| eager renderer gzip | 51,194 B | 57,860 B | 57,935 B | +6,741 B |
 | shared renderer/schema chunk raw/gzip | 28,000 / 7,343 B | 28,000 / 7,343 B | 28,000 / 7,343 B | 0 / 0 B |
-| CSS raw | 14,196 B | 23,557 B | 23,495 B | +9,299 B |
-| CSS gzip | 3,134 B | 4,763 B | 4,748 B | +1,614 B |
+| CSS raw | 14,196 B | 23,557 B | 23,536 B | +9,340 B |
+| CSS gzip | 3,134 B | 4,763 B | 4,766 B | +1,632 B |
 | lazy VChart raw/gzip | 2,810,352 / 643,635 B | 2,810,352 / 643,635 B | 2,810,352 / 643,635 B | 0 / 0 B |
 
 增长来自 Base UI/shadcn 交互组合和完整的 popup/Drawer/Field/Calendar 样式。Base UI、
 Calendar、CVA、`clsx`、`tailwind-merge`、React 和 ReactDOM 保持 external；
 VChart lazy chunk 与 shared schema chunk 没有变化。#29 删除了未使用的通用 portal
-与 cleanup helper 及一条原生 multi-select CSS，因此验收头略小于集成点。
+与 cleanup helper 及一条原生 multi-select CSS；Spec 审查修复又加入单活动 modal
+handoff 和 Drawer keyboard inset。相对集成点，最终 eager renderer 为
++291 B raw / +75 B gzip，CSS 为 -21 B raw / +3 B gzip。
 
 ## Markdown bundle 影响
 

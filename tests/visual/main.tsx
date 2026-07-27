@@ -225,12 +225,17 @@ const portalLifecycleCard = (owner: "first" | "second", title: string) => ({
 
 export function PortalLifecycleCases(): React.JSX.Element {
   const [showFirst, setShowFirst] = useState(true);
+  const [showSecond, setShowSecond] = useState(true);
   const [actions, setActions] = useState<unknown[]>([]);
   return (
     <section id="case-portal-lifecycle">
       <button id="remove-first-card" type="button"
         onClick={() => setShowFirst(false)}>
         卸载第一张卡
+      </button>
+      <button id="remove-second-card" type="button"
+        onClick={() => setShowSecond(false)}>
+        卸载第二张卡
       </button>
       {showFirst && (
         <div data-portal-card="first">
@@ -241,13 +246,15 @@ export function PortalLifecycleCases(): React.JSX.Element {
           />
         </div>
       )}
-      <div data-portal-card="second">
-        <CardRenderer
-          card={portalLifecycleCard("second", "第二张卡确认")}
-          colorScheme="light"
-          onAction={(action) => setActions((current) => [...current, action])}
-        />
-      </div>
+      {showSecond && (
+        <div data-portal-card="second">
+          <CardRenderer
+            card={portalLifecycleCard("second", "第二张卡确认")}
+            colorScheme="light"
+            onAction={(action) => setActions((current) => [...current, action])}
+          />
+        </div>
+      )}
       <output hidden data-portal-actions="">{JSON.stringify(actions)}</output>
     </section>
   );

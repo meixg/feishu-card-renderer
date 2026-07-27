@@ -521,6 +521,7 @@
   }
   .fcr-drawer-viewport {
     position: fixed; z-index: calc(var(--fcr-z-index-overlay) + 1); inset: 0;
+    bottom: var(--drawer-keyboard-inset, 0px);
     display: flex;
     align-items: flex-end; justify-content: center; pointer-events: none;
   }

@@ -185,9 +185,13 @@ import type {
 - 支持输入框、按钮、菜单、静态选项、人员选择、日期时间、图片选择和勾选器。
 - 支持选择器本地搜索、100 项展示上限、多选 chips、PC popup 和 mobile Drawer；
   搜索只使用卡片已有选项及 resolver 已返回的人员显示信息，不查询人员目录。
+- mobile Drawer 消费 Base UI 的 visual viewport keyboard inset；自动化证据模拟
+  `visualViewport` 收缩，不等同于真实 iOS/Android 软键盘验证。
 - 支持 light/dark、PC/mobile，以及 compact、default、fill 三种宽度模式。
 - 支持 SSR；每张成功渲染的卡片拥有自己的主题作用域 portal host，overlay 只在
   客户端挂载后进入该 host，卡片卸载时一并清理。图表也只在浏览器挂载后加载。
+- 同页 confirm 保持单一活动 modal；宿主程序化切换到另一张卡的 confirm 时，旧
+  modal 先取消并退出，避免两个独立 focus trap 互相 inert。
 - 不支持 JSON 1.0、旧版 `tag: "action"` 交互模块或卡片搭建工具专用的循环容器。
 
 为了避免异常输入拖垮页面，渲染器还会执行 JSON 2.0 的主要边界检查，包括 200 个元素上限、五层容器上限、`element_id` 唯一性和组件嵌套限制。未知字段会被忽略，未知组件会稳定降级，不会让整张卡片白屏。

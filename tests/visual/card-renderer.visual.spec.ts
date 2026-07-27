@@ -308,6 +308,62 @@ test("an open card portal tears down without disturbing another card", async ({
   expect(pageErrors).toEqual([]);
 });
 
+test("simultaneous card modal mounts hand off safely and clean up independently", async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/tests/visual/");
+  const lifecycle = page.locator("#case-portal-lifecycle");
+  const firstCard = lifecycle.locator("[data-portal-card='first']");
+  const secondCard = lifecycle.locator("[data-portal-card='second']");
+  const firstTrigger = firstCard.getByRole("button", {
+    name: "打开第一张卡确认",
+  });
+
+  await firstTrigger.click();
+  const mountedOwners = await page.evaluate(async () => {
+    document.querySelector<HTMLButtonElement>(
+      "[data-portal-card='second'] button",
+    )?.click();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    return Array.from(document.querySelectorAll("[role='alertdialog']"))
+      .map((node) => node.closest("[data-portal-card]")
+        ?.getAttribute("data-portal-card"));
+  });
+  expect(mountedOwners).toEqual(["first", "second"]);
+
+  const firstDialog = firstCard.locator("[role='alertdialog']");
+  const secondDialog = secondCard.locator("[role='alertdialog']");
+  await expect(secondDialog).toHaveCount(1);
+  expect(await secondDialog.evaluate((node) =>
+    node.closest("[data-fcr-portal-host]")?.closest("[data-portal-card]")
+      ?.getAttribute("data-portal-card"))).toBe("second");
+  expect(await secondDialog.evaluate((node) =>
+    node.closest("[inert], [aria-hidden='true']") === null)).toBe(true);
+  await expect(secondDialog.getByRole("button", { name: "取消" })).toBeFocused();
+  await expect(firstDialog).toBeHidden();
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#remove-second-card")?.click();
+  });
+  await expect(secondCard).toHaveCount(0);
+  await expect(firstCard.locator("[data-fcr-portal-host]")).toHaveCount(1);
+  await expect(page.locator("[data-base-ui-inert]")).toHaveCount(0);
+
+  await firstTrigger.focus();
+  await firstTrigger.press("Enter");
+  const reopened = firstCard.getByRole("alertdialog", {
+    name: "第一张卡确认",
+  });
+  await expect(reopened.getByRole("button", { name: "取消" })).toBeFocused();
+  await reopened.getByRole("button", { name: "取消" }).press("Enter");
+  await expect(reopened).toBeHidden();
+  await expect(firstTrigger).toBeFocused();
+  await expect(page.locator("[data-base-ui-inert]")).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+});
+
 test("Dropdown Menu supports roving keys, outside press, and confirm handoff", async ({
   page,
 }) => {
@@ -442,6 +498,86 @@ test("mobile choices use a keyboard-safe Drawer without horizontal overflow", as
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
   await expect(drawer).toHaveScreenshot("card-choices-mobile-drawer.png");
+});
+
+test("mobile Drawer follows a simulated soft-keyboard visual viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const state = {
+      height: window.innerHeight,
+      offsetLeft: 0,
+      offsetTop: 0,
+      width: window.innerWidth,
+    };
+    const viewport = new EventTarget();
+    Object.defineProperties(viewport, {
+      height: { get: () => state.height },
+      offsetLeft: { get: () => state.offsetLeft },
+      offsetTop: { get: () => state.offsetTop },
+      pageLeft: { get: () => state.offsetLeft },
+      pageTop: { get: () => state.offsetTop },
+      scale: { get: () => 1 },
+      width: { get: () => state.width },
+    });
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: viewport,
+    });
+    Object.defineProperty(window, "__setTestVisualViewport", {
+      configurable: true,
+      value: (next: Partial<typeof state>) => {
+        Object.assign(state, next);
+        viewport.dispatchEvent(new Event("resize"));
+      },
+    });
+  });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  const root = host.locator(".fcr-root");
+  const trigger = host.getByRole("button", {
+    name: "Multiple choices，打开选项",
+  });
+  await trigger.click();
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  const search = drawer.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  await expect(search).toBeFocused();
+
+  await page.evaluate(() => {
+    const testWindow = window as unknown as Window & {
+      __setTestVisualViewport: (next: {
+        height: number;
+        offsetTop: number;
+        width: number;
+      }) => void;
+    };
+    testWindow.__setTestVisualViewport({
+      height: 420,
+      offsetTop: 0,
+      width: 390,
+    });
+  });
+  await expect.poll(() => host.locator(".fcr-drawer-viewport").evaluate(
+    (node) => getComputedStyle(node).getPropertyValue("--drawer-keyboard-inset"),
+  )).toBe("424px");
+
+  const bounds = await drawer.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  expect(bounds!.y).toBeGreaterThanOrEqual(0);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(420);
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  await expect(search).toBeFocused();
+
+  await search.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page.locator("[data-base-ui-inert]")).toHaveCount(0);
 });
 
 test("Select and Combobox preserve real-browser keyboard selection semantics", async ({

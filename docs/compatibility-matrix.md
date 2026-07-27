@@ -87,13 +87,18 @@ Playwright 在真实 Chrome 中使用正式懒加载 VChart runtime 实例化，
 - 每张成功卡片只有一个主题作用域 portal host；fatal 卡不创建 host。SSR 输出、
   hydration 复用、同页多卡 ID/主题隔离、打开状态卸载和 inert 清理由组件测试及
   真实 Chrome 流程覆盖。
+- 多卡 confirm 的真实 Chrome 流程强制触发 host 级 handoff：退出与新进入的
+  portal DOM 可同时挂载，但仅新 modal 可聚焦；随后卸载新卡、重开旧卡并逐项断言
+  focus trap、focus return 和 inert marker 均已清理。
 - confirm、overflow 和图片预览位于所属卡片 portal；取消不产生 action，确认恰好
   执行一次，portal 子交互不会触发父 `interactive_container`。
 - 少于 8 项的单选使用 Select，8 项以上使用可搜索 Combobox；多选始终可搜索并
   使用 chips。搜索完整 options、最多显示 100 项，对象 option value、required、
   reset、disabled、confirm 和人员 resolver 三态均有公共 `CardRenderer` 证据。
 - PC 使用 popup/Calendar，mobile choice 使用 Drawer；真实 Chrome 覆盖触控下滑、
-  软键盘安全边界、焦点返回，以及 date/time/datetime 的协议格式和 IANA timezone。
+  焦点返回，以及 date/time/datetime 的协议格式和 IANA timezone。软键盘边界证据
+  来自桌面 Chrome 中模拟的 `visualViewport` 844→420 px 收缩，并断言 bounds 与
+  overflow；它不冒充真实 iOS/Android OS 键盘或 Safari 验证。
 - shadcn/Base UI wrapper、provider、context 和类型保持私有；兼容矩阵只承诺协议、
   公共类型、DOM 语义角色和 `CardAction`，不承诺内部 DOM/class/视觉兼容。
 
