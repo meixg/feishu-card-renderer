@@ -17,6 +17,7 @@ import {
 } from "../schema/identity";
 import { ownDataValue, safeDataSnapshot } from "../schema/safe-data";
 import { collectMarkdownAnalyses } from "../markdown/bounded";
+import { UiPortalProvider } from "./portal";
 
 export type { ResourceResolver } from "./context";
 export type FatalFallback = (
@@ -171,17 +172,19 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
         data-fcr-card-renderer="ready"
         data-locale={context.locale}
       >
-        {header && <Header header={header} />}
-        <div className={`fcr-body fcr-direction-${card.body.direction}`}
-          style={bodyStyle}>
-          {card.body.elements.map((element, index) => (
-            <ComponentRenderer key={keyForElement(
-              element,
-              `$.body.elements[${index}]`,
-              uniqueElementIds,
-            )} element={element} path={`$.body.elements[${index}]`} />
-          ))}
-        </div>
+        <UiPortalProvider>
+          {header && <Header header={header} />}
+          <div className={`fcr-body fcr-direction-${card.body.direction}`}
+            style={bodyStyle}>
+            {card.body.elements.map((element, index) => (
+              <ComponentRenderer key={keyForElement(
+                element,
+                `$.body.elements[${index}]`,
+                uniqueElementIds,
+              )} element={element} path={`$.body.elements[${index}]`} />
+            ))}
+          </div>
+        </UiPortalProvider>
       </article>
     </RendererContext.Provider>
   );

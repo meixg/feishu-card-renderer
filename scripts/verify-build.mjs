@@ -17,6 +17,7 @@ const runFile = promisify(execFile);
 
 const entry = await readFile("dist/index.js", "utf8");
 const entryTypes = await readFile("dist/index.d.ts", "utf8");
+const packageManifest = JSON.parse(await readFile("package.json", "utf8"));
 const css = await readFile("dist/styles.css", "utf8");
 const files = await readdir("dist");
 const cssFiles = files.filter((file) => file.endsWith(".css"));
@@ -67,6 +68,18 @@ await runFile("node_modules/.bin/tsc", [
 
 if (entry.includes("react.production.min") || entry.includes("react.development")) {
   throw new Error("React implementation was bundled into the library output.");
+}
+if (packageManifest.dependencies?.["@base-ui/react"] !== "^1.6.0") {
+  throw new Error("@base-ui/react must remain a verified 1.x runtime dependency.");
+}
+if (entry.includes("@base-ui/utils") || entry.includes("BaseUI")) {
+  throw new Error("Base UI implementation code was bundled into the renderer entry.");
+}
+if (/(?:from|import\()\s*["']@\//.test(entry)) {
+  throw new Error("A source alias leaked into the built renderer entry.");
+}
+if (/components\/ui|ButtonProps|buttonVariants/.test(entryTypes)) {
+  throw new Error("Private shadcn/Base UI wrappers leaked from the public types.");
 }
 if (!entry.includes("micromark") || !entry.includes("mdast")) {
   throw new Error(
