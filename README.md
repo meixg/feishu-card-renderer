@@ -2,7 +2,50 @@
 
 一个面向 Web 的飞书卡片 JSON 2.0 渲染器。项目计划使用 React + Tailwind CSS，把飞书会话流中的卡片 JSON 转换成尽可能接近飞书客户端的可视界面，并在浏览器中模拟卡片交互。
 
-> 当前仓库处于规范沉淀阶段，尚未初始化前端工程。本文件是首版产品边界、JSON 结构和组件协议基线。
+> 1.0 实现覆盖本文列出的 JSON 2.0 运行时组件。协议兼容不等于飞书
+> 服务端能力：鉴权、消息发送、图片上传、人员目录和业务回调均由宿主负责。
+
+## 工程基线
+
+安装依赖并运行全部质量检查：
+
+```bash
+pnpm install
+pnpm check
+```
+
+也可独立运行 `pnpm typecheck`、`pnpm lint`、`pnpm unit`、
+`pnpm component`、`pnpm accessibility`、`pnpm visual` 和 `pnpm build`。
+视觉快照需要本机安装 Google Chrome；基线更新使用 `pnpm visual:update`。
+
+安装并在宿主入口引入预编译样式：
+
+```tsx
+// pnpm add @meixg/feishu-card-renderer react react-dom
+import { CardRenderer } from "@meixg/feishu-card-renderer";
+import "@meixg/feishu-card-renderer/styles.css";
+
+export function CardHost() {
+  return <CardRenderer card={{ schema: "2.0" }} />;
+}
+```
+
+发布构建仅输出 ESM、TypeScript 声明和带 `.fcr-root` 作用域的预编译 CSS。
+React 与 ReactDOM 保持 peer dependencies，宿主无需安装或配置 Tailwind。
+完整公共 API、资源适配、动作集成和 SSR 说明见
+[集成指南](docs/integration.md)。逐 tag 验收情况见
+[1.0 兼容矩阵](docs/compatibility-matrix.md)。
+
+稳定协议类型从包根导入；纯 schema API 也保留独立子路径：
+
+```ts
+import type { CardJsonV2 } from "@meixg/feishu-card-renderer";
+import {
+  normalizeCard,
+  validateCard,
+  type CardJsonV2 as SchemaCardJsonV2,
+} from "@meixg/feishu-card-renderer/schema";
+```
 
 ## 什么是飞书卡片
 
@@ -227,7 +270,9 @@
 }
 ```
 
-Web 渲染器需要通过可注入的 `resolveImage(imgKey)` 和图标 token 映射表解析资源。解析失败时展示尺寸稳定的占位符，不能让布局坍塌。
+Web 渲染器需要通过可注入的 `resolveImage(imgKey, signal)` 和图标 token
+映射表解析资源。`signal` 用于卸载或 resolver 身份切换时取消旧请求。解析失败时
+展示尺寸稳定的占位符，不能让布局坍塌。
 
 ### 交互行为
 
@@ -563,7 +608,9 @@ type CardAction = {
 }
 ```
 
-人员 ID 可以来自 open_id、user_id 或 union_id。Web 渲染器通过 `resolvePerson(id)` 获取姓名和头像；无解析器时展示脱敏占位，而不是伪造人员。
+人员 ID 可以来自 open_id、user_id 或 union_id。Web 渲染器通过
+`resolvePerson(id, signal)` 获取姓名和头像；无解析器时展示脱敏占位，而不是
+伪造人员。
 
 #### 人员列表 `person_list`
 
@@ -600,6 +647,10 @@ type CardAction = {
 ```
 
 `chart_spec` 使用 VChart 定义，可覆盖折线、面积、柱状、条形、饼图、环图、组合图、漏斗、散点、雷达、进度和词云等。单卡建议最多五个图表。不执行 `chart_spec` 中的 JavaScript。
+
+实现使用正式依赖 `@visactor/vchart`，并隔离在仅由 `chart` 客户端挂载触发的懒加载 chunk 中；SSR 只输出尺寸稳定的占位。输入 spec 会先递归复制并拒绝函数、脚本入口、危险原型字段、HTML/DOM 扩展、函数注册和其它可执行配置。
+
+兼容范围以飞书文档列出的折线、面积、柱/条、饼/环、组合、漏斗、散点、雷达、进度和词云为基线，不等同于当前 npm VChart 的全部能力。飞书说明客户端会默认追加 media，但没有公开完整规则；本渲染器不猜测这组隐式 media，fixture 使用 `media: []` 获得可重复结果。飞书列出的移动端限制（纹理、圆锥渐变、grid 词云、`extensionMark` 图片 repeat、SVG 图元背景）也保留为明确 limitation。`preview: true` 复用图片与图表统一的可访问预览层，并在预览层中重新挂载同一份经过安全过滤的图表结果；关闭预览会销毁对应 VChart 实例。
 
 #### 表格 `table`
 
@@ -967,3 +1018,9 @@ Tailwind 适合固定 token；运行时 px、RGBA 和列权重需要经过白名
 - Markdown、URL、图片和图表配置按不可信输入处理。
 - 非法嵌套、重复 `element_id`、超 200 元素和超五层容器有明确诊断。
 - 交互通过宿主回调输出，不在组件内部耦合真实网络请求。
+
+## 1.0 发布资料
+
+- [安装、公共类型、宿主集成、限制与迁移](docs/integration.md)
+- [逐 tag fixture、视觉、交互、资源与协议兼容矩阵](docs/compatibility-matrix.md)
+- [安全审查与发布验收清单](docs/release-checklist.md)
