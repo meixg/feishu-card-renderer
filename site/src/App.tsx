@@ -6,6 +6,7 @@ import coverImage from "../../tests/visual/card-renderer.visual.spec.ts-snapshot
 import darkImage from "../../tests/visual/card-renderer.visual.spec.ts-snapshots/card-renderer-dark-chromium-darwin.png";
 import mobileImage from "../../tests/visual/card-renderer.visual.spec.ts-snapshots/card-renderer-mobile-chromium-darwin.png";
 import { catalog, categories, type CatalogItem } from "./catalog";
+import { Playground } from "./Playground";
 
 type Theme = "light" | "dark";
 type Device = "pc" | "mobile";
@@ -223,6 +224,7 @@ export function App() {
           <span>Feishu Card Renderer</span>
         </a>
         <nav aria-label="主要导航">
+          <a href="#playground">Playground</a>
           <a href="#guide">使用方式</a>
           <a href="#components">组件</a>
           <a href="https://github.com/meixg/feishu-card-renderer">GitHub</a>
@@ -239,7 +241,8 @@ export function App() {
               本页直接运行项目源码，并逐项展示全部 26 个运行时 tag 与顶层 header。
             </p>
             <div className="hero-actions">
-              <a className="button-primary" href="#guide">快速开始</a>
+              <a className="button-primary" href="#playground">在线试用</a>
+              <a className="button-secondary" href="#guide">快速开始</a>
               <a className="button-secondary" href="#components">浏览 27 项组件</a>
             </div>
             <div className="hero-badges" aria-label="项目能力">
@@ -280,6 +283,13 @@ export function App() {
           <div><strong>200</strong><span>单卡元素上限</span></div>
           <div><strong>5</strong><span>容器嵌套上限</span></div>
         </section>
+
+        <Playground
+          theme={theme}
+          device={device}
+          resolveImage={(key) => imageMap[key]}
+          resolvePerson={(id) => people[id]}
+        />
 
         <section className="docs-section" id="guide">
           <div className="section-intro">
