@@ -211,9 +211,10 @@ describe("interactive components and CardAction", () => {
 
   it("adds the browser IANA timezone to date and time actions outside forms", () => {
     const onAction = vi.fn();
-    render(<CardRenderer onAction={onAction} card={{ schema: "2.0", body: {
-      elements: [{ tag: "date_picker", name: "when" }],
-    } }} />);
+    render(<CardRenderer device="mobile" onAction={onAction}
+      card={{ schema: "2.0", body: {
+        elements: [{ tag: "date_picker", name: "when" }],
+      } }} />);
     fireEvent.change(screen.getByLabelText("when"), {
       target: { value: "2026-07-27" },
     });

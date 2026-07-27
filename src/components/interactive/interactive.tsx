@@ -21,6 +21,19 @@ import {
   ChoiceField,
   type ChoiceOption,
 } from "../ui/choice-field";
+import { Button as UiButton } from "../ui/button";
+import { Calendar } from "../ui/calendar";
+import { Checkbox } from "../ui/checkbox";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "../ui/field";
+import { Input as UiInput } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Textarea } from "../ui/textarea";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -48,9 +61,25 @@ function useTips(element: {
   return {
     describedBy,
     nodes: tips.length > 0
-      ? <span id={describedBy} className="fcr-field-tips">
+      ? <FieldDescription id={describedBy} className="fcr-field-tips">
           {tips.map((tip, index) => <span key={index}>{tip}</span>)}
-        </span>
+        </FieldDescription>
+      : null,
+  };
+}
+
+function fieldFeedback(
+  path: string,
+  describedBy: string | undefined,
+  invalid: boolean,
+) {
+  const errorId = `fcr-error-${path.replace(/[^a-z0-9_-]/gi, "-")}`;
+  return {
+    describedBy: [describedBy, invalid ? errorId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined,
+    error: invalid
+      ? <FieldError id={errorId}>此项为必填项</FieldError>
       : null,
   };
 }
@@ -92,6 +121,7 @@ function useField(element: InteractiveElement, initial: unknown,
   latestInitial.current = initial;
   const registerField = form?.registerField;
   const updateField = form?.updateField;
+  const setFieldControl = form?.setFieldControl;
   useEffect(() => {
     if (!registerField || !name) return;
     return registerField(name, element.tag, latestInitial.current, isMissing);
@@ -102,6 +132,9 @@ function useField(element: InteractiveElement, initial: unknown,
   }, [element.required, element.tag, initial, isMissing, name, updateField]);
   const value = form && name && Object.hasOwn(form.values, name)
     ? form.values[name] : local;
+  const controlRef = useCallback((control: HTMLElement | null) => {
+    if (name && setFieldControl) setFieldControl(name, control);
+  }, [name, setFieldControl]);
   const apply = (next: unknown, path: string, timezone = false) => {
     if (form && name) form.setValue(name, next);
     else {
@@ -124,7 +157,9 @@ function useField(element: InteractiveElement, initial: unknown,
     setPending({ next, path, timezone });
     setConfirming(true);
   };
-  return { value, set, disabled: element.disabled === true ||
+  return { value, set, controlRef,
+    invalid: Boolean(form && name && form.invalidFields.has(name)),
+    disabled: element.disabled === true ||
     (!form && !onAction && !allowLocalWithoutAction),
     confirmDialog: element.confirm
       ? <ConfirmDialog open={confirming}
@@ -142,18 +177,26 @@ export function Input({ element, path }: { element: InputElement; path: string }
   const field = useField(element, element.default_value ?? "");
   const tips = useTips(element);
   const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
+  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
   const shared = { id, disabled: field.disabled, required: element.required,
-    "aria-describedby": tips.describedBy,
+    "aria-describedby": feedback.describedBy,
+    "aria-invalid": field.invalid || undefined,
     maxLength: element.max_length, value: String(field.value ?? ""),
     placeholder: element.placeholder?.content,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       field.set(event.target.value, path) };
-  return <><label className="fcr-field" htmlFor={id}>
-    {element.label?.content ?? element.name ?? "输入"}
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel htmlFor={id}>
+      {element.label?.content ?? element.name ?? "输入"}
+    </FieldLabel>
     {element.input_type === "multiline_text"
-      ? <textarea {...shared} rows={element.rows ?? 5} />
-      : <input {...shared} type={element.input_type === "password" ? "password" : "text"} />}
-  </label>{tips.nodes}{field.confirmDialog}</>;
+      ? <Textarea ref={(node) => field.controlRef(node)}
+          {...shared} rows={element.rows ?? 5} />
+      : <UiInput ref={(node) => field.controlRef(node)}
+          {...shared}
+          type={element.input_type === "password" ? "password" : "text"} />}
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 type Single = SelectStaticElement | SelectPersonElement;
@@ -252,11 +295,14 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
     sameOptionValue(rawOptionValue(option), field.value));
   const label = element.label?.content ?? element.placeholder?.content ??
     element.name ?? "选择";
-  return <><div className="fcr-field">
-    <span>{label}</span>
+  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel>{label}</FieldLabel>
     <ChoiceField
-      describedBy={tips.describedBy}
+      controlRef={field.controlRef}
+      describedBy={feedback.describedBy}
       disabled={field.disabled}
+      invalid={field.invalid}
       label={label}
       locale={locale}
       mobile={device === "mobile"}
@@ -275,7 +321,8 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
       searchable={element.tag === "select_person" || choices.length >= 8}
       value={selectedIndex < 0 ? "" : optionToken(path, selectedIndex)}
     />
-  </div>{probes}{tips.nodes}{field.confirmDialog}</>;
+    {tips.nodes}{feedback.error}
+  </Field>{probes}{field.confirmDialog}</>;
 }
 
 type Multi = MultiSelectStaticElement | MultiSelectPersonElement;
@@ -290,11 +337,14 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
       ? [optionToken(path, index)] : [];
   });
   const label = element.label?.content ?? element.name ?? "多选";
-  return <><div className="fcr-field">
-    <span>{label}</span>
+  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel>{label}</FieldLabel>
     <ChoiceField
-      describedBy={tips.describedBy}
+      controlRef={field.controlRef}
+      describedBy={feedback.describedBy}
       disabled={field.disabled}
+      invalid={field.invalid}
       label={label}
       locale={locale}
       mobile={device === "mobile"}
@@ -315,10 +365,35 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
       searchable
       value={selectedTokens}
     />
-  </div>{probes}{tips.nodes}{field.confirmDialog}</>;
+    {tips.nodes}{feedback.error}
+  </Field>{probes}{field.confirmDialog}</>;
 }
 
 type Picker = DatePickerElement | TimePickerElement | DateTimePickerElement;
+
+function parseDateValue(value: unknown): Date | undefined {
+  if (typeof value !== "string") return undefined;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+    ? date
+    : undefined;
+}
+
+function formatDateValue(date: Date): string {
+  return [
+    String(date.getFullYear()).padStart(4, "0"),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 export function Picker({ element, path }: { element: Picker; path: string }) {
   const tag = element.tag;
   const initial = tag === "date_picker" ? element.initial_date :
@@ -326,28 +401,101 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
     element.initial_datetime?.replace(" ", "T");
   const field = useField(element, initial ?? "");
   const tips = useTips(element);
+  const { device, locale } = useRendererContext();
+  const [open, setOpen] = useState(false);
   const type = tag === "date_picker" ? "date" : tag === "picker_time" ? "time" :
     "datetime-local";
-  return <><label className="fcr-field">{element.label?.content ?? element.name ?? "日期时间"}
-    <input aria-label={element.label?.content ?? element.name ?? "日期时间"}
-      type={type} value={String(field.value ?? "")} disabled={field.disabled}
-      aria-describedby={tips.describedBy}
-      required={element.required}
-      onChange={(event) => field.set(event.target.value, path, true)} />
-  </label>{tips.nodes}{field.confirmDialog}</>;
+  const label = element.label?.content ?? element.name ?? "日期时间";
+  const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
+  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const value = String(field.value ?? "");
+  const selected = parseDateValue(value);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    {tag === "date_picker" && device === "pc"
+      ? <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            render={<UiButton
+              ref={(node) => field.controlRef(node)}
+              id={id}
+              type="button"
+              variant="outline"
+            />}
+            aria-describedby={feedback.describedBy}
+            aria-invalid={field.invalid || undefined}
+            aria-label={`${label}：${value || "请选择"}`}
+            data-required={element.required || undefined}
+            disabled={field.disabled}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <span>{value || "请选择"}</span>
+            <svg aria-hidden="true" className="fcr-date-icon"
+              viewBox="0 0 16 16">
+              <path d="M4 1.5v2M12 1.5v2M2.5 6h11M3 3h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+                fill="none" stroke="currentColor" strokeWidth="1.25" />
+            </svg>
+          </PopoverTrigger>
+          <PopoverContent
+            aria-label={`选择${label}`}
+            initialFocus
+            role="dialog"
+          >
+            <Calendar
+              autoFocus
+              defaultMonth={selected}
+              mode="single"
+              onSelect={(date) => {
+                if (!date) return;
+                field.set(formatDateValue(date), path, true);
+                setOpen(false);
+              }}
+              rendererLocale={locale}
+              selected={selected}
+            />
+          </PopoverContent>
+        </Popover>
+      : <UiInput
+          ref={(node) => field.controlRef(node)}
+          id={id}
+          aria-describedby={feedback.describedBy}
+          aria-invalid={field.invalid || undefined}
+          aria-label={label}
+          disabled={field.disabled}
+          required={element.required}
+          type={type}
+          value={value}
+          onChange={(event) => field.set(event.target.value, path, true)}
+        />}
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 export function Checker({ element, path }: { element: CheckerElement; path: string }) {
   const field = useField(element, element.checked ?? false, false, true,
     checkerMissing);
   const tips = useTips(element);
-  return <><label className="fcr-checker"><input type="checkbox"
-    checked={Boolean(field.value)} disabled={field.disabled}
-    aria-describedby={tips.describedBy}
-    required={element.required}
-    onChange={(event) => field.set(event.target.checked, path)} />
-    {element.text?.content ?? element.label?.content ?? element.name ?? "确认"}</label>
-    {tips.nodes}{field.confirmDialog}</>;
+  const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
+  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <div className="fcr-checker">
+      <Checkbox
+        ref={(node) => field.controlRef(node)}
+        id={id}
+        aria-describedby={feedback.describedBy}
+        aria-invalid={field.invalid || undefined}
+        checked={Boolean(field.value)}
+        disabled={field.disabled}
+        required={element.required}
+        onCheckedChange={(checked) => field.set(checked, path)}
+      />
+      <FieldLabel htmlFor={id}>
+        {element.text?.content ?? element.label?.content ??
+          element.name ?? "确认"}
+      </FieldLabel>
+    </div>
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 function SelectImageVisual({ option }: { option: SelectOption }) {
@@ -366,43 +514,102 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
     element.selected_values?.[0] ?? "";
   const field = useField(element, initial);
   const tips = useTips(element);
-  return <><fieldset className="fcr-select-image" disabled={field.disabled}
-    aria-describedby={tips.describedBy}>
-    <legend>{element.label?.content ?? element.name ?? "选择图片"}</legend>
-    {(element.options ?? []).map((option, index) => {
-      const value = rawOptionValue(option);
-      const token = optionToken(path, index);
-      const checked = element.multi_select ? Array.isArray(field.value) &&
-        value !== undefined && includesOption(field.value, value) :
-        value !== undefined && sameOptionValue(field.value, value);
-      return <label key={token}><input type={element.multi_select ? "checkbox" : "radio"}
-        name={`fcr-choice-${path}`} checked={checked}
-        disabled={value === undefined || option.disabled} onChange={() => {
-          if (value === undefined) return;
-          const next = element.multi_select
-            ? checked ? (field.value as OptionValue[])
-                .filter((item) => !sameOptionValue(item, value))
-              : [...(field.value as OptionValue[]), value]
-            : value;
-          field.set(next, path);
-        }} /><SelectImageVisual option={option} />{optionText(option)}</label>;
-    })}
-  </fieldset>{tips.nodes}{field.confirmDialog}</>;
+  const label = element.label?.content ?? element.name ?? "选择图片";
+  const labelId = `fcr-label-${path.replace(/[^a-z0-9_-]/gi, "-")}`;
+  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const options = element.options ?? [];
+  const firstFocusableIndex = options.findIndex((option) =>
+    rawOptionValue(option) !== undefined && option.disabled !== true);
+  const selectedToken = options.findIndex((option) =>
+    sameOptionValue(rawOptionValue(option), field.value));
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel id={labelId}>{label}</FieldLabel>
+    <fieldset className="fcr-select-image"
+      aria-describedby={feedback.describedBy}
+      aria-invalid={field.invalid || undefined}
+      aria-labelledby={labelId}
+      disabled={field.disabled}>
+      <legend className="fcr-sr-only">{label}</legend>
+      {element.multi_select
+        ? <div className="fcr-select-image-options">
+            {options.map((option, index) => {
+              const value = rawOptionValue(option);
+              const token = optionToken(path, index);
+              const checked = Array.isArray(field.value) &&
+                value !== undefined && includesOption(field.value, value);
+              return <label className="fcr-select-image-option" key={token}>
+                <Checkbox
+                  ref={index === firstFocusableIndex
+                    ? (node) => field.controlRef(node)
+                    : undefined}
+                  checked={checked}
+                  disabled={field.disabled || value === undefined ||
+                    option.disabled}
+                  onCheckedChange={() => {
+                    if (value === undefined) return;
+                    const next = checked
+                      ? (field.value as OptionValue[])
+                          .filter((item) => !sameOptionValue(item, value))
+                      : [...(field.value as OptionValue[]), value];
+                    field.set(next, path);
+                  }}
+                />
+                <SelectImageVisual option={option} />
+                <span>{optionText(option)}</span>
+              </label>;
+            })}
+          </div>
+        : <RadioGroup
+            aria-describedby={feedback.describedBy}
+            aria-invalid={field.invalid || undefined}
+            aria-labelledby={labelId}
+            disabled={field.disabled}
+            name={`fcr-choice-${path}`}
+            required={element.required}
+            value={selectedToken < 0 ? "" : optionToken(path, selectedToken)}
+            onValueChange={(token) => {
+              const index = options.findIndex((_, optionIndex) =>
+                optionToken(path, optionIndex) === token);
+              const value = index < 0
+                ? undefined
+                : rawOptionValue(options[index]);
+              if (value !== undefined) field.set(value, path);
+            }}
+          >
+            {options.map((option, index) => {
+              const value = rawOptionValue(option);
+              const token = optionToken(path, index);
+              return <label className="fcr-select-image-option" key={token}>
+                <RadioGroupItem
+                  inputRef={index === firstFocusableIndex
+                    ? (node) => field.controlRef(node)
+                    : undefined}
+                  disabled={field.disabled || value === undefined ||
+                    option.disabled}
+                  value={token}
+                />
+                <SelectImageVisual option={option} />
+                <span>{optionText(option)}</span>
+              </label>;
+            })}
+          </RadioGroup>}
+    </fieldset>
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 export function Button({ element, path }: { element: ButtonElement; path: string }) {
   const { form } = useRecursiveContext();
   const { onAction } = useRendererContext();
-  const [error, setError] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const tips = useTips(element);
   const trigger = useRef<HTMLButtonElement>(null);
   const business = element.form_action_type !== "reset";
-  const run = () => {
-    if (element.form_action_type === "reset") { form?.reset(); setError(false); return; }
-    if (form?.hasMissingRequired()) {
-      setError(true); return;
-    }
+  const validate = () => element.form_action_type === "submit" &&
+    Boolean(form?.validateRequired());
+  const run = (validated = false) => {
+    if (element.form_action_type === "reset") { form?.reset(); return; }
+    if (!validated && validate()) return;
     const extra = form
       ? { formValue: { ...form.values }, timezone: browserTimezone() }
       : {};
@@ -421,21 +628,18 @@ export function Button({ element, path }: { element: ButtonElement; path: string
     }
   };
   const activate = () => {
-    if (form && element.form_action_type === "submit" &&
-      form.hasMissingRequired()) {
-      setError(true);
-      return;
-    }
+    if (validate()) return;
     if (element.confirm) setConfirm(true);
-    else run();
+    else run(true);
   };
-  return <><button ref={trigger} type={element.form_action_type === "submit" ? "submit" : "button"}
+  return <><UiButton ref={trigger}
+    type={element.form_action_type === "submit" ? "submit" : "button"}
     className="fcr-button" disabled={element.disabled || (business && !onAction)}
     aria-describedby={tips.describedBy}
     onKeyDown={(event) => event.stopPropagation()}
     onClick={(event) => { event.stopPropagation(); event.preventDefault(); activate(); }}>
-    {element.text?.content ?? "按钮"}</button>
-    {tips.nodes}{error && <span role="alert">有必填项未填写</span>}
+    {element.text?.content ?? "按钮"}</UiButton>
+    {tips.nodes}
     {element.confirm && <ConfirmDialog open={confirm}
       title={element.confirm.title} text={element.confirm.text}
       trigger={trigger} onCancel={() => setConfirm(false)}

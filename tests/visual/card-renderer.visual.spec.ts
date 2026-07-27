@@ -508,3 +508,183 @@ test("mobile Drawer closes by Esc, close button, and downward swipe with focus r
   await expect(drawer).toBeHidden();
   await expect(trigger).toBeFocused();
 });
+
+test("form controls validate, focus, clear, reset, and submit once in a real browser", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-form-controls-pc");
+  const form = host.locator("form");
+  const title = form.getByRole("textbox", { name: "标题" });
+  const details = form.getByRole("textbox", { name: "详情" });
+  const terms = form.getByRole("checkbox", { name: "同意条款" });
+  const firstImage = form.getByRole("checkbox", { name: "图片一" });
+
+  await title.fill("");
+  await form.getByRole("button", { name: "提交" }).click();
+  await expect(title).toBeFocused();
+  await expect(title).toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("此项为必填项")).toBeVisible();
+
+  await title.fill("已修正");
+  await expect(title).not.toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("此项为必填项")).toBeHidden();
+  await details.fill("已修改");
+  await terms.click();
+  await firstImage.click();
+  await form.getByRole("button", { name: "重置" }).click();
+  await expect(title).toHaveValue("初始标题");
+  await expect(details).toHaveValue("初始详情");
+  await expect(terms).toBeChecked();
+  await expect(firstImage).toBeChecked();
+  await expect(form.getByText("此项为必填项")).toBeHidden();
+
+  await form.getByRole("button", { name: "提交" }).click();
+  const actions = await host.locator("[data-form-control-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ formValue?: Record<string, unknown> }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]?.formValue).toMatchObject({
+    title: "初始标题",
+    details: "初始详情",
+    terms: true,
+    images: ["one"],
+    date: "2026-07-28",
+    time: "09:30",
+    datetime: "2026-07-28T09:30",
+  });
+});
+
+test("PC Calendar supports focus, arrows, Escape, and timezone-preserving selection", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-form-controls-pc");
+  const standalone = host.locator(".fcr-root").nth(1);
+  const trigger = standalone.getByRole("button", {
+    name: /^预约日期：/,
+  });
+
+  await trigger.focus();
+  await trigger.press("Enter");
+  let dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
+  const selected = dialog.getByRole("button", {
+    name: "2026-07-28，已选择",
+  });
+  await expect(selected).toBeFocused();
+  await selected.press("ArrowRight");
+  const next = dialog.getByRole("button", { name: "2026-07-29" });
+  await expect(next).toBeFocused();
+  await next.press("Enter");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  const actions = await host.locator("[data-form-control-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ value?: unknown; timezone?: string }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]).toEqual({
+    type: "callback",
+    source: {
+      tag: "date_picker",
+      name: "date",
+      elementId: "standalone_date",
+      path: "$.body.elements[0]",
+    },
+    value: "2026-07-29",
+    timezone: await page.evaluate(() =>
+      Intl.DateTimeFormat().resolvedOptions().timeZone),
+  });
+
+  await trigger.press("Space");
+  dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("select_img preserves pointer, keyboard, and touch semantics in a real browser", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-form-controls-pc");
+  const form = host.locator("form");
+  const multi = form.getByRole("checkbox", { name: "图片二" });
+  await multi.focus();
+  await multi.press("Space");
+  await expect(multi).toBeChecked();
+  const bounds = await multi.boundingBox();
+  expect(bounds).not.toBeNull();
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  const touchPoint = {
+    x: bounds!.x + bounds!.width / 2,
+    y: bounds!.y + bounds!.height / 2,
+  };
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [touchPoint],
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect(multi).not.toBeChecked();
+  await session.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+  await session.detach();
+
+  const singleCard = host.locator(".fcr-root").nth(2);
+  const second = singleCard.getByRole("radio", { name: "单图二" });
+  await second.focus();
+  await second.press("Space");
+  await expect(second).toBeChecked();
+  const actions = await host.locator("[data-form-control-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ value?: unknown }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]?.value).toBe("two");
+});
+
+test("form controls cover light/dark, PC/mobile, widths, reduced motion, and scoped overflow", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/tests/visual/");
+
+  for (const id of [
+    "case-form-controls-pc",
+    "case-form-controls-dark",
+    "case-form-controls-mobile",
+  ]) {
+    const host = page.locator(`#${id}`);
+    const root = host.locator(".fcr-root").first();
+    await expect(root).toBeVisible();
+    expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true);
+  }
+
+  const pc = page.locator("#case-form-controls-pc");
+  const form = pc.locator("form");
+  await form.getByRole("textbox", { name: "标题" }).fill("");
+  await form.getByRole("button", { name: "提交" }).click();
+  await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
+
+  const standalone = pc.locator(".fcr-root").nth(1);
+  await standalone.getByRole("button", {
+    name: "预约日期：2026-07-28",
+  }).click();
+  const calendar = standalone.getByRole("dialog", { name: "选择预约日期" });
+  await expect(calendar).toBeVisible();
+  expect(await calendar.evaluate((node) =>
+    getComputedStyle(node).transitionDuration)).toBe("0s");
+  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
+
+  await expect(page.locator("#case-form-controls-dark"))
+    .toHaveScreenshot("card-form-controls-dark.png");
+  await expect(page.locator("#case-form-controls-mobile"))
+    .toHaveScreenshot("card-form-controls-mobile.png");
+});

@@ -72,8 +72,15 @@ if (entry.includes("react.production.min") || entry.includes("react.development"
 if (packageManifest.dependencies?.["@base-ui/react"] !== "^1.6.0") {
   throw new Error("@base-ui/react must remain a verified 1.x runtime dependency.");
 }
+if (packageManifest.dependencies?.["react-day-picker"] !== "^9.7.0") {
+  throw new Error("react-day-picker must remain the verified shadcn Calendar dependency.");
+}
 if (entry.includes("@base-ui/utils") || entry.includes("BaseUI")) {
   throw new Error("Base UI implementation code was bundled into the renderer entry.");
+}
+if (!entry.includes('from "react-day-picker"') ||
+  !entry.includes('from "react-day-picker/locale"')) {
+  throw new Error("The private Calendar must retain external react-day-picker imports.");
 }
 if (/(?:from|import\()\s*["']@\//.test(entry)) {
   throw new Error("A source alias leaked into the built renderer entry.");

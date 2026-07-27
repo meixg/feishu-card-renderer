@@ -1,5 +1,12 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CardRenderer } from "../../src";
 import {
@@ -8,6 +15,11 @@ import {
   fiveLevelContainerCard,
   sixLevelContainerCard,
 } from "../../src/fixtures/container-cards";
+
+afterEach(async () => {
+  cleanup();
+  await act(async () => {});
+});
 
 describe("container rendering", () => {
   it("recursively renders columns and form layout with stable protocol paths", () => {
@@ -36,6 +48,7 @@ describe("container rendering", () => {
     expect(document.getElementById(controls!)).not.toHaveAttribute("hidden");
 
     fireEvent.keyDown(trigger, { key: "Enter" });
+    fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "false");
 
     rerender(<CardRenderer card={defaultContainerCard} />);
@@ -90,6 +103,7 @@ describe("container rendering", () => {
     expect(controls).toMatch(/^fcr-panel-/);
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     fireEvent.keyDown(trigger, { key: "Enter" });
+    fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(document.getElementById(controls!)).not.toHaveAttribute("hidden");
     expect(container.querySelectorAll(`#${controls}`)).toHaveLength(1);

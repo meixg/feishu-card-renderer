@@ -13,6 +13,11 @@ import { completeContainerCard } from "../../src/fixtures/container-cards";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 import { completeInteractiveCard } from "../../src/fixtures/interactive-card";
 import {
+  formControlsValidationCard,
+  singleSelectImageCard,
+  standaloneDateControlsCard,
+} from "../../src/fixtures/form-controls-card";
+import {
   feishuChartCardsByType,
 } from "../../src/fixtures/chart-compatibility";
 import "../../src/styles.css";
@@ -193,6 +198,48 @@ export function OverlayCases(): React.JSX.Element {
   );
 }
 
+export function FormControlCases({
+  colorScheme = "light",
+  device = "pc",
+  id,
+  widthMode,
+}: {
+  colorScheme?: "light" | "dark";
+  device?: "pc" | "mobile";
+  id: string;
+  widthMode: "compact" | "default" | "fill";
+}): React.JSX.Element {
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id={id}>
+      <CardRenderer
+        card={{
+          ...formControlsValidationCard,
+          config: { update_multi: true, width_mode: widthMode },
+        }}
+        colorScheme={colorScheme}
+        device={device}
+        onAction={(action) => setActions((current) => [...current, action])}
+        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+      />
+      <CardRenderer
+        card={standaloneDateControlsCard}
+        colorScheme={colorScheme}
+        device={device}
+        onAction={(action) => setActions((current) => [...current, action])}
+      />
+      <CardRenderer
+        card={singleSelectImageCard}
+        colorScheme={colorScheme}
+        device={device}
+        onAction={(action) => setActions((current) => [...current, action])}
+        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+      />
+      <output hidden data-form-control-actions="">{JSON.stringify(actions)}</output>
+    </section>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <main style={{ display: "grid", gap: 24 }}>
@@ -278,6 +325,22 @@ createRoot(document.getElementById("root")!).render(
           })}
         />
       </section>
+      <FormControlCases
+        id="case-form-controls-pc"
+        widthMode="compact"
+      />
+      <FormControlCases
+        colorScheme="dark"
+        id="case-form-controls-dark"
+        widthMode="default"
+      />
+      <div style={{ width: 390 }}>
+        <FormControlCases
+          device="mobile"
+          id="case-form-controls-mobile"
+          widthMode="fill"
+        />
+      </div>
     </main>
   </React.StrictMode>,
 );
