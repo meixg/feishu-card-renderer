@@ -561,7 +561,7 @@ test("PC Calendar supports focus, arrows, Escape, and timezone-preserving select
   await page.goto("/tests/visual/");
   const host = page.locator("#case-form-controls-pc");
   const standalone = host.locator(".fcr-root").nth(1);
-  const trigger = standalone.getByRole("button", {
+  const trigger = standalone.getByRole("combobox", {
     name: /^预约日期：/,
   });
 
@@ -674,7 +674,7 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
 
   const standalone = pc.locator(".fcr-root").nth(1);
-  await standalone.getByRole("button", {
+  await standalone.getByRole("combobox", {
     name: "预约日期：2026-07-28",
   }).click();
   const calendar = standalone.getByRole("dialog", { name: "选择预约日期" });

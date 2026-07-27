@@ -98,13 +98,6 @@ export function useFormScope(name: string, path: string): FormScope {
     setValues({ ...initialValues.current });
     setInvalidFields(new Set());
   }, []);
-  const hasMissingRequired = useCallback(() => {
-    for (const [fieldName, requirement] of requirements.current) {
-      if (requirement.required &&
-        requirement.isMissing(valuesRef.current[fieldName])) return true;
-    }
-    return false;
-  }, []);
   const validateRequired = useCallback(() => {
     const missing: string[] = [];
     for (const [fieldName, requirement] of requirements.current) {
@@ -132,8 +125,7 @@ export function useFormScope(name: string, path: string): FormScope {
     setFieldControl,
     invalidFields,
     reset,
-    hasMissingRequired,
     validateRequired,
   }), [name, path, values, registerField, updateField, setValue, reset,
-    setFieldControl, invalidFields, hasMissingRequired, validateRequired]);
+    setFieldControl, invalidFields, validateRequired]);
 }

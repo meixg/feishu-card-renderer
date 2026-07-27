@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ButtonElement, CheckerElement, DatePickerElement, DateTimePickerElement,
   InputElement, MultiSelectPersonElement, MultiSelectStaticElement,
@@ -47,17 +47,29 @@ const optionText = (option: SelectOption) => option.text?.content ??
     typeof option.value === "boolean" ? String(option.value) : "");
 const checkerMissing = (value: unknown) => value !== true;
 
+function useElementIds(path: string) {
+  const { domIdPrefix } = useRendererContext();
+  const pathId = path.replace(/[^A-Za-z0-9_-]/g, "-");
+  const prefix = `${domIdPrefix}-${pathId}`;
+  return {
+    choiceName: `${prefix}-choice`,
+    control: `${prefix}-control`,
+    description: `${prefix}-description`,
+    error: `${prefix}-error`,
+    label: `${prefix}-label`,
+  };
+}
+
 function useTips(element: {
   disabled?: boolean;
   hover_tips?: { content?: string };
   disabled_tips?: { content?: string };
-}) {
-  const id = useId().replace(/[^A-Za-z0-9_-]/g, "");
+}, descriptionId: string) {
   const tips = [
     element.hover_tips?.content,
     element.disabled ? element.disabled_tips?.content : undefined,
   ].filter((value): value is string => typeof value === "string" && value.length > 0);
-  const describedBy = tips.length > 0 ? `fcr-tips-${id}` : undefined;
+  const describedBy = tips.length > 0 ? descriptionId : undefined;
   return {
     describedBy,
     nodes: tips.length > 0
@@ -69,11 +81,10 @@ function useTips(element: {
 }
 
 function fieldFeedback(
-  path: string,
+  errorId: string,
   describedBy: string | undefined,
   invalid: boolean,
 ) {
-  const errorId = `fcr-error-${path.replace(/[^a-z0-9_-]/gi, "-")}`;
   return {
     describedBy: [describedBy, invalid ? errorId : undefined]
       .filter(Boolean)
@@ -175,9 +186,10 @@ function useField(element: InteractiveElement, initial: unknown,
 
 export function Input({ element, path }: { element: InputElement; path: string }) {
   const field = useField(element, element.default_value ?? "");
-  const tips = useTips(element);
-  const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
-  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
+  const id = ids.control;
   const shared = { id, disabled: field.disabled, required: element.required,
     "aria-describedby": feedback.describedBy,
     "aria-invalid": field.invalid || undefined,
@@ -288,14 +300,15 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
     : undefined;
   const initial = element.initial_option ?? indexed ?? "";
   const field = useField(element, initial);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
   const { choices, probes } = useChoiceOptions(element, path);
   const selectedIndex = (element.options ?? []).findIndex((option) =>
     sameOptionValue(rawOptionValue(option), field.value));
   const label = element.label?.content ?? element.placeholder?.content ??
     element.name ?? "选择";
-  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   return <><Field data-invalid={field.invalid || undefined}>
     <FieldLabel>{label}</FieldLabel>
     <ChoiceField
@@ -328,7 +341,8 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
 type Multi = MultiSelectStaticElement | MultiSelectPersonElement;
 export function MultiSelect({ element, path }: { element: Multi; path: string }) {
   const field = useField(element, element.selected_values ?? []);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
   const { choices, probes } = useChoiceOptions(element, path);
   const selectedTokens = (element.options ?? []).flatMap((option, index) => {
@@ -337,7 +351,7 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
       ? [optionToken(path, index)] : [];
   });
   const label = element.label?.content ?? element.name ?? "多选";
-  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   return <><Field data-invalid={field.invalid || undefined}>
     <FieldLabel>{label}</FieldLabel>
     <ChoiceField
@@ -400,14 +414,15 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
     tag === "picker_time" ? element.initial_time :
     element.initial_datetime?.replace(" ", "T");
   const field = useField(element, initial ?? "");
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
   const [open, setOpen] = useState(false);
   const type = tag === "date_picker" ? "date" : tag === "picker_time" ? "time" :
     "datetime-local";
   const label = element.label?.content ?? element.name ?? "日期时间";
-  const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
-  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const id = ids.control;
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   const value = String(field.value ?? "");
   const selected = parseDateValue(value);
   return <><Field data-invalid={field.invalid || undefined}>
@@ -424,7 +439,8 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
             aria-describedby={feedback.describedBy}
             aria-invalid={field.invalid || undefined}
             aria-label={`${label}：${value || "请选择"}`}
-            data-required={element.required || undefined}
+            aria-required={element.required || undefined}
+            role="combobox"
             disabled={field.disabled}
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
@@ -474,9 +490,10 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
 export function Checker({ element, path }: { element: CheckerElement; path: string }) {
   const field = useField(element, element.checked ?? false, false, true,
     checkerMissing);
-  const tips = useTips(element);
-  const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
-  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const id = ids.control;
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   return <><Field data-invalid={field.invalid || undefined}>
     <div className="fcr-checker">
       <Checkbox
@@ -513,10 +530,11 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
   const initial = element.multi_select ? element.selected_values ?? [] :
     element.selected_values?.[0] ?? "";
   const field = useField(element, initial);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const label = element.label?.content ?? element.name ?? "选择图片";
-  const labelId = `fcr-label-${path.replace(/[^a-z0-9_-]/gi, "-")}`;
-  const feedback = fieldFeedback(path, tips.describedBy, field.invalid);
+  const labelId = ids.label;
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   const options = element.options ?? [];
   const firstFocusableIndex = options.findIndex((option) =>
     rawOptionValue(option) !== undefined && option.disabled !== true);
@@ -564,7 +582,7 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
             aria-invalid={field.invalid || undefined}
             aria-labelledby={labelId}
             disabled={field.disabled}
-            name={`fcr-choice-${path}`}
+            name={ids.choiceName}
             required={element.required}
             value={selectedToken < 0 ? "" : optionToken(path, selectedToken)}
             onValueChange={(token) => {
@@ -602,7 +620,8 @@ export function Button({ element, path }: { element: ButtonElement; path: string
   const { form } = useRecursiveContext();
   const { onAction } = useRendererContext();
   const [confirm, setConfirm] = useState(false);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const trigger = useRef<HTMLButtonElement>(null);
   const business = element.form_action_type !== "reset";
   const validate = () => element.form_action_type === "submit" &&
@@ -651,7 +670,8 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
   const { onAction } = useRendererContext();
   const [open, setOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const trigger = useRef<HTMLButtonElement>(null);
   return <div className="fcr-overflow">
     <DropdownMenu

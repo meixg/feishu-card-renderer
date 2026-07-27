@@ -37,7 +37,7 @@ it("keeps the PC date Popover and calendar keyboard surface accessible", async (
     device="pc"
     onAction={() => {}}
   />);
-  fireEvent.click(screen.getByRole("button", {
+  fireEvent.click(screen.getByRole("combobox", {
     name: "预约日期：2026-07-28",
   }));
 

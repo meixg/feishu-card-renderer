@@ -25,6 +25,93 @@ function clear(control: HTMLElement): void {
 }
 
 describe("Issue #28 form controls, Field validation, and date interaction", () => {
+  it("keeps field IDs and label, description, and error references inside each card", () => {
+    const card = {
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "form",
+          name: "duplicate-structure",
+          elements: [
+            {
+              tag: "input",
+              name: "title",
+              label: { tag: "plain_text", content: "标题" },
+              hover_tips: { tag: "plain_text", content: "标题说明" },
+              required: true,
+            },
+            {
+              tag: "select_img",
+              name: "image",
+              label: { tag: "plain_text", content: "图片" },
+              hover_tips: { tag: "plain_text", content: "图片说明" },
+              multi_select: true,
+              options: [{
+                text: { tag: "plain_text", content: "图片一" },
+                value: "one",
+              }],
+              required: true,
+            },
+            {
+              tag: "date_picker",
+              name: "date",
+              label: { tag: "plain_text", content: "日期" },
+              hover_tips: { tag: "plain_text", content: "日期说明" },
+              required: true,
+            },
+            {
+              tag: "button",
+              form_action_type: "submit",
+              text: { tag: "plain_text", content: "提交" },
+            },
+          ],
+        }],
+      },
+    } as const;
+    const { container } = render(<>
+      <CardRenderer card={card} onAction={() => {}} />
+      <CardRenderer card={card} onAction={() => {}} />
+    </>);
+    const cards = [...container.querySelectorAll<HTMLElement>("article")];
+    expect(cards).toHaveLength(2);
+
+    for (const renderedCard of cards) {
+      fireEvent.click(within(renderedCard).getByRole("button", {
+        name: "提交",
+      }));
+      for (const label of renderedCard.querySelectorAll<HTMLLabelElement>(
+        "label[for]",
+      )) {
+        expect(renderedCard.querySelector(`[id="${label.htmlFor}"]`))
+          .not.toBeNull();
+      }
+      const describedIds = new Set<string>();
+      for (const control of renderedCard.querySelectorAll<HTMLElement>(
+        "[aria-describedby]",
+      )) {
+        for (const id of control.getAttribute("aria-describedby")!.split(" ")) {
+          describedIds.add(id);
+          expect(renderedCard.querySelector(`[id="${id}"]`)).not.toBeNull();
+        }
+      }
+      for (const control of renderedCard.querySelectorAll<HTMLElement>(
+        "[aria-labelledby]",
+      )) {
+        for (const id of control.getAttribute("aria-labelledby")!.split(" ")) {
+          expect(renderedCard.querySelector(`[id="${id}"]`)).not.toBeNull();
+        }
+      }
+      for (const error of within(renderedCard).getAllByRole("alert")) {
+        expect(error.id).not.toBe("");
+        expect(describedIds).toContain(error.id);
+      }
+    }
+
+    const ids = [...container.querySelectorAll<HTMLElement>("[id]")]
+      .map((element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("marks every missing required field, focuses and scrolls the first, clears corrected errors, and resets", async () => {
     const onAction = vi.fn();
     const scrollIntoView = vi.fn();
@@ -167,7 +254,9 @@ describe("Issue #28 form controls, Field validation, and date interaction", () =
     />);
 
     expect(container.querySelector("button button")).toBeNull();
-    const trigger = screen.getByRole("button", { name: "预约日期：2026-07-28" });
+    const trigger = screen.getByRole("combobox", {
+      name: "预约日期：2026-07-28",
+    });
     trigger.focus();
     fireEvent.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "选择预约日期" });
@@ -193,6 +282,18 @@ describe("Issue #28 form controls, Field validation, and date interaction", () =
       expect(screen.queryByRole("dialog", { name: "选择预约日期" })).toBeNull();
       expect(trigger).toHaveFocus();
     });
+  });
+
+  it("exposes required state on the PC date Popover trigger", () => {
+    render(<CardRenderer
+      card={formControlsValidationCard}
+      device="pc"
+      onAction={() => {}}
+    />);
+
+    expect(screen.getByRole("combobox", {
+      name: "日期：2026-07-28",
+    })).toHaveAttribute("aria-required", "true");
   });
 
   it("keeps mobile date and all time/datetime controls native, formatted, and timezone-aware", () => {
