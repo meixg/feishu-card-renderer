@@ -16,6 +16,7 @@ import {
   keyForElement,
 } from "../schema/identity";
 import { ownDataValue, safeDataSnapshot } from "../schema/safe-data";
+import { collectMarkdownAnalyses } from "../markdown/bounded";
 
 export type { ResourceResolver } from "./context";
 export type FatalFallback = (
@@ -76,6 +77,10 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     () => collectUniqueElementIds(safeCard),
     [safeCard],
   );
+  const markdownAnalyses = useMemo(
+    () => collectMarkdownAnalyses(result.card),
+    [result.card],
+  );
   // Resolver identity is part of the cache boundary. A host may switch tenant
   // or session resolvers while reusing the renderer and protocol keys.
   const imageScope = useMemo(() => ({
@@ -90,6 +95,9 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   }), [props.resolvePerson]);
   const diagnostics = useMemo(() => {
     const unique = new Map(result.diagnostics.map((item) => [keyFor(item), item]));
+    for (const analysis of markdownAnalyses.values()) {
+      for (const item of analysis.diagnostics) unique.set(keyFor(item), item);
+    }
     if (!props.onAction && hasBusinessAction(safeCard)) {
       const item: CardDiagnostic = {
         code: "missing_on_action", path: "$", classification: "recoverable",
@@ -99,7 +107,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
       unique.set(keyFor(item), item);
     }
     return [...unique.values()];
-  }, [props.onAction, result.diagnostics, safeCard]);
+  }, [markdownAnalyses, props.onAction, result.diagnostics, safeCard]);
   const diagnosticKey = diagnostics.map(keyFor).join("|");
   useEffect(() => {
     onDiagnostic?.(diagnostics);
@@ -141,6 +149,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
     personControllers: personScope.controllers,
     uniqueElementIds,
     onAction: props.onAction,
+    markdownAnalyses,
   } as const;
   const bodyStyle = {
     padding: safeBox(card.body.padding, false),

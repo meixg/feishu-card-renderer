@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import type { Person } from "../types";
 import type { CardAction } from "../types";
+import type { MarkdownAnalysis } from "../markdown/bounded";
 
 export type ResourceResolver<T> = (
   key: string,
@@ -29,6 +30,7 @@ type RendererContextValue = Readonly<{
   personControllers: Set<AbortController>;
   uniqueElementIds: ReadonlySet<string>;
   onAction?: (action: CardAction) => void;
+  markdownAnalyses: ReadonlyMap<string, MarkdownAnalysis>;
 }>;
 
 export const RendererContext = createContext<RendererContextValue | null>(null);

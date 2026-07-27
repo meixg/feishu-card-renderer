@@ -41,6 +41,44 @@ export const invalidRendererCard = {
   },
 } as const;
 
+export const minimalMarkdownCard: Card = {
+  schema: "2.0",
+  body: { elements: [{ tag: "markdown", content: "A paragraph." }] },
+};
+
+export const completeMarkdownFoundationCard: Card = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: [
+        "# 基础语义",
+        "",
+        "段落包含 *强调*、**粗体**、~~删除线~~和[安全链接](https://example.com)。",
+        "",
+        "- 无序项",
+        "  1. 嵌套有序项",
+        "",
+        "> 引用内容",
+        "",
+        "---",
+      ].join("\n"),
+    }],
+  },
+};
+
+export const invalidMarkdownFoundationCard = {
+  schema: "2.0",
+  body: {
+    elements: [{
+      tag: "markdown",
+      content: "<future-tag>可见原文</future-tag>\n\n"
+        + "![替代文本](https://tracker.example/image.png)\n\n"
+        + "[危险链接](javascript:alert(1))",
+    }],
+  },
+} as const;
+
 export const chartRendererCard: Card = {
   schema: "2.0",
   body: {

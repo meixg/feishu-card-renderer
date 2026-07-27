@@ -42,9 +42,33 @@
   .fcr-body { display: flex; padding: 16px 20px; min-width: 0; }
   .fcr-direction-vertical { flex-direction: column; }
   .fcr-direction-horizontal { flex-direction: row; }
-  .fcr-div, .fcr-markdown { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .fcr-div { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .fcr-markdown { min-width: 0; overflow-wrap: anywhere; }
+  .fcr-markdown > :first-child { margin-top: 0; }
+  .fcr-markdown > :last-child { margin-bottom: 0; }
+  .fcr-markdown h1, .fcr-markdown h2, .fcr-markdown h3,
+  .fcr-markdown h4, .fcr-markdown h5, .fcr-markdown h6 {
+    margin: 12px 0 6px; font-size: 1em; line-height: 1.4; font-weight: 600;
+  }
+  .fcr-markdown h1 { font-size: 1.3em; }
+  .fcr-markdown h2 { font-size: 1.18em; }
+  .fcr-markdown p { margin: 8px 0; }
+  .fcr-markdown ul, .fcr-markdown ol { margin: 8px 0; padding-left: 24px; }
+  .fcr-markdown blockquote {
+    margin: 8px 0; padding-left: 12px; border-left: 3px solid var(--fcr-color-border);
+    color: var(--fcr-color-text-secondary);
+  }
   .fcr-markdown code { overflow-wrap: anywhere; }
   .fcr-markdown a { color: var(--fcr-color-primary); }
+  .fcr-markdown a:focus-visible {
+    outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
+  }
+  .fcr-markdown-image-alt {
+    color: var(--fcr-color-text-secondary); font-style: italic;
+  }
+  .fcr-markdown-truncated {
+    display: block; margin-top: 8px; color: var(--fcr-color-text-secondary);
+  }
   .fcr-hr { width: 100%; border: 0; border-top: 1px solid var(--fcr-color-border); }
   .fcr-image { margin: 0; overflow: hidden; }
   .fcr-image img { display: block; width: 100%; height: auto; }

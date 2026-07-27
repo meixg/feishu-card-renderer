@@ -6,7 +6,9 @@ import type {
 } from "../../schema/components";
 import { useImageResource } from "../../renderer/resources";
 import { safeBox, safePx } from "../../styles/safe";
-import { SafeMarkdown, SafeText } from "../primitives/SafeText";
+import { SafeText } from "../primitives/SafeText";
+import { MarkdownContent } from "./MarkdownContent";
+import { useRendererContext } from "../../renderer/context";
 
 export function Div({ element }: { element: DivElement }): React.JSX.Element {
   return (
@@ -16,10 +18,17 @@ export function Div({ element }: { element: DivElement }): React.JSX.Element {
   );
 }
 
-export function Markdown({ element }: { element: MarkdownElement }): React.JSX.Element {
+export function Markdown({ element, path }: {
+  element: MarkdownElement;
+  path: string;
+}): React.JSX.Element {
+  const { markdownAnalyses } = useRendererContext();
+  const analysis = markdownAnalyses.get(path);
   return (
     <div className="fcr-markdown">
-      <SafeMarkdown content={element.content ?? ""} />
+      {analysis
+        ? <MarkdownContent analysis={analysis} />
+        : element.content ?? ""}
     </div>
   );
 }

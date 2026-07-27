@@ -30,7 +30,11 @@ export type CardDiagnosticCode =
   | "unsafe_url"
   | "missing_on_action"
   | "image_unavailable"
-  | "image_resolve_failed";
+  | "image_resolve_failed"
+  | "markdown_limit_exceeded"
+  | "markdown_unsupported_markup"
+  | "markdown_image_blocked"
+  | "markdown_parse_failed";
 
 export type CardDiagnostic = {
   code: CardDiagnosticCode;
