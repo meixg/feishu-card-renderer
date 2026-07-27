@@ -7,7 +7,10 @@ pnpm add @meixg/feishu-card-renderer react react-dom
 ```
 
 包仅发布 ESM、TypeScript 声明和预编译 CSS。React/ReactDOM 是 peer
-dependencies；宿主不需要 Tailwind。应用入口必须加载一次样式：
+dependencies。`@base-ui/react`、`react-day-picker`、CVA、`clsx` 和
+`tailwind-merge` 是包的 runtime dependencies，由包管理器自动安装；它们没有
+公共 provider 或类型契约。Tailwind CSS 4 和 PostCSS 只在本仓库构建时使用，
+宿主不需要安装、扫描或配置 Tailwind。应用入口必须加载一次样式：
 
 ```tsx
 import {
@@ -104,11 +107,40 @@ chunk。宿主 CSP 应继续禁止非预期脚本来源。不要全局覆盖 `.f
 发布构建固定使用 Markdown 字符实体解码器的无 DOM 条件导出；根 ESM 入口在没有
 `document` 的 Node 环境可直接导入，导入期间不会发起 `fetch` 或其它网络请求。
 
+每张成功渲染的卡片会在自己的 `.fcr-root` 内输出一个稳定 portal host。服务端只
+输出空 host 和关闭状态的 overlay 树；hydration 复用同一 host，客户端 effect
+取得 DOM 后，Alert Dialog、Dialog、Menu、Select/Combobox、Drawer 和 Popover
+才把内容放入其中。这样 portal 继承所属卡片的 light/dark、字体和 `--fcr-*`
+token，多张卡片不会共享 host。卸载一张打开 overlay 的卡片会同时移除其 portal、
+焦点陷阱和 inert 状态，不影响页面中的其它卡片。
+
+发布构建只有一个 `dist/styles.css`，所有普通选择器均受 `.fcr` 命名空间约束，
+不包含 Tailwind preflight、通用 `:root`、`body` 或未作用域 reset。库构建将
+React/ReactDOM、Base UI、Calendar、CVA、`clsx` 和 `tailwind-merge`
+externalize；包内 shadcn wrapper 仍会编译进 `dist/index.js`，且产物不得含
+`@/` 或 `#` 源码 alias。
+
+## Base UI 交互集成
+
+- PC 的菜单、选择器和日期使用锚定 popup；mobile 选择器使用 Drawer，time 与
+  datetime 保持浏览器原生输入。
+- 本地搜索不发出 `CardAction`，最多展示前 100 个匹配项；协议 option value
+  始终经过内部 opaque token 往返，对象值不会变成 DOM 字符串。
+- 所有 overlay 仍通过协议层生成动作。portal 中的子交互会阻止父
+  `interactive_container` 冒泡，confirm 取消不产生 action。
+- required submit 聚焦第一个错误字段；修正后清除字段错误；reset 恢复协议初始值。
+
+Base UI 是私有实现细节。本版本不兼容旧的内部 DOM、未文档化 `.fcr-*` class、
+Base UI `data-*` 属性或历史视觉快照，也不提供旧交互模式。公共 React props、
+schema 子路径、协议值和 `CardAction` 才是集成兼容边界。
+
 ## 1.0 限制
 
 - 仅支持 JSON 2.0；不读取 1.0 根级 `elements` 或 `i18n_elements`。
 - 不模拟 7.20 以前客户端，不支持搭建工具专用循环容器。
 - Web 视觉目标是协议一致，不承诺复制某个飞书客户端版本的私有设计 token。
+- 同一页面只应让最上层 modal 接受用户输入；Base UI 会按标准模态语义把其它内容
+  设为 inert。宿主卸载当前卡片后，其 modal 状态会清理，剩余卡片可继续交互。
 - 独立 `markdown` 与 `lark_md` 使用不同解析路径；后者仍仅支持既有有限语法。
   原始 HTML 和未知飞书扩展标签不会执行，而是显示可见原文；远程 Markdown
   图片不会加载，只保留 alt 文本。代码语言仅显示文本标签，不提供语法高亮。

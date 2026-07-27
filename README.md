@@ -18,7 +18,9 @@
 pnpm add @meixg/feishu-card-renderer react react-dom
 ```
 
-项目发布 ESM、TypeScript 类型和预编译 CSS，支持 React 18.2 至 19。使用者不需要安装或配置 Tailwind CSS。
+项目发布 ESM、TypeScript 类型和预编译 CSS，支持 React 18.2 至 19。复杂交互由
+包内私有的 shadcn/Base UI 视图层实现，相关运行时依赖会随本包安装；使用者不需要
+安装、扫描或配置 Tailwind CSS。
 
 ## 快速开始
 
@@ -181,8 +183,11 @@ import type {
 - 支持标题、分栏、表单、交互容器和折叠面板。
 - 支持文本、Markdown、图片、多图、人员、图表、表格和分隔线。
 - 支持输入框、按钮、菜单、静态选项、人员选择、日期时间、图片选择和勾选器。
+- 支持选择器本地搜索、100 项展示上限、多选 chips、PC popup 和 mobile Drawer；
+  搜索只使用卡片已有选项及 resolver 已返回的人员显示信息，不查询人员目录。
 - 支持 light/dark、PC/mobile，以及 compact、default、fill 三种宽度模式。
-- 支持 SSR；图表会在浏览器挂载后加载。
+- 支持 SSR；每张成功渲染的卡片拥有自己的主题作用域 portal host，overlay 只在
+  客户端挂载后进入该 host，卡片卸载时一并清理。图表也只在浏览器挂载后加载。
 - 不支持 JSON 1.0、旧版 `tag: "action"` 交互模块或卡片搭建工具专用的循环容器。
 
 为了避免异常输入拖垮页面，渲染器还会执行 JSON 2.0 的主要边界检查，包括 200 个元素上限、五层容器上限、`element_id` 唯一性和组件嵌套限制。未知字段会被忽略，未知组件会稳定降级，不会让整张卡片白屏。
@@ -210,6 +215,17 @@ Markdown 表格保留 `table`、表头、行和单元格语义，并支持 GFM �
 逐像素复刻。
 
 逐组件和字段级支持情况请查看 [1.0 兼容矩阵](docs/compatibility-matrix.md)。官方协议仍可能演进；如文档存在冲突，以最新的飞书 JSON 2.0 组件子文档为准。
+
+## 交互实现兼容性
+
+确认框、图片预览、overflow、选择器、日期选择、表单字段、图片选择和折叠面板已迁移
+到 shadcn/Base UI 交互层。飞书 JSON 2.0 输入、normalization、表单值、
+required/reset/confirm/disabled 和 `CardAction` 契约保持不变；shadcn 组件、
+provider、context 和类型不属于公共 API。
+
+这次升级不兼容旧的内部 DOM、未文档化 `.fcr-*` class 或视觉快照，也不提供 legacy
+interaction mode。集成方应只依赖本 README 和公共类型中声明的接口；品牌定制使用
+文档化的 `--fcr-*` 语义变量，不要查询或覆盖 Base UI 的 `data-*` 内部状态。
 
 ## 只使用校验和类型
 

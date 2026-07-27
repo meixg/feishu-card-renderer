@@ -253,6 +253,61 @@ test("Alert Dialog traps focus, cancels safely, and confirms exactly once", asyn
   });
 });
 
+test("an open card portal tears down without disturbing another card", async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/tests/visual/");
+  const lifecycle = page.locator("#case-portal-lifecycle");
+  const firstCard = lifecycle.locator("[data-portal-card='first']");
+  const secondCard = lifecycle.locator("[data-portal-card='second']");
+
+  await firstCard.getByRole("button", { name: "打开第一张卡确认" }).click();
+  const firstDialog = firstCard.getByRole("alertdialog", {
+    name: "第一张卡确认",
+  });
+  await expect(firstDialog).toBeVisible();
+  expect(await firstDialog.evaluate((node) =>
+    node.closest("[data-portal-card]")?.getAttribute("data-portal-card")))
+    .toBe("first");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#remove-first-card")?.click();
+  });
+  await expect(firstCard).toHaveCount(0);
+  await expect(firstDialog).toHaveCount(0);
+  await expect(lifecycle.locator("[data-fcr-portal-host]")).toHaveCount(1);
+
+  const secondTrigger = secondCard.getByRole("button", {
+    name: "打开第二张卡确认",
+  });
+  await expect(secondTrigger).toBeVisible();
+  expect(await secondTrigger.evaluate((node) =>
+    node.closest("[data-base-ui-inert]"))).toBeNull();
+  await secondTrigger.focus();
+  await secondTrigger.press("Enter");
+  const secondDialog = secondCard.getByRole("alertdialog", {
+    name: "第二张卡确认",
+  });
+  await expect(secondDialog).toBeVisible();
+  await expect(secondDialog.getByRole("button", { name: "取消" }))
+    .toBeFocused();
+  expect(await secondDialog.evaluate((node) =>
+    node.closest("[data-portal-card]")?.getAttribute("data-portal-card")))
+    .toBe("second");
+
+  await secondDialog.getByRole("button", { name: "确认" }).press("Enter");
+  await expect(secondDialog).toBeHidden();
+  await expect(secondTrigger).toBeFocused();
+  const actions = await lifecycle.locator("[data-portal-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ value?: { owner?: string } }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]?.value).toEqual({ owner: "second" });
+  expect(pageErrors).toEqual([]);
+});
+
 test("Dropdown Menu supports roving keys, outside press, and confirm handoff", async ({
   page,
 }) => {

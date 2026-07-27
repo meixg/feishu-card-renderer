@@ -376,13 +376,12 @@
   .fcr-ui-button:focus-visible {
     outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
   }
-  .fcr-field input, .fcr-field textarea, .fcr-field select, .fcr-button,
+  .fcr-field input, .fcr-field textarea, .fcr-button,
   .fcr-overflow button {
     min-height: 32px; border: 1px solid var(--fcr-color-border);
     border-radius: 6px; padding: 6px 10px; background: var(--fcr-color-surface);
     color: inherit; font: inherit;
   }
-  .fcr-field select[multiple] { min-height: 72px; }
   .fcr-button { cursor: pointer; }
   .fcr-field :focus-visible, .fcr-button:focus-visible,
   .fcr-overflow button:focus-visible, .fcr-checker input:focus-visible {

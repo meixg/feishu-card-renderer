@@ -1,30 +1,15 @@
 import {
   type ComponentProps,
-  useCallback,
-  useEffect,
   useMemo,
   useRef,
 } from "react";
-import { createPortal } from "react-dom";
-import { UiPortalContext, useUiPortalHost } from "./portal-context";
+import { UiPortalContext } from "./portal-context";
 
 export function UiPortalProvider({ children }: {
   children: React.ReactNode;
 }): React.JSX.Element {
   const hostRef = useRef<HTMLDivElement>(null);
-  const cleanups = useRef(new Set<() => void>());
-  const registerCleanup = useCallback((cleanup: () => void) => {
-    cleanups.current.add(cleanup);
-    return () => cleanups.current.delete(cleanup);
-  }, []);
-  useEffect(() => () => {
-    for (const cleanup of cleanups.current) cleanup();
-    cleanups.current.clear();
-  }, []);
-  const context = useMemo(
-    () => ({ hostRef, registerCleanup }),
-    [registerCleanup],
-  );
+  const context = useMemo(() => ({ hostRef }), []);
 
   return (
     <UiPortalContext.Provider value={context}>
@@ -58,16 +43,5 @@ export function UiPortalEventBoundary({
         onPointerDown?.(event);
       }}
     />
-  );
-}
-
-export function UiPortal({ children }: {
-  children: React.ReactNode;
-}): React.ReactPortal | null {
-  const host = useUiPortalHost();
-  if (!host) return null;
-  return createPortal(
-    <UiPortalEventBoundary>{children}</UiPortalEventBoundary>,
-    host,
   );
 }

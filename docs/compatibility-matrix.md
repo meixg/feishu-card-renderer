@@ -11,7 +11,7 @@ defaults/invalid 卡、完整字段清单、具体 normalization 默认值、非
 | 容器 | `column_set`, `column`, `form`, `interactive_container`, `collapsible_panel` | 允许/禁止嵌套、五层边界、稳定路径、表单提交、折叠 ARIA |
 | 基础展示 | `div`, `markdown`, `img`, `hr` | 默认布局、Markdown 消毒、危险 URL、图片资源三态 |
 | 复杂展示 | `img_combination`, `person`, `person_list`, `chart`, `table` | 资源缺失/成功/失败、VChart 纯数据、语义表格、根级限制 |
-| 交互 | `input`, `button`, `overflow`, `select_static`, `multi_select_static`, `select_person`, `multi_select_person`, `date_picker`, `picker_time`, `picker_datetime`, `select_img`, `checker` | 原生语义、键盘、disabled、confirm、表单初始值与 reset |
+| 交互 | `input`, `button`, `overflow`, `select_static`, `multi_select_static`, `select_person`, `multi_select_person`, `date_picker`, `picker_time`, `picker_datetime`, `select_img`, `checker` | Base UI/原生混合语义、键盘/触控、disabled、confirm、表单初始值与 reset |
 
 `header` 是顶层结构而非 `body.elements` tag，由 renderer fixture、schema 测试和
 light/dark 视觉用例独立覆盖。
@@ -54,7 +54,10 @@ unknown 五类卡。complete 卡同时覆盖全部已支持语法（标题、段
 
 Playwright 对包含全部 tag 的发布卡执行全部 12 个组合：light/dark × PC/mobile ×
 compact 400px/default 600px/fill。另有容器、图表 light/dark/mobile 和图表预览
-基线。视觉回归验证协议布局稳定，不宣称逐像素复制飞书私有客户端。
+基线。交互专项基线另覆盖 400px PC choice popup、多选 chips、mobile Drawer、
+表单 light/dark/PC/mobile、required error 和 PC Calendar。视觉回归验证协议布局
+稳定，不宣称逐像素复制飞书私有客户端；Base UI 升级后的内部 DOM 和视觉不兼容
+旧快照。
 
 Markdown 完整卡在同一 12 组合中逐项测量：卡片 `scrollWidth` 等于
 `clientWidth`，代码块与表格容器保持自身 `overflow-x: auto` 且不宽于外层卡片。
@@ -67,14 +70,31 @@ Playwright 在真实 Chrome 中使用正式懒加载 VChart runtime 实例化，
 
 ## 可访问性矩阵
 
-- 语义 button/input/select/table；交互组件有原生 disabled 状态。
+- 语义 button/input/combobox/listbox/menu/dialog/table；交互组件有原生或 Base UI
+  暴露的 disabled 状态。
 - 折叠面板关联稳定 `aria-controls`/`aria-expanded`。
-- overflow、confirm 和 preview 覆盖 Enter/Escape、焦点进入与恢复。
+- overflow、confirm、preview、choice Drawer 和 Calendar 覆盖 Tab/Shift+Tab、
+  Enter/Space、Arrow、Home/End、Escape、焦点进入、陷阱与恢复。
 - 自定义交互面有 `:focus-visible`；reduced-motion 下关闭 transition 和 smooth
   scrolling。
 - axe 覆盖基础、复杂内容、递归容器和表单；light/dark 主次文本及焦点色有 WCAG
   对比度断言。颜色不作为唯一状态表达。
 - Markdown 发布卡显式断言标题、列表、引用、表格、代码、链接、只读任务状态与
   截断 `role="note"`，并在公共 `CardRenderer` 输出上运行 axe。
+
+## Base UI 交互发布证据
+
+- 每张成功卡片只有一个主题作用域 portal host；fatal 卡不创建 host。SSR 输出、
+  hydration 复用、同页多卡 ID/主题隔离、打开状态卸载和 inert 清理由组件测试及
+  真实 Chrome 流程覆盖。
+- confirm、overflow 和图片预览位于所属卡片 portal；取消不产生 action，确认恰好
+  执行一次，portal 子交互不会触发父 `interactive_container`。
+- 少于 8 项的单选使用 Select，8 项以上使用可搜索 Combobox；多选始终可搜索并
+  使用 chips。搜索完整 options、最多显示 100 项，对象 option value、required、
+  reset、disabled、confirm 和人员 resolver 三态均有公共 `CardRenderer` 证据。
+- PC 使用 popup/Calendar，mobile choice 使用 Drawer；真实 Chrome 覆盖触控下滑、
+  软键盘安全边界、焦点返回，以及 date/time/datetime 的协议格式和 IANA timezone。
+- shadcn/Base UI wrapper、provider、context 和类型保持私有；兼容矩阵只承诺协议、
+  公共类型、DOM 语义角色和 `CardAction`，不承诺内部 DOM/class/视觉兼容。
 
 明确协议冲突和实现限制见 [集成指南](integration.md#10-限制)。
