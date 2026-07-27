@@ -17,6 +17,13 @@ async function settleVisualLayout(
   }));
 }
 
+async function overlayActions(
+  page: import("@playwright/test").Page,
+): Promise<unknown[]> {
+  return page.locator("#overlay-actions").evaluate((node) =>
+    JSON.parse(node.textContent || "[]"));
+}
+
 test("theme, device, and width visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
 
@@ -205,4 +212,143 @@ test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", a
       }
     }
   }
+});
+
+test("Alert Dialog traps focus, cancels safely, and confirms exactly once", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const overlay = page.locator("#case-overlays");
+  const trigger = overlay.getByRole("button", { name: "打开确认" });
+
+  await trigger.focus();
+  await trigger.press("Enter");
+  let dialog = overlay.getByRole("alertdialog", { name: "确认执行" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "取消" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(dialog.getByRole("button", { name: "确认" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("button", { name: "取消" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(await overlayActions(page)).toEqual([]);
+
+  await trigger.press("Space");
+  dialog = overlay.getByRole("alertdialog", { name: "确认执行" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "确认" }).press("Enter");
+
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  const actions = await overlayActions(page) as Array<{
+    type?: string;
+    value?: { owner?: string };
+  }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]).toMatchObject({
+    type: "callback",
+    value: { owner: "confirm-child" },
+  });
+});
+
+test("Dropdown Menu supports roving keys, outside press, and confirm handoff", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const overlay = page.locator("#case-overlays");
+  const trigger = overlay.getByRole("button", { name: "更多操作" });
+
+  await trigger.focus();
+  await trigger.press("Enter");
+  let menu = overlay.getByRole("menu", { name: "更多操作" });
+  let first = overlay.getByRole("menuitem", { name: "第一项" });
+  const disabled = overlay.getByRole("menuitem", { name: "禁用项" });
+  let last = overlay.getByRole("menuitem", { name: "最后项" });
+  await expect(first).toBeFocused();
+  await first.press("End");
+  await expect(last).toBeFocused();
+  await last.press("Home");
+  await expect(first).toBeFocused();
+  await first.press("ArrowDown");
+  await expect(disabled).toBeFocused();
+  await expect(disabled).toHaveAttribute("aria-disabled", "true");
+  await disabled.press("Enter");
+  await expect(menu).toBeVisible();
+  expect(await overlayActions(page)).toEqual([]);
+  await disabled.press("ArrowDown");
+  await expect(last).toBeFocused();
+  await last.press("Escape");
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.press("Space");
+  menu = overlay.getByRole("menu", { name: "更多操作" });
+  await expect(menu).toBeVisible();
+  await page.mouse.click(1, 1);
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  first = overlay.getByRole("menuitem", { name: "第一项" });
+  await first.click();
+  await expect(overlay.getByRole("menu")).toBeHidden();
+  let dialog = overlay.getByRole("alertdialog", { name: "确认菜单操作" });
+  await dialog.getByRole("button", { name: "取消" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(await overlayActions(page)).toEqual([]);
+
+  await trigger.click();
+  last = overlay.getByRole("menuitem", { name: "最后项" });
+  await last.click();
+  dialog = overlay.getByRole("alertdialog", { name: "确认菜单操作" });
+  await dialog.getByRole("button", { name: "确认" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  const actions = await overlayActions(page) as Array<{
+    type?: string;
+    value?: { owner?: string };
+  }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]).toMatchObject({
+    type: "callback",
+    value: { owner: "overflow-last" },
+  });
+  expect(actions).not.toContainEqual(expect.objectContaining({
+    value: { owner: "container-parent" },
+  }));
+});
+
+test("image Dialog handles arrows, trapped Tab, Escape, and outside press", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const overlay = page.locator("#case-overlays");
+  const trigger = overlay.getByRole("button", { name: "打开图片组预览" });
+
+  await trigger.focus();
+  await trigger.press("Space");
+  let dialog = overlay.getByRole("dialog", { name: "第一张" });
+  await expect(dialog).toBeVisible();
+  await dialog.press("ArrowRight");
+  dialog = overlay.getByRole("dialog", { name: "第二张" });
+  await expect(dialog).toContainText("2 / 2");
+  await page.keyboard.press("Tab");
+  expect(await dialog.evaluate((node) => node.contains(document.activeElement)))
+    .toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  dialog = overlay.getByRole("dialog", { name: "第一张" });
+  await expect(dialog).toBeVisible();
+  await overlay.locator(".fcr-preview-backdrop").click({
+    position: { x: 4, y: 4 },
+  });
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(await overlayActions(page)).toEqual([]);
 });

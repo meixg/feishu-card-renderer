@@ -11,6 +11,12 @@ import {
 } from "../../interactions/behaviors";
 import { ConfirmDialog } from "../primitives/ConfirmDialog";
 import { useImageResource } from "../../renderer/resources";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -115,8 +121,9 @@ function useField(element: InteractiveElement, initial: unknown,
   };
   return { value, set, disabled: element.disabled === true ||
     (!form && !onAction && !allowLocalWithoutAction),
-    confirmDialog: confirming
-      ? <ConfirmDialog title={element.confirm?.title} text={element.confirm?.text}
+    confirmDialog: element.confirm
+      ? <ConfirmDialog open={confirming}
+          title={element.confirm.title} text={element.confirm.text}
           trigger={trigger} onCancel={() => setConfirming(false)}
           onConfirm={() => {
             const request = pending as { next: unknown; path: string; timezone: boolean };
@@ -324,10 +331,12 @@ export function Button({ element, path }: { element: ButtonElement; path: string
   return <><button ref={trigger} type={element.form_action_type === "submit" ? "submit" : "button"}
     className="fcr-button" disabled={element.disabled || (business && !onAction)}
     aria-describedby={tips.describedBy}
+    onKeyDown={(event) => event.stopPropagation()}
     onClick={(event) => { event.stopPropagation(); event.preventDefault(); activate(); }}>
     {element.text?.content ?? "按钮"}</button>
     {tips.nodes}{error && <span role="alert">有必填项未填写</span>}
-    {confirm && <ConfirmDialog title={element.confirm?.title} text={element.confirm?.text}
+    {element.confirm && <ConfirmDialog open={confirm}
+      title={element.confirm.title} text={element.confirm.text}
       trigger={trigger} onCancel={() => setConfirm(false)}
       onConfirm={() => { setConfirm(false); run(); }} />}
   </>;
@@ -339,67 +348,67 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const tips = useTips(element);
   const trigger = useRef<HTMLButtonElement>(null);
-  const menu = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (open) menu.current?.querySelector<HTMLButtonElement>(
-      "[role='menuitem']:not(:disabled)",
-    )?.focus();
-  }, [open]);
-  const close = () => {
-    setOpen(false);
-    queueMicrotask(() => trigger.current?.focus());
-  };
-  return <div className="fcr-overflow"><button ref={trigger} type="button"
-    aria-label="更多操作" disabled={element.disabled}
-    aria-describedby={tips.describedBy}
-    aria-expanded={open} onClick={(event) => {
-      event.stopPropagation(); setOpen(!open);
-    }}>⋯</button>
-    {open && <div ref={menu} role="menu" tabIndex={-1}
-      aria-label="更多操作"
-      onKeyDown={(event) => {
-        if (event.key === "Escape") { event.preventDefault(); close(); }
-        const items = [...(menu.current?.querySelectorAll<HTMLButtonElement>(
-          "[role='menuitem']:not(:disabled)",
-        ) ?? [])];
-        if (items.length === 0) return;
-        const current = items.indexOf(document.activeElement as HTMLButtonElement);
-        const target = event.key === "Home" ? 0 :
-          event.key === "End" ? items.length - 1 :
-          event.key === "ArrowDown" ? (current + 1) % items.length :
-          event.key === "ArrowUp"
-            ? (current <= 0 ? items.length - 1 : current - 1) : undefined;
-        if (target !== undefined) {
-          event.preventDefault();
-          items[target]?.focus();
-        }
-      }}>{(element.options ?? []).map((option, index) =>
-      <button role="menuitem" type="button"
-        disabled={element.disabled || !onAction ||
-          rawOptionValue(option) === undefined}
-        key={index} onClick={(event) => {
-          event.stopPropagation();
-          const run = () => {
-            const optionBehaviors = [
-              ...(element.behaviors ?? []),
-              ...(option.behaviors ?? []),
-              ...(option.multi_url ? [{ type: "open_url",
-                pc_url: option.multi_url.pc_url,
-                default_url: option.multi_url.url ?? option.multi_url.default_url }] : []),
-            ];
-            const actions = actionsFor({ ...element, value: option.value,
-              behaviors: optionBehaviors }, path);
-            if (actions.length) actions.forEach((action) => onAction?.(action));
-            else onAction?.({ type: "callback", source: sourceFor(element, path),
-              value: serializableValue(option.value) });
-            close();
-          };
-          if (element.confirm) setPendingAction(() => run);
-          else run();
-        }}>{optionText(option)}</button>)}</div>}
-    {tips.nodes}{pendingAction && <ConfirmDialog title={element.confirm?.title}
-      text={element.confirm?.text} trigger={trigger}
+  return <div className="fcr-overflow">
+    <DropdownMenu
+      open={open}
+      onOpenChange={setOpen}
+      disabled={element.disabled}
+    >
+      <DropdownMenuTrigger
+        ref={trigger}
+        aria-label="更多操作"
+        disabled={element.disabled}
+        aria-describedby={tips.describedBy}
+        onKeyDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        ⋯
+      </DropdownMenuTrigger>
+      <DropdownMenuContent aria-label="更多操作">
+        {(element.options ?? []).map((option, index) =>
+          <DropdownMenuItem
+            disabled={element.disabled || !onAction ||
+              rawOptionValue(option) === undefined || option.disabled}
+            key={index}
+            onClick={(event) => {
+              event.stopPropagation();
+              const run = () => {
+                const optionBehaviors = [
+                  ...(element.behaviors ?? []),
+                  ...(option.behaviors ?? []),
+                  ...(option.multi_url ? [{ type: "open_url",
+                    pc_url: option.multi_url.pc_url,
+                    default_url: option.multi_url.url ??
+                      option.multi_url.default_url }] : []),
+                ];
+                const actions = actionsFor({ ...element, value: option.value,
+                  behaviors: optionBehaviors }, path);
+                if (actions.length) {
+                  actions.forEach((action) => onAction?.(action));
+                } else {
+                  onAction?.({
+                    type: "callback",
+                    source: sourceFor(element, path),
+                    value: serializableValue(option.value),
+                  });
+                }
+              };
+              if (element.confirm) setPendingAction(() => run);
+              else run();
+            }}
+          >
+            {optionText(option)}
+          </DropdownMenuItem>)}
+      </DropdownMenuContent>
+    </DropdownMenu>
+    {tips.nodes}{element.confirm && <ConfirmDialog open={pendingAction !== null}
+      title={element.confirm.title}
+      text={element.confirm.text} trigger={trigger}
       onCancel={() => setPendingAction(null)}
-      onConfirm={() => { const run = pendingAction; setPendingAction(null); run(); }} />}
+      onConfirm={() => {
+        const run = pendingAction;
+        setPendingAction(null);
+        run?.();
+      }} />}
   </div>;
 }
