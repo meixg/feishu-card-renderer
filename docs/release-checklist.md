@@ -167,14 +167,17 @@ incident 中记录操作者、UTC 时间、受影响 ref、绕过规则、原因
 完成后贴出 ruleset insights 或 audit log 链接。Changesets 使用的内置
 `GITHUB_TOKEN` 只创建/更新 PR，不需要 ruleset bypass。
 
-只读验证使用：
+维护者先确认 `gh` 已登录且当前身份具有仓库设置读取权限，再运行只读 verifier：
 
 ```bash
-gh api repos/meixg/feishu-card-renderer/actions/permissions/workflow
-gh api repos/meixg/feishu-card-renderer/rulesets
-gh api repos/meixg/feishu-card-renderer/rulesets/RULESET_ID
-gh api repos/meixg/feishu-card-renderer/rules/branches/main
+gh auth status
+pnpm governance:verify
 ```
+
+该命令不写 GitHub、不读取或输出 token，也不创建、改写或删除 tag。它按
+`name + target` 唯一解析 live ruleset（不硬编码 ruleset ID），规范化比较 live
+详情与仓库 JSON，并独立读取 `main` effective rules。它需要维护者本地已有的
+GitHub 认证，因此不会加入普通 PR CI。
 
 回读时确认 Actions 输出恰为 `default_workflow_permissions: read` 和
 `can_approve_pull_request_reviews: true`；两个 ruleset 均为 `active`，匹配器、规则、

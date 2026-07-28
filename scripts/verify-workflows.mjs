@@ -37,57 +37,69 @@ const emergencyAdminBypass = [{
   actor_type: "RepositoryRole",
   bypass_mode: "always",
 }];
-
-requireContract(
-  mainRuleset.name === "Protect main"
-    && mainRuleset.target === "branch"
-    && mainRuleset.enforcement === "active"
-    && JSON.stringify(mainRuleset.conditions.ref_name) === JSON.stringify({
+const expectedMainRuleset = {
+  name: "Protect main",
+  target: "branch",
+  enforcement: "active",
+  bypass_actors: emergencyAdminBypass,
+  conditions: {
+    ref_name: {
       include: ["refs/heads/main"],
       exclude: [],
-    }),
-  "main ruleset must actively and exclusively protect refs/heads/main",
-);
-requireContract(
-  JSON.stringify(mainRuleset.bypass_actors) === JSON.stringify(emergencyAdminBypass)
-    && JSON.stringify(releaseTagsRuleset.bypass_actors) === JSON.stringify(emergencyAdminBypass),
-  "rulesets must expose only the repository administrator emergency bypass",
-);
-const mainRules = new Map(mainRuleset.rules.map((rule) => [rule.type, rule.parameters ?? null]));
-requireContract(
-  mainRules.has("deletion") && mainRules.has("non_fast_forward"),
-  "main ruleset must block deletion and force pushes",
-);
-const pullRequestRule = mainRules.get("pull_request");
-requireContract(
-  pullRequestRule
-    && pullRequestRule.required_approving_review_count === 0
-    && pullRequestRule.required_review_thread_resolution === true,
-  "main must require PRs and resolved conversations without independent approval",
-);
-const statusRule = mainRules.get("required_status_checks");
-requireContract(
-  statusRule
-    && statusRule.strict_required_status_checks_policy === true
-    && statusRule.do_not_enforce_on_create === false
-    && JSON.stringify(statusRule.required_status_checks) === JSON.stringify(
-      requiredChecks.map((context) => ({ context, integration_id: githubActionsAppId })),
-    ),
-  "main required checks must be current and bound to the GitHub Actions App",
-);
-requireContract(
-  releaseTagsRuleset.name === "Protect release tags"
-    && releaseTagsRuleset.target === "tag"
-    && releaseTagsRuleset.enforcement === "active"
-    && JSON.stringify(releaseTagsRuleset.conditions.ref_name) === JSON.stringify({
+    },
+  },
+  rules: [
+    { type: "deletion" },
+    { type: "non_fast_forward" },
+    {
+      type: "pull_request",
+      parameters: {
+        allowed_merge_methods: ["merge", "squash", "rebase"],
+        automatic_copilot_code_review_enabled: false,
+        dismiss_stale_reviews_on_push: false,
+        require_code_owner_review: false,
+        require_last_push_approval: false,
+        required_approving_review_count: 0,
+        required_review_thread_resolution: true,
+      },
+    },
+    {
+      type: "required_status_checks",
+      parameters: {
+        do_not_enforce_on_create: false,
+        required_status_checks: requiredChecks.map((context) => ({
+          context,
+          integration_id: githubActionsAppId,
+        })),
+        strict_required_status_checks_policy: true,
+      },
+    },
+  ],
+};
+const expectedReleaseTagsRuleset = {
+  name: "Protect release tags",
+  target: "tag",
+  enforcement: "active",
+  bypass_actors: emergencyAdminBypass,
+  conditions: {
+    ref_name: {
       include: ["refs/tags/feishu-card-renderer@*"],
       exclude: [],
-    })
-    && JSON.stringify(releaseTagsRuleset.rules) === JSON.stringify([
-      { type: "update" },
-      { type: "deletion" },
-    ]),
-  "release tag ruleset must allow creation while blocking updates and deletion",
+    },
+  },
+  rules: [
+    { type: "update" },
+    { type: "deletion" },
+  ],
+};
+
+requireContract(
+  JSON.stringify(mainRuleset) === JSON.stringify(expectedMainRuleset),
+  "main ruleset must exactly match the independently declared governance contract",
+);
+requireContract(
+  JSON.stringify(releaseTagsRuleset) === JSON.stringify(expectedReleaseTagsRuleset),
+  "release tag ruleset must exactly match the independently declared governance contract",
 );
 
 for (const [file, source] of workflows) {
