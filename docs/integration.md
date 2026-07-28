@@ -6,6 +6,9 @@
 pnpm add feishu-card-renderer react react-dom
 ```
 
+项目在线站点直接从最新 `main` 部署，可能展示尚未正式发布的能力。生产集成应以
+npm `latest` 指向的不可变版本及其随包文档为准，不要把在线站点当作版本化制品。
+
 包仅发布 ESM、TypeScript 声明和预编译 CSS。React/ReactDOM 是 peer
 dependencies。`@base-ui/react`、`react-day-picker`、CVA、`clsx` 和
 `tailwind-merge` 是包的 runtime dependencies，由包管理器自动安装；它们没有

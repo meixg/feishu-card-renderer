@@ -277,4 +277,8 @@ pnpm check
 
 本地查看项目主页使用 `pnpm site:dev`；只验证 GitHub Pages 静态构建可使用
 `pnpm site:build`。`main` 分支更新后由 `.github/workflows/pages.yml` 自动发布，
-Pull Request 只执行站点构建检查。
+Pull Request 只执行站点构建检查。因此在线站点展示的是最新 `main`，可能先于正式
+发布；消费者安装和版本比较应以 npm `latest` 指向的不可变发布版本为准。
+
+安全漏洞请不要提交公开 Issue。支持范围、私密报告入口和协调披露规则见
+[安全政策](https://github.com/meixg/feishu-card-renderer/security/policy)。

@@ -10,6 +10,7 @@ const workflows = new Map(await Promise.all(workflowFiles.map(async (file) => [
   file,
   await readFile(resolve(workflowsDirectory, file), "utf8"),
 ])));
+const dependabot = await readFile(resolve(root, ".github/dependabot.yml"), "utf8");
 const mainRuleset = JSON.parse(await readFile(resolve(root, ".github/rulesets/main.json"), "utf8"));
 const releaseTagsRuleset = JSON.parse(
   await readFile(resolve(root, ".github/rulesets/release-tags.json"), "utf8"),
@@ -24,6 +25,24 @@ function requireContract(condition, message) {
 function occurrences(source, pattern) {
   return [...source.matchAll(pattern)].length;
 }
+
+requireContract(
+  /^version: 2\n\nupdates:\n/.test(dependabot),
+  "Dependabot configuration must use version 2",
+);
+requireContract(
+  occurrences(dependabot, /package-ecosystem: "npm"/g) === 1
+    && occurrences(dependabot, /package-ecosystem: "github-actions"/g) === 1,
+  "Dependabot must cover the pnpm lockfile through npm ecosystem and GitHub Actions exactly once",
+);
+requireContract(
+  occurrences(dependabot, /interval: "weekly"/g) === 2,
+  "both Dependabot ecosystems must run weekly",
+);
+requireContract(
+  !/\b(?:automerge|auto-merge|release:skip)\b/i.test(dependabot),
+  "Dependabot must not auto-merge or self-apply the maintainer-only release:skip label",
+);
 
 const githubActionsAppId = 15368;
 const requiredChecks = [
@@ -267,6 +286,10 @@ requireContract(
     && !/\b(?:changeset-release\/main|release-pr-exempt)\b/.test(ci),
   "the Release PR exception must not bypass any existing CI check",
 );
+requireContract(
+  !/\bdependabot\b/i.test(ci) && !/\bdependabot\b/i.test(releaseImpact),
+  "Dependabot PRs must use the same CI and release-impact paths as every other PR",
+);
 
 const releaseImpactAdapter = await readFile(resolve(root, "scripts/check-release-impact.mjs"), "utf8");
 const releaseImpactCheck = await readFile(resolve(root, "scripts/release-impact-check.mjs"), "utf8");
@@ -275,17 +298,21 @@ requireContract(
     && /\$\{baseRepositoryPath\}\/pulls\/\$\{number\}\/files\?/.test(releaseImpactAdapter)
     && /\$\{baseRepositoryPath\}\/issues\/\$\{number\}\/events\?/.test(releaseImpactAdapter)
     && /\$\{baseRepositoryPath\}\/collaborators\/\$\{encodeURIComponent\(login\)\}\/permission/.test(releaseImpactAdapter)
-    && /readFileAtRef\(headRepo, path, headSha\)/.test(releaseImpactAdapter)
-    && /const headRepositoryPath = repositoryPath\(headRepo\)/.test(releaseImpactAdapter)
-    && /\$\{headRepositoryPath\}\/contents\/\$\{encodedPath\}\?ref=\$\{encodeURIComponent\(headSha\)\}/.test(releaseImpactAdapter),
-  "release impact adapter must keep metadata on base while reading head-SHA content from the validated head repository",
+    && /readFileAtRef\(repository, path, ref\)/.test(releaseImpactAdapter)
+    && /const contentRepositoryPath = repositoryPath\(repository\)/.test(releaseImpactAdapter)
+    && /const encodedPath = contentPath\(path\)/.test(releaseImpactAdapter)
+    && /\$\{contentRepositoryPath\}\/contents\/\$\{encodedPath\}\?ref=\$\{commitRef\(ref\)\}/.test(releaseImpactAdapter)
+    && /\^\[0-9a-f\]\{40\}\$/.test(releaseImpactAdapter),
+  "release impact adapter must validate and encode repository, content path, and immutable commit refs",
 );
 requireContract(
   !/node:child_process|\bexecFile|\bspawn\b|pnpm|package\.json|\.changeset\/config|changelog/.test(releaseImpactAdapter)
     && !/\bfetch\(/.test(releaseImpactCheck)
+    && /pullRequest\.base\.repo\.full_name,\n {8}"package\.json",\n {8}pullRequest\.base\.sha/.test(releaseImpactCheck)
+    && /pullRequest\.head\.repo\.full_name,\n {8}"package\.json",\n {8}pullRequest\.head\.sha/.test(releaseImpactCheck)
     && /head\?\.repo\?\.full_name/.test(releaseImpactCheck)
     && /pullRequest\.head\.repo\.full_name,\n {6}path,\n {6}pullRequest\.head\.sha/.test(releaseImpactCheck),
-  "release impact policy must not execute PR code/config/dependencies and its orchestration seam must remain injectable",
+  "release impact policy must compare base/head manifests as API data without executing PR code or dependencies",
 );
 
 for (const [file, source] of workflows) {

@@ -90,6 +90,16 @@ try {
       "The packed README must not link to the internal release checklist.",
     );
   }
+  if (
+    packedReadme.includes("](SECURITY.md)")
+    || !packedReadme.includes(
+      "https://github.com/meixg/feishu-card-renderer/security/policy",
+    )
+  ) {
+    throw new Error(
+      "The packed README must use the repository security policy URL, not unpacked SECURITY.md.",
+    );
+  }
   const sourceManifest = JSON.parse(await readFile(
     join(repositoryRoot, "package.json"),
     "utf8",
