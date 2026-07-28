@@ -103,7 +103,7 @@
     "mdast-util-gfm-table": "^2.0.0",
     "micromark-extension-gfm-strikethrough": "^2.1.0",
     "micromark-extension-gfm-table": "^2.1.1",
-    "react-day-picker": "^9.7.0",
+    "react-day-picker": "^10.0.1",
     "tailwind-merge": "^3.6.0"
   }
 }
