@@ -140,18 +140,22 @@ GitHub Release。该审计记录解释 bootstrap PR 修改 shipped CHANGELOG 的
 
 ### 无 Changeset 后退休 stale Draft Release PR
 
-Changesets Action 在 `main` 不再有待处理 Changeset 时不会自动关闭已经存在的 Draft
-Release PR。删除最后一个 bootstrap Changeset 时，维护者按以下顺序处理：
+删除最后一个 bootstrap Changeset 时，以 maintenance workflow 完成后的仓库状态为准，
+按以下顺序处理：
 
 1. 不在 bootstrap 修复 PR 合并前关闭 stale Draft；否则 `main` 仍有 Changeset，
    `Maintain Changesets release PR` workflow 会立即重建或更新它。
 2. 合并 bootstrap 修复 PR 后，等待该次 `Maintain Changesets release PR` workflow
    成功完成。
-3. 只读确认 `main` 没有待处理 Changeset、`package.json` 仍为 `0.0.1`，并确认既有
-   Draft（本次 bootstrap 中为 #51）仍是错误提议 `0.0.2` 的 stale Release PR。
-4. 由维护者显式关闭该 stale Draft，并评论说明它是首次发布 bootstrap 记账产生、
-   对应 Changeset 已折入未发布的 `0.0.1` Initial release。
-5. 关闭后只读确认不存在 open 的 `changeset-release/main` PR。
+3. 只读确认 `main` 没有待处理 Changeset、`package.json` 仍为 `0.0.1`，并检查
+   `changeset-release/main` PR 的当前状态。
+4. 若既有 Draft 已关闭，记录关闭 actor、UTC 时间和可核实的 reason 后继续，不推断
+   具体关闭机制；本次 bootstrap 中，#51 的关闭事件 actor 为 `meixg`，时间为
+   `2026-07-28T11:19:11Z`，GitHub timeline 未记录显式 reason。
+5. 若既有 Draft 仍 open 且仍是错误提议 `0.0.2` 的 stale Release PR，再由维护者
+   显式关闭并评论说明它是首次发布 bootstrap 记账产生、对应 Changeset 已折入未发布的
+   `0.0.1` Initial release。
+6. 最后只读确认不存在 open 的 `changeset-release/main` PR。
 
 以上退休步骤不发布 npm、不创建 tag 或 GitHub Release，也不代替首次发布的人工作业。
 
