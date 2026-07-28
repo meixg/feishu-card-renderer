@@ -34,9 +34,13 @@ for (const [file, source] of workflows) {
 const ci = workflows.get("ci.yml");
 const pages = workflows.get("pages.yml");
 const visualRefresh = workflows.get("visual-refresh.yml");
+const releaseImpact = workflows.get("release-impact.yml");
+const changesets = workflows.get("changesets.yml");
 requireContract(ci, "ci.yml is required");
 requireContract(pages, "pages.yml is required");
 requireContract(visualRefresh, "visual-refresh.yml is required");
+requireContract(releaseImpact, "release-impact.yml is required");
+requireContract(changesets, "changesets.yml is required");
 
 requireContract(
   /^on:\n {2}push:\n {4}branches: \["main"\]\n {2}pull_request:\n {4}branches: \["main"\]\n\npermissions:\n {2}contents: read\n/m.test(ci),
@@ -119,6 +123,58 @@ requireContract(
   !/^\s*[a-z-]+:\s*write\s*$/m.test(visualRefresh)
     && !/\b(?:git\s+push|gh\s+pr|npm\s+publish)\b/.test(visualRefresh),
   "visual refresh must not write repository or registry state",
+);
+
+requireContract(
+  /^name: Release impact policy\n\non:\n {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, labeled, unlabeled\]\n\npermissions:\n {2}contents: read\n {2}pull-requests: read\n/m.test(releaseImpact),
+  "release impact must use the read-only pull_request event for main",
+);
+requireContract(!/\bpull_request_target\b/.test(releaseImpact), "release impact must not use pull_request_target");
+requireContract(!/^\s*[a-z-]+:\s*write\s*$/m.test(releaseImpact), "release impact must remain read-only");
+requireContract(!/^\s*id-token:/m.test(releaseImpact), "release impact must not request OIDC");
+requireContract(
+  occurrences(releaseImpact, /name: Release impact$/gm) === 1,
+  "release impact required check name must remain stable and unique",
+);
+requireContract(
+  /run: node scripts\/check-release-impact\.mjs/.test(releaseImpact),
+  "release impact must execute the tested policy seam",
+);
+requireContract(
+  /ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/.test(releaseImpact),
+  "release impact must explicitly inspect the pull request head in its read-only context",
+);
+
+requireContract(
+  /^on:\n {2}push:\n {4}branches: \["main"\]\n\npermissions:\n {2}contents: write\n {2}pull-requests: write\n/m.test(changesets),
+  "Changesets maintenance must run only on trusted main with contents and pull-request writes",
+);
+requireContract(!/\bpull_request(?:_target)?\b/.test(changesets), "Changesets maintenance must never run on pull requests");
+requireContract(!/^\s*id-token:/m.test(changesets), "Changesets maintenance must not request OIDC");
+requireContract(
+  /uses: changesets\/action@[0-9a-f]{40}\s+#\s+v1\.8\.0/.test(changesets),
+  "Changesets action must be pinned to the audited v1.8.0 commit",
+);
+requireContract(
+  /commitMode: github-api/.test(changesets)
+    && /prDraft: create/.test(changesets)
+    && /createGithubReleases: false/.test(changesets)
+    && /GITHUB_TOKEN: \$\{\{ github\.token \}\}/.test(changesets),
+  "Changesets must use GitHub API commits, draft PR creation, no releases, and the built-in token",
+);
+requireContract(
+  /group: changesets-release-pr\n {2}cancel-in-progress: false/.test(changesets),
+  "Changesets must serialize maintenance of its single release PR",
+);
+requireContract(
+  !/\b(?:publish:|npm\s+publish|changeset\s+publish|NPM_TOKEN|NODE_AUTH_TOKEN)\b/.test(changesets),
+  "Changesets maintenance must not publish or receive registry credentials",
+);
+
+requireContract(
+  /^ {2}pull_request:\n {4}branches: \["main"\]$/m.test(ci)
+    && !/\b(?:changeset-release\/main|release-pr-exempt)\b/.test(ci),
+  "the Release PR exception must not bypass any existing CI check",
 );
 
 for (const [file, source] of workflows) {

@@ -105,3 +105,15 @@ pnpm package:verify
 
 本清单不执行 `npm publish`，也不创建 GitHub Release。发布者仍须核对 tag、
 changelog、registry 身份和组织发布权限。
+
+## Draft Release PR 初始化
+
+`Maintain Changesets release PR` workflow 只在可信 `main` 上运行，使用仓库内置
+`GITHUB_TOKEN` 和 Changesets 的 GitHub API commit 模式维护
+`changeset-release/main` 上唯一的 Draft Release PR。此阶段只聚合版本与根
+`CHANGELOG.md`，不 publish npm、不创建 tag/Release，也不申请 OIDC。
+
+GitHub 仓库的 **Settings → Actions → General → Workflow permissions** 中，
+“Allow GitHub Actions to create and approve pull requests” 是代码库外设置。若当前
+禁用，首次运行会无法创建 Release PR；按父规格的后续 #41 由维护者人工启用并记录，
+本 #40 不声称已修改或验证该设置。
