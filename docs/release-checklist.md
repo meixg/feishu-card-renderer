@@ -120,6 +120,41 @@ Release impact、`Package candidate (Node 22.12.0)`、`Package candidate (Node 2
 `Full quality (Node 24)` 和其它 PR checks。任何后续 Changeset 更新都会再次设为
 Draft，维护者需重新审阅并再次点击 Ready。
 
+### 首次发布 bootstrap 例外
+
+首次正式发布前，只有同时确认以下事实，维护者才能用 `release:skip` 修正 Changesets
+bootstrap 记账：
+
+- npm 上从未发布过本包，release tag 与 GitHub Release 中也没有对应版本。
+- `package.json` 已经是计划的首次版本 `0.0.1`。
+- 待处理 Changeset 记录的内容已经位于尚未发布的同一 `0.0.1` 源码中，不是新增的
+  消费者变化。
+
+允许的修正仅限删除该 Changeset，并将其摘要折入现有 `0.0.1` Initial release
+CHANGELOG。PR 必须记录上述理由；添加 `release:skip` 前，维护者还必须只读查询 npm，
+确认 `feishu-card-renderer@0.0.1` 仍不存在，并确认没有对应 release tag 或
+GitHub Release。该审计记录解释 bootstrap PR 修改 shipped CHANGELOG 的合法性。
+
+首次正式发布完成后，此例外永久失效；后续 shipped docs 或其它消费者变化必须使用
+正常 Changeset，不能借 bootstrap bookkeeping 或 `release:skip` 绕过。
+
+### 无 Changeset 后退休 stale Draft Release PR
+
+Changesets Action 在 `main` 不再有待处理 Changeset 时不会自动关闭已经存在的 Draft
+Release PR。删除最后一个 bootstrap Changeset 时，维护者按以下顺序处理：
+
+1. 不在 bootstrap 修复 PR 合并前关闭 stale Draft；否则 `main` 仍有 Changeset，
+   `Maintain Changesets release PR` workflow 会立即重建或更新它。
+2. 合并 bootstrap 修复 PR 后，等待该次 `Maintain Changesets release PR` workflow
+   成功完成。
+3. 只读确认 `main` 没有待处理 Changeset、`package.json` 仍为 `0.0.1`，并确认既有
+   Draft（本次 bootstrap 中为 #51）仍是错误提议 `0.0.2` 的 stale Release PR。
+4. 由维护者显式关闭该 stale Draft，并评论说明它是首次发布 bootstrap 记账产生、
+   对应 Changeset 已折入未发布的 `0.0.1` Initial release。
+5. 关闭后只读确认不存在 open 的 `changeset-release/main` PR。
+
+以上退休步骤不发布 npm、不创建 tag 或 GitHub Release，也不代替首次发布的人工作业。
+
 Release impact workflow 使用只读 `pull_request_target`，只 checkout 事件中的
 base SHA 并执行 `main` 上的可信 checker。PR changed files、label events、actor
 permission 和候选 Changeset 内容都通过 GitHub API 读取；候选文档固定按 head SHA
