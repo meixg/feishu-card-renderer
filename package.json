@@ -1,6 +1,6 @@
 {
   "name": "feishu-card-renderer",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "面向 React 的飞书卡片 JSON 2.0 Web 渲染器",
   "license": "MIT",
   "author": "Xuguang Mei",

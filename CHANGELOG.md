@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.0.2
+
+### Patch Changes
+
+- 35706ad: 明确在线站点展示最新 `main`，而 npm `latest` 才是消费者应采用的正式不可变发布版本。
+
 本文件记录 `feishu-card-renderer` 面向使用者的版本变化。项目从 `0.0.1` 开始记录，
 不补写不存在的历史版本。后续版本由 Changesets Release PR 聚合维护；版本级别与
 发布说明以 `.changeset/*.md` 为唯一事实来源。
