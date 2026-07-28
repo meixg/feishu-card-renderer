@@ -134,5 +134,51 @@ ref 均严格校验或逐段编码。内容仅作为文本数据，不 checkout 
 
 GitHub 仓库的 **Settings → Actions → General → Workflow permissions** 中，
 “Allow GitHub Actions to create and approve pull requests” 是代码库外设置。若当前
-禁用，首次运行会无法创建 Release PR；按父规格的后续 #41 由维护者人工启用并记录，
-本 #40 不声称已修改或验证该设置。
+禁用，首次运行会无法创建 Release PR。仓库保持默认 workflow permission 为
+`read`，仅启用该开关；需要写权限的 `changesets.yml` 仍逐项声明
+`contents: write` 与 `pull-requests: write`，不使用 PAT 或自建 GitHub App。
+
+## GitHub 仓库治理
+
+可复现的 REST 请求体保存在 [`.github/rulesets/main.json`](../.github/rulesets/main.json)
+和 [`.github/rulesets/release-tags.json`](../.github/rulesets/release-tags.json)。
+它们是静态契约，不会由 PR workflow 自动写入仓库设置。应用前先读取现状；按
+`name` 与 `target` 找到同名 ruleset 后使用 `PUT /repos/{owner}/{repo}/rulesets/{id}`，
+不存在时才使用 `POST /repos/{owner}/{repo}/rulesets`，从而保持幂等。
+
+`Protect main` 仅匹配 `refs/heads/main`，要求所有更新通过 PR，并要求分支保持最新、
+解决 review conversations。单维护者阶段 required approval 数量为 `0`。它禁止
+删除和 non-fast-forward push，并要求以下四个 check：
+
+- `Package candidate (Node 22.12.0)`
+- `Package candidate (Node 24)`
+- `Full quality (Node 24)`
+- `Release impact`
+
+每个 required check 都绑定 GitHub Actions App integration ID `15368`；不要去掉
+`integration_id`，否则同名手工 commit status 可能满足规则。`Protect release tags`
+仅匹配 `refs/tags/feishu-card-renderer@*`，没有 `creation` 规则，因而允许首次创建；
+它的 `update` 与 `deletion` 规则禁止后续改写和删除。
+
+两个 ruleset 唯一的 bypass actor 都是内置 `RepositoryRole` 管理员角色（actor ID
+`5`，`always`）。这是 emergency-only 通道，不得授予 Changesets bot、普通用户、
+GitHub App 或 deploy key 绕过权限。管理员每次使用 bypass 前必须在关联 Issue 或
+incident 中记录操作者、UTC 时间、受影响 ref、绕过规则、原因和后续修复，并在操作
+完成后贴出 ruleset insights 或 audit log 链接。Changesets 使用的内置
+`GITHUB_TOKEN` 只创建/更新 PR，不需要 ruleset bypass。
+
+只读验证使用：
+
+```bash
+gh api repos/meixg/feishu-card-renderer/actions/permissions/workflow
+gh api repos/meixg/feishu-card-renderer/rulesets
+gh api repos/meixg/feishu-card-renderer/rulesets/RULESET_ID
+gh api repos/meixg/feishu-card-renderer/rules/branches/main
+```
+
+回读时确认 Actions 输出恰为 `default_workflow_permissions: read` 和
+`can_approve_pull_request_reviews: true`；两个 ruleset 均为 `active`，匹配器、规则、
+bypass 与静态契约一致。`rules/branches/main` 的 effective state 必须同时列出四个
+required checks、PR、删除与 non-fast-forward 规则。tag 语义通过 API 中缺少
+`creation` 且存在 `update`/`deletion` 证明；不要为了验证而创建、改写或删除真实
+release tag。
