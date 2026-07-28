@@ -1,4 +1,4 @@
-# JSON 2.0 1.0 兼容矩阵
+# JSON 2.0 public preview 兼容矩阵
 
 矩阵依据 2026-07-26 的官方资料、父规格和研究结论建立。每个注册 tag 都在
 `compatibilityFixturesByTag` 中拥有独立的可执行契约：聚焦 minimal/complete/
@@ -102,4 +102,4 @@ Playwright 在真实 Chrome 中使用正式懒加载 VChart runtime 实例化，
 - shadcn/Base UI wrapper、provider、context 和类型保持私有；兼容矩阵只承诺协议、
   公共类型、DOM 语义角色和 `CardAction`，不承诺内部 DOM/class/视觉兼容。
 
-明确协议冲突和实现限制见 [集成指南](integration.md#10-限制)。
+明确协议冲突和实现限制见 [集成指南](integration.md#public-preview-限制)。

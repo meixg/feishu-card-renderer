@@ -125,7 +125,7 @@ globalThis.fetch = () => {
   throw new Error("The package entry performed a network request during import.");
 };
 try {
-  const rootModule = await import("@meixg/feishu-card-renderer");
+  const rootModule = await import("feishu-card-renderer");
   if (typeof rootModule.CardRenderer !== "function") {
     throw new Error("The ESM package root must export CardRenderer.");
   }
@@ -168,7 +168,7 @@ for (const [file, source] of schemaClosure) {
     );
   }
 }
-const schemaModule = await import("@meixg/feishu-card-renderer/schema");
+const schemaModule = await import("feishu-card-renderer/schema");
 if (typeof schemaModule.validateCard !== "function" ||
   typeof schemaModule.normalizeCard !== "function") {
   throw new Error("The schema subpath must export validation and normalization.");

@@ -15,7 +15,7 @@
 ## 安装
 
 ```bash
-pnpm add @meixg/feishu-card-renderer react react-dom
+pnpm add feishu-card-renderer react react-dom
 ```
 
 项目发布 ESM、TypeScript 类型和预编译 CSS，支持 React 18.2 至 19。复杂交互由
@@ -27,8 +27,8 @@ pnpm add @meixg/feishu-card-renderer react react-dom
 在应用入口加载一次样式，然后把飞书卡片 JSON 传给 `CardRenderer`：
 
 ```tsx
-import { CardRenderer } from "@meixg/feishu-card-renderer";
-import "@meixg/feishu-card-renderer/styles.css";
+import { CardRenderer } from "feishu-card-renderer";
+import "feishu-card-renderer/styles.css";
 
 const card = {
   schema: "2.0",
@@ -172,7 +172,7 @@ import type {
   CardJsonV2,
   CardRendererProps,
   Person,
-} from "@meixg/feishu-card-renderer";
+} from "feishu-card-renderer";
 ```
 
 ## 支持范围
@@ -218,7 +218,11 @@ Markdown 表格保留 `table`、表头、行和单元格语义，并支持 GFM �
 这些默认样式追求协议一致、稳定的卡片原生排版，不是对某个飞书客户端版本的
 逐像素复刻。
 
-逐组件和字段级支持情况请查看 [1.0 兼容矩阵](docs/compatibility-matrix.md)。官方协议仍可能演进；如文档存在冲突，以最新的飞书 JSON 2.0 组件子文档为准。
+当前 npm 包为 `0.0.1` public preview，尚不承诺 1.0 稳定性。`0.x` 补丁版本用于
+兼容修复和小幅改进；次版本用于新增公共能力，也可能包含明确记录的破坏性变更。
+逐组件和字段级支持情况请查看 [public preview 兼容矩阵](docs/compatibility-matrix.md)。
+未来稳定 `1.0` 会单独明确兼容承诺。官方协议仍可能演进；如文档存在冲突，以最新的
+飞书 JSON 2.0 组件子文档为准。
 
 ## 交互实现兼容性
 
@@ -240,7 +244,7 @@ import {
   normalizeCard,
   validateCard,
   type CardJsonV2,
-} from "@meixg/feishu-card-renderer/schema";
+} from "feishu-card-renderer/schema";
 
 const validation = validateCard(payload);
 const normalized = normalizeCard(payload);

@@ -1,4 +1,4 @@
-# 1.0 安全审查与发布验收
+# 0.0.1 public preview 安全审查与发布验收
 
 ## 安全边界
 
@@ -17,7 +17,7 @@
 
 ## 包契约
 
-- [x] 版本 `1.0.0`，公开 ESM、声明和 scoped CSS。
+- [x] 包名 `feishu-card-renderer`，版本 `0.0.1`，公开 ESM、声明和 scoped CSS。
 - [x] React/ReactDOM 是 peer dependencies，不打入 bundle。
 - [x] `@base-ui/react`、`react-day-picker`、CVA、`clsx` 和
   `tailwind-merge` 是 externalized runtime dependencies；私有 shadcn wrapper
@@ -100,7 +100,7 @@ pnpm accessibility
 pnpm visual
 pnpm build
 pnpm site:build
-npm pack --dry-run
+pnpm package:verify
 ```
 
 本清单不执行 `npm publish`，也不创建 GitHub Release。发布者仍须核对 tag、

@@ -35,7 +35,8 @@
 - 首版不发布 CommonJS，不支持 IE。
 - Tailwind 只作为组件库内部开发工具；宿主无需配置 Tailwind。
 - `CardRenderer` 必须 SSR-safe，但不是 React Server Component。
-- 全部规定组件达到完成定义后才发布稳定 `1.0`。
+- 首个可安装版本为 `0.0.1` public preview；全部规定组件达到完成定义不自动等同于
+  稳定性承诺，未来稳定 `1.0` 由单独版本明确承诺。
 
 ## 4. 公共接口
 

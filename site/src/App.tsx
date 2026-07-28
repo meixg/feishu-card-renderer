@@ -11,9 +11,9 @@ import { Playground } from "./Playground";
 type Theme = "light" | "dark";
 type Device = "pc" | "mobile";
 
-const installCode = `pnpm add @meixg/feishu-card-renderer react react-dom`;
-const quickStartCode = `import { CardRenderer } from "@meixg/feishu-card-renderer";
-import "@meixg/feishu-card-renderer/styles.css";
+const installCode = `pnpm add feishu-card-renderer react react-dom`;
+const quickStartCode = `import { CardRenderer } from "feishu-card-renderer";
+import "feishu-card-renderer/styles.css";
 
 export function CardHost({ payload }: { payload: unknown }) {
   return (
@@ -443,7 +443,7 @@ export function App() {
           </div>
           <div className="limitations-actions">
             <a href="https://github.com/meixg/feishu-card-renderer/blob/main/docs/integration.md">完整集成指南</a>
-            <a href="https://github.com/meixg/feishu-card-renderer/blob/main/docs/compatibility-matrix.md">1.0 兼容矩阵</a>
+            <a href="https://github.com/meixg/feishu-card-renderer/blob/main/docs/compatibility-matrix.md">Public preview 兼容矩阵</a>
             <a href="https://open.larkoffice.com/document/feishu-cards/card-json-v2-components/component-json-v2-overview">飞书官方组件文档</a>
           </div>
         </section>
