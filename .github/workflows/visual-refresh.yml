@@ -1,0 +1,41 @@
+name: Visual baseline refresh
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: Refresh visual baselines (artifact only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install managed Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Regenerate visual snapshots
+        run: pnpm visual:update
+
+      - name: Upload visual snapshots
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: visual-snapshots-${{ github.run_attempt }}
+          path: tests/visual/card-renderer.visual.spec.ts-snapshots
+          if-no-files-found: error
+          retention-days: 7

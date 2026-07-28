@@ -269,7 +269,11 @@ pnpm install
 pnpm check
 ```
 
-`pnpm check` 会依次执行类型检查、lint、单元测试、组件测试、可访问性测试、视觉测试、库构建和项目主页构建。视觉测试需要本机安装 Google Chrome。
+`pnpm check` 会依次执行类型检查、lint、单元测试、组件测试、可访问性测试、视觉测试、
+库构建和项目主页构建。视觉测试使用与锁定 Playwright 版本配套的 managed Chromium；
+首次运行前执行 `pnpm exec playwright install chromium`，Linux CI 使用
+`pnpm exec playwright install --with-deps chromium` 安装浏览器及系统依赖，然后运行
+`pnpm visual`。本机 Google Chrome 不参与自动化基线，只可作为可选的手工兼容检查。
 
 本地查看项目主页使用 `pnpm site:dev`；只验证 GitHub Pages 静态构建可使用
 `pnpm site:build`。`main` 分支更新后由 `.github/workflows/pages.yml` 自动发布，
