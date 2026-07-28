@@ -11,6 +11,10 @@ const workflows = new Map(await Promise.all(workflowFiles.map(async (file) => [
   await readFile(resolve(workflowsDirectory, file), "utf8"),
 ])));
 const dependabot = await readFile(resolve(root, ".github/dependabot.yml"), "utf8");
+const mainRuleset = JSON.parse(await readFile(resolve(root, ".github/rulesets/main.json"), "utf8"));
+const releaseTagsRuleset = JSON.parse(
+  await readFile(resolve(root, ".github/rulesets/release-tags.json"), "utf8"),
+);
 
 function requireContract(condition, message) {
   if (!condition) {
@@ -38,6 +42,83 @@ requireContract(
 requireContract(
   !/\b(?:automerge|auto-merge|release:skip)\b/i.test(dependabot),
   "Dependabot must not auto-merge or self-apply the maintainer-only release:skip label",
+);
+
+const githubActionsAppId = 15368;
+const requiredChecks = [
+  "Package candidate (Node 22.12.0)",
+  "Package candidate (Node 24)",
+  "Full quality (Node 24)",
+  "Release impact",
+];
+const emergencyAdminBypass = [{
+  actor_id: 5,
+  actor_type: "RepositoryRole",
+  bypass_mode: "always",
+}];
+const expectedMainRuleset = {
+  name: "Protect main",
+  target: "branch",
+  enforcement: "active",
+  bypass_actors: emergencyAdminBypass,
+  conditions: {
+    ref_name: {
+      include: ["refs/heads/main"],
+      exclude: [],
+    },
+  },
+  rules: [
+    { type: "deletion" },
+    { type: "non_fast_forward" },
+    {
+      type: "pull_request",
+      parameters: {
+        allowed_merge_methods: ["merge", "squash", "rebase"],
+        automatic_copilot_code_review_enabled: false,
+        dismiss_stale_reviews_on_push: false,
+        require_code_owner_review: false,
+        require_last_push_approval: false,
+        required_approving_review_count: 0,
+        required_review_thread_resolution: true,
+      },
+    },
+    {
+      type: "required_status_checks",
+      parameters: {
+        do_not_enforce_on_create: false,
+        required_status_checks: requiredChecks.map((context) => ({
+          context,
+          integration_id: githubActionsAppId,
+        })),
+        strict_required_status_checks_policy: true,
+      },
+    },
+  ],
+};
+const expectedReleaseTagsRuleset = {
+  name: "Protect release tags",
+  target: "tag",
+  enforcement: "active",
+  bypass_actors: emergencyAdminBypass,
+  conditions: {
+    ref_name: {
+      include: ["refs/tags/feishu-card-renderer@*"],
+      exclude: [],
+    },
+  },
+  rules: [
+    { type: "update" },
+    { type: "deletion" },
+  ],
+};
+
+requireContract(
+  JSON.stringify(mainRuleset) === JSON.stringify(expectedMainRuleset),
+  "main ruleset must exactly match the independently declared governance contract",
+);
+requireContract(
+  JSON.stringify(releaseTagsRuleset) === JSON.stringify(expectedReleaseTagsRuleset),
+  "release tag ruleset must exactly match the independently declared governance contract",
 );
 
 for (const [file, source] of workflows) {
