@@ -298,17 +298,21 @@ requireContract(
     && /\$\{baseRepositoryPath\}\/pulls\/\$\{number\}\/files\?/.test(releaseImpactAdapter)
     && /\$\{baseRepositoryPath\}\/issues\/\$\{number\}\/events\?/.test(releaseImpactAdapter)
     && /\$\{baseRepositoryPath\}\/collaborators\/\$\{encodeURIComponent\(login\)\}\/permission/.test(releaseImpactAdapter)
-    && /readFileAtRef\(headRepo, path, headSha\)/.test(releaseImpactAdapter)
-    && /const headRepositoryPath = repositoryPath\(headRepo\)/.test(releaseImpactAdapter)
-    && /\$\{headRepositoryPath\}\/contents\/\$\{encodedPath\}\?ref=\$\{encodeURIComponent\(headSha\)\}/.test(releaseImpactAdapter),
-  "release impact adapter must keep metadata on base while reading head-SHA content from the validated head repository",
+    && /readFileAtRef\(repository, path, ref\)/.test(releaseImpactAdapter)
+    && /const contentRepositoryPath = repositoryPath\(repository\)/.test(releaseImpactAdapter)
+    && /const encodedPath = contentPath\(path\)/.test(releaseImpactAdapter)
+    && /\$\{contentRepositoryPath\}\/contents\/\$\{encodedPath\}\?ref=\$\{commitRef\(ref\)\}/.test(releaseImpactAdapter)
+    && /\^\[0-9a-f\]\{40\}\$/.test(releaseImpactAdapter),
+  "release impact adapter must validate and encode repository, content path, and immutable commit refs",
 );
 requireContract(
   !/node:child_process|\bexecFile|\bspawn\b|pnpm|package\.json|\.changeset\/config|changelog/.test(releaseImpactAdapter)
     && !/\bfetch\(/.test(releaseImpactCheck)
+    && /pullRequest\.base\.repo\.full_name,\n {8}"package\.json",\n {8}pullRequest\.base\.sha/.test(releaseImpactCheck)
+    && /pullRequest\.head\.repo\.full_name,\n {8}"package\.json",\n {8}pullRequest\.head\.sha/.test(releaseImpactCheck)
     && /head\?\.repo\?\.full_name/.test(releaseImpactCheck)
     && /pullRequest\.head\.repo\.full_name,\n {6}path,\n {6}pullRequest\.head\.sha/.test(releaseImpactCheck),
-  "release impact policy must not execute PR code/config/dependencies and its orchestration seam must remain injectable",
+  "release impact policy must compare base/head manifests as API data without executing PR code or dependencies",
 );
 
 for (const [file, source] of workflows) {

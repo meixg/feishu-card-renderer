@@ -31,9 +31,13 @@ CI 或发布影响检查例外。Dependabot actor 不是维护者授权，不能
 `release:skip`。
 
 runtime dependency 或 peer dependency 更新必须包含 Changeset。纯
-devDependency 或 GitHub Action 更新可在维护者确认不改变发布包后，由具备
-`maintain` 或 `admin` 权限的维护者添加 `release:skip`。Action 的 `uses:` 必须继续
-固定到完整 40 位 commit SHA，并保留可读版本注释。
+devDependency、lockfile-only 或 GitHub Action 更新可在维护者确认不改变发布包后，
+由具备 `maintain` 或 `admin` 权限的维护者添加 `release:skip`。根
+`package.json` 中 `dependencies`、`peerDependencies`、`optionalDependencies` 或
+`peerDependenciesMeta` 的任何增删改会由可信 base 检查比较 base/head API 文本；
+即使已有维护者 skip，也必须提供有效 Changeset。`pnpm-lock.yaml` 不进入 npm
+tarball，单独变化不视为 runtime manifest 变化。Action 的 `uses:` 必须继续固定到
+完整 40 位 commit SHA，并保留可读版本注释。
 
 ## 本地验证
 

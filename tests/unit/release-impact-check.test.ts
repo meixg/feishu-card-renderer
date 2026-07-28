@@ -21,11 +21,32 @@ type GitHubSetup = {
   contents?: Record<string, string | undefined>;
 };
 
+const baseManifest = JSON.stringify({
+  dependencies: { react: "^19.1.1" },
+  devDependencies: { vitest: "^3.2.4" },
+});
+const authorizedSkip = [{
+  event: "labeled",
+  label: { name: "release:skip" },
+  actor: { login: "owner" },
+}];
+
+function manifestContents(headManifest: object) {
+  return {
+    "meixg/feishu-card-renderer@base-sha:package.json": baseManifest,
+    "outside/fork@head-sha:package.json": JSON.stringify(headManifest),
+  };
+}
+
 function pullRequestEvent(overrides: Record<string, unknown> = {}) {
   return {
     pull_request: {
       number: 48,
-      base: { ref: "main" },
+      base: {
+        ref: "main",
+        sha: "base-sha",
+        repo: { full_name: "meixg/feishu-card-renderer" },
+      },
       head: {
         ref: "feature",
         sha: "head-sha",
@@ -47,11 +68,191 @@ function githubAdapter({
     listPullRequestFiles: vi.fn(async (_number: number, page: number) => page === 1 ? files : []),
     listLabelEvents: vi.fn(async (_number: number, page: number) => page === 1 ? events : []),
     getActorPermission: vi.fn(async () => permission),
-    readFileAtRef: vi.fn(async (_repo: string, path: string) => contents[path]),
+    readFileAtRef: vi.fn(async (repo: string, path: string, sha: string) => (
+      contents[`${repo}@${sha}:${path}`] ?? contents[path]
+    )),
   };
 }
 
 describe("release impact orchestration", () => {
+  it("requires a Changeset when an authorized skip accompanies a runtime dependency change", async () => {
+    const github = githubAdapter({
+      files: [{ filename: "package.json", status: "modified" }],
+      events: authorizedSkip,
+      permission: "admin",
+      contents: {
+        "meixg/feishu-card-renderer@base-sha:package.json": baseManifest,
+        "outside/fork@head-sha:package.json": JSON.stringify({
+          dependencies: { react: "^19.2.0" },
+          devDependencies: { vitest: "^3.2.4" },
+        }),
+      },
+    });
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent(),
+      github,
+    })).resolves.toEqual({
+      ok: false,
+      code: "consumer-dependency-requires-changeset",
+    });
+  });
+
+  it.each([
+    ["peerDependencies", {
+      dependencies: { react: "^19.1.1" },
+      peerDependencies: { react: ">=19 <20" },
+      devDependencies: { vitest: "^3.2.4" },
+    }],
+    ["optionalDependencies", {
+      dependencies: { react: "^19.1.1" },
+      optionalDependencies: { canvas: "^3.0.0" },
+      devDependencies: { vitest: "^3.2.4" },
+    }],
+    ["peerDependenciesMeta", {
+      dependencies: { react: "^19.1.1" },
+      peerDependenciesMeta: { react: { optional: true } },
+      devDependencies: { vitest: "^3.2.4" },
+    }],
+  ])("requires a Changeset for a %s change despite an authorized skip", async (_field, headManifest) => {
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent(),
+      github: githubAdapter({
+        files: [{ filename: "package.json", status: "modified" }],
+        events: authorizedSkip,
+        permission: "maintain",
+        contents: manifestContents(headManifest),
+      }),
+    })).resolves.toEqual({
+      ok: false,
+      code: "consumer-dependency-requires-changeset",
+    });
+  });
+
+  it.each([
+    ["dependencies", {
+      dependencies: { react: "^19.2.0" },
+      devDependencies: { vitest: "^3.2.4" },
+    }],
+    ["peerDependencies", {
+      dependencies: { react: "^19.1.1" },
+      peerDependencies: { react: ">=19 <20" },
+      devDependencies: { vitest: "^3.2.4" },
+    }],
+    ["optionalDependencies", {
+      dependencies: { react: "^19.1.1" },
+      optionalDependencies: { canvas: "^3.0.0" },
+      devDependencies: { vitest: "^3.2.4" },
+    }],
+    ["peerDependenciesMeta", {
+      dependencies: { react: "^19.1.1" },
+      peerDependenciesMeta: { react: { optional: true } },
+      devDependencies: { vitest: "^3.2.4" },
+    }],
+  ])("accepts a valid Changeset for a %s change", async (_field, headManifest) => {
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent(),
+      github: githubAdapter({
+        files: [
+          { filename: "package.json", status: "modified" },
+          { filename: ".changeset/dependencies.md", status: "added" },
+        ],
+        contents: {
+          ...manifestContents(headManifest),
+          ".changeset/dependencies.md": validChangeset,
+        },
+      }),
+    })).resolves.toEqual({ ok: true, code: "changeset" });
+  });
+
+  it.each([
+    ["devDependency-only", [{ filename: "package.json", status: "modified" }], {
+      dependencies: { react: "^19.1.1" },
+      devDependencies: { vitest: "^3.3.0" },
+    }],
+    ["GitHub Action-only", [{ filename: ".github/workflows/ci.yml", status: "modified" }], undefined],
+    ["lockfile-only", [{ filename: "pnpm-lock.yaml", status: "modified" }], undefined],
+  ])("allows an authorized skip for a %s update", async (_name, files, headManifest) => {
+    const github = githubAdapter({
+      files,
+      events: authorizedSkip,
+      permission: "admin",
+      contents: headManifest ? manifestContents(headManifest) : {},
+    });
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent(),
+      github,
+    })).resolves.toEqual({ ok: true, code: "authorized-skip" });
+  });
+
+  it("does not mistake reordered consumer dependency keys for a manifest change", async () => {
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent(),
+      github: githubAdapter({
+        files: [{ filename: "package.json", status: "modified" }],
+        events: authorizedSkip,
+        permission: "admin",
+        contents: {
+          "meixg/feishu-card-renderer@base-sha:package.json": JSON.stringify({
+            dependencies: { react: "^19.1.1", zod: "^4.0.0" },
+          }),
+          "outside/fork@head-sha:package.json": JSON.stringify({
+            dependencies: { zod: "^4.0.0", react: "^19.1.1" },
+          }),
+        },
+      }),
+    })).resolves.toEqual({ ok: true, code: "authorized-skip" });
+  });
+
+  it("reads fork head and base manifests from their exact repositories and SHAs", async () => {
+    const github = githubAdapter({
+      files: [{ filename: "package.json", status: "modified" }],
+      events: authorizedSkip,
+      permission: "admin",
+      contents: manifestContents({
+        dependencies: { react: "^19.1.1" },
+        devDependencies: { vitest: "^3.3.0" },
+      }),
+    });
+    await assessReleaseImpact({ event: pullRequestEvent(), github });
+    expect(github.readFileAtRef.mock.calls).toEqual([
+      ["meixg/feishu-card-renderer", "package.json", "base-sha"],
+      ["outside/fork", "package.json", "head-sha"],
+    ]);
+  });
+
+  it.each([
+    ["malformed base manifest", "{", baseManifest],
+    ["malformed head manifest", baseManifest, "[]"],
+    ["missing base manifest", undefined, baseManifest],
+    ["missing head manifest", baseManifest, undefined],
+  ])("fails closed on %s", async (_name, baseSource, headSource) => {
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent(),
+      github: githubAdapter({
+        files: [{ filename: "package.json", status: "modified" }],
+        contents: {
+          ...(baseSource === undefined ? {} : {
+            "meixg/feishu-card-renderer@base-sha:package.json": baseSource,
+          }),
+          ...(headSource === undefined ? {} : {
+            "outside/fork@head-sha:package.json": headSource,
+          }),
+        },
+      }),
+    })).rejects.toThrow();
+  });
+
+  it("fails closed when either manifest API request fails", async () => {
+    const github = githubAdapter({
+      files: [{ filename: "package.json", status: "modified" }],
+    });
+    github.readFileAtRef.mockRejectedValue(new Error("manifest API failed"));
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent(),
+      github,
+    })).rejects.toThrow("manifest API failed");
+  });
+
   it("discovers every changed Changeset document at the head SHA and validates its content", async () => {
     const github = githubAdapter({
       contents: {

@@ -281,4 +281,4 @@ Pull Request 只执行站点构建检查。因此在线站点展示的是最新 
 发布；消费者安装和版本比较应以 npm `latest` 指向的不可变发布版本为准。
 
 安全漏洞请不要提交公开 Issue。支持范围、私密报告入口和协调披露规则见
-[安全政策](SECURITY.md)。
+[安全政策](https://github.com/meixg/feishu-card-renderer/security/policy)。

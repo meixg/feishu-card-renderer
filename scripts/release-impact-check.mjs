@@ -9,6 +9,12 @@ import {
 
 const PAGE_SIZE = 100;
 const REPOSITORY_FULL_NAME = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\/[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/u;
+const CONSUMER_DEPENDENCY_FIELDS = [
+  "dependencies",
+  "peerDependencies",
+  "optionalDependencies",
+  "peerDependenciesMeta",
+];
 
 async function collectPages(loadPage) {
   const items = [];
@@ -26,6 +32,8 @@ function pullRequestIdentity(event) {
   const pullRequest = event?.pull_request;
   if (
     !pullRequest?.base?.ref
+    || !pullRequest?.base?.sha
+    || !REPOSITORY_FULL_NAME.test(pullRequest?.base?.repo?.full_name)
     || !pullRequest?.head?.ref
     || !pullRequest?.head?.sha
     || !REPOSITORY_FULL_NAME.test(pullRequest?.head?.repo?.full_name)
@@ -35,6 +43,41 @@ function pullRequestIdentity(event) {
     throw new Error("pull_request 事件缺少或包含非法的必要身份数据。");
   }
   return pullRequest;
+}
+
+function consumerDependencyManifest(source, ref) {
+  if (typeof source !== "string") {
+    throw new Error(`GitHub API 未返回 ${ref} package.json 的文本内容。`);
+  }
+  let manifest;
+  try {
+    manifest = JSON.parse(source);
+  } catch {
+    throw new Error(`${ref} package.json 不是合法 JSON。`);
+  }
+  if (manifest === null || typeof manifest !== "object" || Array.isArray(manifest)) {
+    throw new Error(`${ref} package.json 必须是 JSON 对象。`);
+  }
+  return Object.fromEntries(CONSUMER_DEPENDENCY_FIELDS.map((field) => [
+    field,
+    canonicalizeJson(manifest[field]),
+  ]));
+}
+
+function canonicalizeJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalizeJson);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, nested]) => [key, canonicalizeJson(nested)]));
+  }
+  return value;
+}
+
+function consumerDependenciesChanged(baseSource, headSource) {
+  const base = consumerDependencyManifest(baseSource, "base");
+  const head = consumerDependencyManifest(headSource, "head");
+  return JSON.stringify(base) !== JSON.stringify(head);
 }
 
 export async function assessReleaseImpact({ event, github }) {
@@ -62,6 +105,7 @@ export async function assessReleaseImpact({ event, github }) {
   const changesetPaths = files
     .filter((file) => file?.status !== "removed" && isChangesetDocumentPath(file?.filename))
     .map((file) => file.filename);
+  const rootManifestChanged = files.some((file) => file?.filename === "package.json");
 
   for (const path of changesetPaths) {
     const source = await github.readFileAtRef(
@@ -75,6 +119,27 @@ export async function assessReleaseImpact({ event, github }) {
     const validation = validateChangesetDocument(source);
     if (!validation.ok) {
       return { ok: false, code: "invalid-changeset", path, message: validation.message };
+    }
+  }
+
+  if (rootManifestChanged) {
+    const [baseManifest, headManifest] = await Promise.all([
+      github.readFileAtRef(
+        pullRequest.base.repo.full_name,
+        "package.json",
+        pullRequest.base.sha,
+      ),
+      github.readFileAtRef(
+        pullRequest.head.repo.full_name,
+        "package.json",
+        pullRequest.head.sha,
+      ),
+    ]);
+    if (
+      consumerDependenciesChanged(baseManifest, headManifest)
+      && changesetPaths.length === 0
+    ) {
+      return { ok: false, code: "consumer-dependency-requires-changeset" };
     }
   }
 

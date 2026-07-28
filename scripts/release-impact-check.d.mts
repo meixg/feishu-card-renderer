@@ -1,7 +1,11 @@
 export type PullRequestEvent = {
   pull_request?: {
     number?: number;
-    base?: { ref?: string };
+    base?: {
+      ref?: string;
+      sha?: string;
+      repo?: { full_name?: string };
+    };
     head?: {
       ref?: string;
       sha?: string;
@@ -15,7 +19,7 @@ export type ReleaseImpactGitHub = {
   listPullRequestFiles(number: number, page: number, perPage: number): Promise<unknown>;
   listLabelEvents(number: number, page: number, perPage: number): Promise<unknown>;
   getActorPermission(login: string): Promise<unknown>;
-  readFileAtRef(headRepo: string, path: string, headSha: string): Promise<unknown>;
+  readFileAtRef(repository: string, path: string, ref: string): Promise<unknown>;
 };
 
 export function assessReleaseImpact(input: {

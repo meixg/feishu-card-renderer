@@ -32,6 +32,32 @@ function repositoryPath(fullName) {
   return `/repos/${segments.map(encodeURIComponent).join("/")}`;
 }
 
+function contentPath(path) {
+  if (typeof path !== "string") {
+    throw new Error("GitHub content path 非法。");
+  }
+  const segments = path.split("/");
+  if (
+    segments.length === 0
+    || segments.some((segment) => (
+      segment.length === 0
+      || segment === "."
+      || segment === ".."
+      || !/^[A-Za-z0-9._-]+$/u.test(segment)
+    ))
+  ) {
+    throw new Error("GitHub content path 非法。");
+  }
+  return segments.map(encodeURIComponent).join("/");
+}
+
+function commitRef(ref) {
+  if (typeof ref !== "string" || !/^[0-9a-f]{40}$/u.test(ref)) {
+    throw new Error("GitHub commit ref 非法。");
+  }
+  return encodeURIComponent(ref);
+}
+
 const baseRepositoryPath = repositoryPath(process.env.GITHUB_REPOSITORY);
 const github = {
   listPullRequestFiles(number, page, perPage) {
@@ -46,11 +72,11 @@ const github = {
     );
     return result.permission;
   },
-  async readFileAtRef(headRepo, path, headSha) {
-    const headRepositoryPath = repositoryPath(headRepo);
-    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+  async readFileAtRef(repository, path, ref) {
+    const contentRepositoryPath = repositoryPath(repository);
+    const encodedPath = contentPath(path);
     const result = await githubJson(
-      `${headRepositoryPath}/contents/${encodedPath}?ref=${encodeURIComponent(headSha)}`,
+      `${contentRepositoryPath}/contents/${encodedPath}?ref=${commitRef(ref)}`,
     );
     if (result.type !== "file" || result.encoding !== "base64" || typeof result.content !== "string") {
       throw new Error(`GitHub API 未返回 ${path} 的 base64 文件内容。`);
