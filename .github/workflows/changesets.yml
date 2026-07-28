@@ -1,0 +1,45 @@
+name: Maintain Changesets release PR
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: changesets-release-pr
+  cancel-in-progress: false
+
+jobs:
+  release-pr:
+    name: Maintain draft release PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trusted main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create or update the draft Release PR
+        uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
+        with:
+          title: "chore: release feishu-card-renderer"
+          commit: "chore: release feishu-card-renderer"
+          commitMode: github-api
+          prDraft: always
+          setupGitUser: false
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

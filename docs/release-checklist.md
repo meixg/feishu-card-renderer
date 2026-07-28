@@ -105,3 +105,34 @@ pnpm package:verify
 
 本清单不执行 `npm publish`，也不创建 GitHub Release。发布者仍须核对 tag、
 changelog、registry 身份和组织发布权限。
+
+## Draft Release PR 初始化
+
+`Maintain Changesets release PR` workflow 只在可信 `main` 上运行，使用仓库内置
+`GITHUB_TOKEN` 和 Changesets 的 GitHub API commit 模式维护
+`changeset-release/main` 上唯一的 Draft Release PR。`prDraft: always` 保证新建
+和每次更新后都回到 Draft。此阶段只聚合版本与根
+`CHANGELOG.md`，不 publish npm、不创建 tag/Release，也不申请 OIDC。
+
+bot 使用 `GITHUB_TOKEN` 创建或更新 PR 不会触发后续 workflow。维护者必须先审阅
+聚合版本与 CHANGELOG，再点击 **Ready for review**；`ready_for_review` 事件会触发
+Release impact、`Package candidate (Node 22.12.0)`、`Package candidate (Node 24)`、
+`Full quality (Node 24)` 和其它 PR checks。任何后续 Changeset 更新都会再次设为
+Draft，维护者需重新审阅并再次点击 Ready。
+
+Release impact workflow 使用只读 `pull_request_target`，只 checkout 事件中的
+base SHA 并执行 `main` 上的可信 checker。PR changed files、label events、actor
+permission 和候选 Changeset 内容都通过 GitHub API 读取；候选文档固定按 head SHA
+从事件给出的 `pull_request.head.repo.full_name`（包括外部 fork）读取，仓库名、路径和
+ref 均严格校验或逐段编码。内容仅作为文本数据，不 checkout 或执行 PR head，也不
+安装其依赖；changed files、label events 和 actor permission 始终查询 base 仓库。
+
+#40 本身是引入该 base checker 的 bootstrap PR，因此合并前的 `main` 无法运行新的
+可信-base workflow。PR #48 最终 head 使用维护者凭据通过 GitHub Status API 写入
+一次性、可审计的 `Release impact` 状态；这不是 workflow fallback，也不会进入
+`main`。#40 合并后所有 PR（包括外部 PR）只能走上述可信-base 路径。
+
+GitHub 仓库的 **Settings → Actions → General → Workflow permissions** 中，
+“Allow GitHub Actions to create and approve pull requests” 是代码库外设置。若当前
+禁用，首次运行会无法创建 Release PR；按父规格的后续 #41 由维护者人工启用并记录，
+本 #40 不声称已修改或验证该设置。
