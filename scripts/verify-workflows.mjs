@@ -10,6 +10,7 @@ const workflows = new Map(await Promise.all(workflowFiles.map(async (file) => [
   file,
   await readFile(resolve(workflowsDirectory, file), "utf8"),
 ])));
+const dependabot = await readFile(resolve(root, ".github/dependabot.yml"), "utf8");
 
 function requireContract(condition, message) {
   if (!condition) {
@@ -20,6 +21,24 @@ function requireContract(condition, message) {
 function occurrences(source, pattern) {
   return [...source.matchAll(pattern)].length;
 }
+
+requireContract(
+  /^version: 2\n\nupdates:\n/.test(dependabot),
+  "Dependabot configuration must use version 2",
+);
+requireContract(
+  occurrences(dependabot, /package-ecosystem: "npm"/g) === 1
+    && occurrences(dependabot, /package-ecosystem: "github-actions"/g) === 1,
+  "Dependabot must cover the pnpm lockfile through npm ecosystem and GitHub Actions exactly once",
+);
+requireContract(
+  occurrences(dependabot, /interval: "weekly"/g) === 2,
+  "both Dependabot ecosystems must run weekly",
+);
+requireContract(
+  !/\b(?:automerge|auto-merge|release:skip)\b/i.test(dependabot),
+  "Dependabot must not auto-merge or self-apply the maintainer-only release:skip label",
+);
 
 for (const [file, source] of workflows) {
   const usesLines = source.match(/^\s*uses:\s*.+$/gm) ?? [];
@@ -185,6 +204,10 @@ requireContract(
   /^ {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, ready_for_review\]$/m.test(ci)
     && !/\b(?:changeset-release\/main|release-pr-exempt)\b/.test(ci),
   "the Release PR exception must not bypass any existing CI check",
+);
+requireContract(
+  !/\bdependabot\b/i.test(ci) && !/\bdependabot\b/i.test(releaseImpact),
+  "Dependabot PRs must use the same CI and release-impact paths as every other PR",
 );
 
 const releaseImpactAdapter = await readFile(resolve(root, "scripts/check-release-impact.mjs"), "utf8");

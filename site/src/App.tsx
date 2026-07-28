@@ -238,7 +238,8 @@ export function App() {
             <h1>让飞书卡片在<br />你的 Web 应用里可靠呈现。</h1>
             <p>
               一个宿主无关、可诊断、可交互的飞书卡片 JSON 2.0 渲染器。
-              本页直接运行项目源码，并逐项展示全部 26 个运行时 tag 与顶层 header。
+              本页直接运行最新 main 源码，并逐项展示全部 26 个运行时 tag 与顶层 header。
+              正式、不可变的发布版本以 npm latest 为准。
             </p>
             <div className="hero-actions">
               <a className="button-primary" href="#playground">在线试用</a>

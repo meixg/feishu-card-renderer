@@ -24,6 +24,17 @@ Release PR 来自标准分支 `changeset-release/main`。每次 Changesets 创�
 `GITHUB_TOKEN` 创建或更新 PR 本身不会递归触发这些 workflow。Release PR 只豁免
 上述二选一检查，仍必须通过仓库所有其它 required checks。
 
+## 依赖更新
+
+Dependabot 每周为 pnpm lockfile 和 GitHub Actions 创建 PR，不自动合并，也不享有
+CI 或发布影响检查例外。Dependabot actor 不是维护者授权，不能自行添加
+`release:skip`。
+
+runtime dependency 或 peer dependency 更新必须包含 Changeset。纯
+devDependency 或 GitHub Action 更新可在维护者确认不改变发布包后，由具备
+`maintain` 或 `admin` 权限的维护者添加 `release:skip`。Action 的 `uses:` 必须继续
+固定到完整 40 位 commit SHA，并保留可读版本注释。
+
 ## 本地验证
 
 ```bash
