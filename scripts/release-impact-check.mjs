@@ -8,6 +8,7 @@ import {
 } from "./release-impact-policy.mjs";
 
 const PAGE_SIZE = 100;
+const REPOSITORY_FULL_NAME = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\/[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/u;
 
 async function collectPages(loadPage) {
   const items = [];
@@ -27,10 +28,11 @@ function pullRequestIdentity(event) {
     !pullRequest?.base?.ref
     || !pullRequest?.head?.ref
     || !pullRequest?.head?.sha
+    || !REPOSITORY_FULL_NAME.test(pullRequest?.head?.repo?.full_name)
     || !pullRequest?.user?.login
     || !Number.isInteger(pullRequest.number)
   ) {
-    throw new Error("pull_request 事件缺少必要身份数据。");
+    throw new Error("pull_request 事件缺少或包含非法的必要身份数据。");
   }
   return pullRequest;
 }
@@ -62,7 +64,11 @@ export async function assessReleaseImpact({ event, github }) {
     .map((file) => file.filename);
 
   for (const path of changesetPaths) {
-    const source = await github.readFileAtRef(path, pullRequest.head.sha);
+    const source = await github.readFileAtRef(
+      pullRequest.head.repo.full_name,
+      path,
+      pullRequest.head.sha,
+    );
     if (typeof source !== "string") {
       throw new Error(`GitHub API 未返回 ${path} 的文本内容。`);
     }

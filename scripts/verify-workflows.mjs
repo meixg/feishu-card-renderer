@@ -190,15 +190,20 @@ requireContract(
 const releaseImpactAdapter = await readFile(resolve(root, "scripts/check-release-impact.mjs"), "utf8");
 const releaseImpactCheck = await readFile(resolve(root, "scripts/release-impact-check.mjs"), "utf8");
 requireContract(
-  /\/pulls\/\$\{number\}\/files\?/.test(releaseImpactAdapter)
-    && /\/issues\/\$\{number\}\/events\?/.test(releaseImpactAdapter)
-    && /\/collaborators\/\$\{encodeURIComponent\(login\)\}\/permission/.test(releaseImpactAdapter)
-    && /\/contents\/\$\{encodedPath\}\?ref=\$\{encodeURIComponent\(ref\)\}/.test(releaseImpactAdapter),
-  "release impact adapter must read changed files, label events, actor permission, and head-pinned content via GitHub API",
+  /const baseRepositoryPath = repositoryPath\(process\.env\.GITHUB_REPOSITORY\)/.test(releaseImpactAdapter)
+    && /\$\{baseRepositoryPath\}\/pulls\/\$\{number\}\/files\?/.test(releaseImpactAdapter)
+    && /\$\{baseRepositoryPath\}\/issues\/\$\{number\}\/events\?/.test(releaseImpactAdapter)
+    && /\$\{baseRepositoryPath\}\/collaborators\/\$\{encodeURIComponent\(login\)\}\/permission/.test(releaseImpactAdapter)
+    && /readFileAtRef\(headRepo, path, headSha\)/.test(releaseImpactAdapter)
+    && /const headRepositoryPath = repositoryPath\(headRepo\)/.test(releaseImpactAdapter)
+    && /\$\{headRepositoryPath\}\/contents\/\$\{encodedPath\}\?ref=\$\{encodeURIComponent\(headSha\)\}/.test(releaseImpactAdapter),
+  "release impact adapter must keep metadata on base while reading head-SHA content from the validated head repository",
 );
 requireContract(
   !/node:child_process|\bexecFile|\bspawn\b|pnpm|package\.json|\.changeset\/config|changelog/.test(releaseImpactAdapter)
-    && !/\bfetch\(/.test(releaseImpactCheck),
+    && !/\bfetch\(/.test(releaseImpactCheck)
+    && /head\?\.repo\?\.full_name/.test(releaseImpactCheck)
+    && /pullRequest\.head\.repo\.full_name,\n {6}path,\n {6}pullRequest\.head\.sha/.test(releaseImpactCheck),
   "release impact policy must not execute PR code/config/dependencies and its orchestration seam must remain injectable",
 );
 

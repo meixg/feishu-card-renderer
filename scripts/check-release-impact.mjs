@@ -17,24 +17,40 @@ async function githubJson(path) {
   return response.json();
 }
 
-const repositoryPath = `/repos/${process.env.GITHUB_REPOSITORY}`;
+function repositoryPath(fullName) {
+  if (typeof fullName !== "string") {
+    throw new Error("GitHub repository full_name 非法。");
+  }
+  const segments = fullName.split("/");
+  if (
+    segments.length !== 2
+    || !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/u.test(segments[0])
+    || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/u.test(segments[1])
+  ) {
+    throw new Error("GitHub repository full_name 非法。");
+  }
+  return `/repos/${segments.map(encodeURIComponent).join("/")}`;
+}
+
+const baseRepositoryPath = repositoryPath(process.env.GITHUB_REPOSITORY);
 const github = {
   listPullRequestFiles(number, page, perPage) {
-    return githubJson(`${repositoryPath}/pulls/${number}/files?per_page=${perPage}&page=${page}`);
+    return githubJson(`${baseRepositoryPath}/pulls/${number}/files?per_page=${perPage}&page=${page}`);
   },
   listLabelEvents(number, page, perPage) {
-    return githubJson(`${repositoryPath}/issues/${number}/events?per_page=${perPage}&page=${page}`);
+    return githubJson(`${baseRepositoryPath}/issues/${number}/events?per_page=${perPage}&page=${page}`);
   },
   async getActorPermission(login) {
     const result = await githubJson(
-      `${repositoryPath}/collaborators/${encodeURIComponent(login)}/permission`,
+      `${baseRepositoryPath}/collaborators/${encodeURIComponent(login)}/permission`,
     );
     return result.permission;
   },
-  async readFileAtRef(path, ref) {
+  async readFileAtRef(headRepo, path, headSha) {
+    const headRepositoryPath = repositoryPath(headRepo);
     const encodedPath = path.split("/").map(encodeURIComponent).join("/");
     const result = await githubJson(
-      `${repositoryPath}/contents/${encodedPath}?ref=${encodeURIComponent(ref)}`,
+      `${headRepositoryPath}/contents/${encodedPath}?ref=${encodeURIComponent(headSha)}`,
     );
     if (result.type !== "file" || result.encoding !== "base64" || typeof result.content !== "string") {
       throw new Error(`GitHub API 未返回 ${path} 的 base64 文件内容。`);

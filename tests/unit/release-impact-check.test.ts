@@ -26,7 +26,11 @@ function pullRequestEvent(overrides: Record<string, unknown> = {}) {
     pull_request: {
       number: 48,
       base: { ref: "main" },
-      head: { ref: "feature", sha: "head-sha" },
+      head: {
+        ref: "feature",
+        sha: "head-sha",
+        repo: { full_name: "outside/fork" },
+      },
       user: { login: "contributor" },
       ...overrides,
     },
@@ -43,7 +47,7 @@ function githubAdapter({
     listPullRequestFiles: vi.fn(async (_number: number, page: number) => page === 1 ? files : []),
     listLabelEvents: vi.fn(async (_number: number, page: number) => page === 1 ? events : []),
     getActorPermission: vi.fn(async () => permission),
-    readFileAtRef: vi.fn(async (path: string) => contents[path]),
+    readFileAtRef: vi.fn(async (_repo: string, path: string) => contents[path]),
   };
 }
 
@@ -73,8 +77,8 @@ describe("release impact orchestration", () => {
       github,
     })).resolves.toEqual({ ok: true, code: "changeset" });
     expect(github.readFileAtRef.mock.calls).toEqual([
-      [".changeset/first.md", "head-sha"],
-      [".changeset/second.md", "head-sha"],
+      ["outside/fork", ".changeset/first.md", "head-sha"],
+      ["outside/fork", ".changeset/second.md", "head-sha"],
     ]);
     expect(github.listPullRequestFiles.mock.calls.map((call) => call[1])).toEqual([1, 2]);
   });
@@ -141,7 +145,11 @@ describe("release impact orchestration", () => {
     const github = githubAdapter();
     await expect(assessReleaseImpact({
       event: pullRequestEvent({
-        head: { ref: "changeset-release/main", sha: "release-sha" },
+        head: {
+          ref: "changeset-release/main",
+          sha: "release-sha",
+          repo: { full_name: "meixg/feishu-card-renderer" },
+        },
         user: { login: "github-actions[bot]" },
       }),
       github,
@@ -180,7 +188,7 @@ describe("release impact orchestration", () => {
     await expect(assessReleaseImpact({
       event: {},
       github: githubAdapter(),
-    })).rejects.toThrow("缺少必要身份数据");
+    })).rejects.toThrow("缺少或包含非法");
 
     const github = githubAdapter();
     github.listPullRequestFiles.mockImplementation(async () => undefined as unknown as ChangedFile[]);
@@ -188,6 +196,25 @@ describe("release impact orchestration", () => {
       event: pullRequestEvent(),
       github,
     })).rejects.toThrow("无效的分页数据");
+  });
+
+  it.each([
+    ["missing", { ref: "feature", sha: "head-sha" }],
+    ["URL-like", {
+      ref: "feature",
+      sha: "head-sha",
+      repo: { full_name: "https://github.com/outside/fork" },
+    }],
+    ["extra path", {
+      ref: "feature",
+      sha: "head-sha",
+      repo: { full_name: "outside/fork/contents" },
+    }],
+  ])("fails closed on %s head repository identity", async (_name, head) => {
+    await expect(assessReleaseImpact({
+      event: pullRequestEvent({ head }),
+      github: githubAdapter(),
+    })).rejects.toThrow("缺少或包含非法");
   });
 
   it.each<[string, GitHubSetup, boolean, string]>([
@@ -214,7 +241,11 @@ describe("release impact orchestration", () => {
   ])("%s produces the end-to-end policy result", async (name, setup, ok, code) => {
     const event = name === "Changesets Release PR"
       ? pullRequestEvent({
-        head: { ref: "changeset-release/main", sha: "release-sha" },
+        head: {
+          ref: "changeset-release/main",
+          sha: "release-sha",
+          repo: { full_name: "meixg/feishu-card-renderer" },
+        },
         user: { login: "github-actions[bot]" },
       })
       : pullRequestEvent();

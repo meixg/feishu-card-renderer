@@ -123,7 +123,9 @@ Draft，维护者需重新审阅并再次点击 Ready。
 Release impact workflow 使用只读 `pull_request_target`，只 checkout 事件中的
 base SHA 并执行 `main` 上的可信 checker。PR changed files、label events、actor
 permission 和候选 Changeset 内容都通过 GitHub API 读取；候选文档固定按 head SHA
-读取且仅作为文本数据，不 checkout 或执行 PR head，也不安装其依赖。
+从事件给出的 `pull_request.head.repo.full_name`（包括外部 fork）读取，仓库名、路径和
+ref 均严格校验或逐段编码。内容仅作为文本数据，不 checkout 或执行 PR head，也不
+安装其依赖；changed files、label events 和 actor permission 始终查询 base 仓库。
 
 #40 本身是引入该 base checker 的 bootstrap PR，因此合并前的 `main` 无法运行新的
 可信-base workflow。PR #48 最终 head 使用维护者凭据通过 GitHub Status API 写入
