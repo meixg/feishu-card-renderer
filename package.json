@@ -1,6 +1,21 @@
 {
-  "name": "@meixg/feishu-card-renderer",
-  "version": "1.0.0",
+  "name": "feishu-card-renderer",
+  "version": "0.0.1",
+  "description": "面向 React 的飞书卡片 JSON 2.0 Web 渲染器",
+  "license": "MIT",
+  "author": "Xuguang Mei",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meixg/feishu-card-renderer.git"
+  },
+  "homepage": "https://meixg.github.io/feishu-card-renderer/",
+  "bugs": {
+    "url": "https://github.com/meixg/feishu-card-renderer/issues"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@10.34.5",
   "private": false,
   "type": "module",
   "sideEffects": [
@@ -10,7 +25,8 @@
     "dist",
     "docs/compatibility-matrix.md",
     "docs/integration.md",
-    "docs/release-checklist.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -41,6 +57,7 @@
     "visual": "playwright test",
     "visual:update": "playwright test --update-snapshots",
     "build": "vite build && node scripts/verify-build.mjs",
+    "package:verify": "node scripts/verify-package.mjs",
     "site:dev": "vite --config vite.site.config.ts",
     "site:build": "vite build --config vite.site.config.ts",
     "site:preview": "vite preview --config vite.site.config.ts",

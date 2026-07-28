@@ -1,4 +1,4 @@
-import type { CardJsonV2 } from "@meixg/feishu-card-renderer";
+import type { CardJsonV2 } from "feishu-card-renderer";
 
 export const packageRootCard = {
   schema: "2.0",
