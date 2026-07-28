@@ -1,33 +1,99 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { TextElement } from "../../schema/components";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
-export function ConfirmDialog({ title, text, onConfirm, onCancel, trigger }: {
+type ActiveModal = {
+  cancel: () => void;
+  id: symbol;
+};
+
+const activeModalByDocument = new WeakMap<Document, ActiveModal>();
+
+export function ConfirmDialog({
+  open,
+  title,
+  text,
+  onConfirm,
+  onCancel,
+  trigger,
+}: {
+  open: boolean;
   title?: TextElement; text?: TextElement; onConfirm: () => void;
   onCancel: () => void; trigger: React.RefObject<HTMLElement | null>;
 }): React.JSX.Element {
-  const dialog = useRef<HTMLDivElement>(null);
-  const close = () => { onCancel(); queueMicrotask(() => trigger.current?.focus()); };
-  useEffect(() => {
-    dialog.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { event.preventDefault(); close(); }
-      if (event.key !== "Tab" || !dialog.current) return;
-      const controls = [...dialog.current.querySelectorAll<HTMLElement>("button")];
-      const index = controls.indexOf(document.activeElement as HTMLElement);
-      const next = event.shiftKey ? (index - 1 + controls.length) % controls.length :
-        (index + 1) % controls.length;
-      event.preventDefault(); controls[next]?.focus();
+  const confirmed = useRef(false);
+  const cancelRef = useRef(onCancel);
+  const modalRef = useRef<ActiveModal | null>(null);
+  const [modalActive, setModalActive] = useState(false);
+  cancelRef.current = onCancel;
+  if (!modalRef.current) {
+    modalRef.current = {
+      cancel: () => cancelRef.current(),
+      id: Symbol("fcr-confirm-dialog"),
     };
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
-  });
-  return <div className="fcr-confirm-backdrop">
-    <div ref={dialog} role="dialog" aria-modal="true"
-      aria-label={title?.content ?? "确认操作"} className="fcr-confirm-dialog">
-      <strong>{title?.content ?? "确认操作"}</strong>
-      <p>{text?.content ?? "是否继续？"}</p>
-      <div><button type="button" onClick={close}>取消</button>
-        <button type="button" onClick={() => { onConfirm(); close(); }}>确认</button></div>
-    </div>
-  </div>;
+  }
+  const modal = modalRef.current;
+
+  useEffect(() => {
+    if (!open) confirmed.current = false;
+  }, [open]);
+  useLayoutEffect(() => {
+    const document = trigger.current?.ownerDocument;
+    if (!open || !document) {
+      setModalActive(false);
+      return undefined;
+    }
+
+    const previous = activeModalByDocument.get(document);
+    if (previous && previous.id !== modal.id) previous.cancel();
+    activeModalByDocument.set(document, modal);
+    setModalActive(true);
+
+    return () => {
+      if (activeModalByDocument.get(document)?.id === modal.id) {
+        activeModalByDocument.delete(document);
+      }
+    };
+  }, [modal, open, trigger]);
+
+  const effectiveOpen = open && modalActive;
+  return (
+    <AlertDialog
+      open={effectiveOpen}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onCancel();
+      }}
+    >
+      <AlertDialogContent finalFocus={trigger}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title?.content ?? "确认操作"}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {text?.content ?? "是否继续？"}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel type="button">取消</AlertDialogCancel>
+          <AlertDialogAction
+            type="button"
+            onClick={() => {
+              if (confirmed.current) return;
+              confirmed.current = true;
+              onConfirm();
+            }}
+          >
+            确认
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }

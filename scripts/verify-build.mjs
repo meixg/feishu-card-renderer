@@ -2,6 +2,7 @@ import { access, readFile, readdir, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
+import postcss from "postcss";
 
 const requiredArtifacts = [
   "dist/index.js",
@@ -16,7 +17,38 @@ const runFile = promisify(execFile);
 
 const entry = await readFile("dist/index.js", "utf8");
 const entryTypes = await readFile("dist/index.d.ts", "utf8");
+const packageManifest = JSON.parse(await readFile("package.json", "utf8"));
+const css = await readFile("dist/styles.css", "utf8");
 const files = await readdir("dist");
+const cssFiles = files.filter((file) => file.endsWith(".css"));
+
+if (cssFiles.length !== 1 || cssFiles[0] !== "styles.css") {
+  throw new Error("The build must emit exactly one published CSS artifact: dist/styles.css.");
+}
+if (css.includes("--tw-")) {
+  throw new Error("Tailwind internal variables leaked into the published CSS artifact.");
+}
+
+const stylesheet = postcss.parse(css);
+for (const rule of stylesheet.nodes.flatMap(function walk(node) {
+  if (node.type === "rule") return [node];
+  if ("nodes" in node && Array.isArray(node.nodes)) {
+    return node.nodes.flatMap(walk);
+  }
+  return [];
+})) {
+  let inKeyframes = false;
+  for (let parent = rule.parent; parent; parent = parent.parent) {
+    if (parent.type === "atrule" && /keyframes$/i.test(parent.name)) {
+      inKeyframes = true;
+      break;
+    }
+  }
+  if (inKeyframes) continue;
+  if (!rule.selectors.every((selector) => selector.includes(".fcr"))) {
+    throw new Error(`Unscoped selector leaked into dist/styles.css: ${rule.selector}`);
+  }
+}
 
 if (!entry.includes('from "react/jsx-runtime"')) {
   throw new Error("React JSX runtime must remain an external ESM import.");
@@ -36,6 +68,46 @@ await runFile("node_modules/.bin/tsc", [
 
 if (entry.includes("react.production.min") || entry.includes("react.development")) {
   throw new Error("React implementation was bundled into the library output.");
+}
+if (packageManifest.peerDependencies?.react !== ">=18.2.0 <20" ||
+  packageManifest.peerDependencies?.["react-dom"] !== ">=18.2.0 <20" ||
+  packageManifest.dependencies?.react ||
+  packageManifest.dependencies?.["react-dom"]) {
+  throw new Error("React and ReactDOM must remain external peer dependencies.");
+}
+const expectedRuntimeDependencies = {
+  "@base-ui/react": "^1.6.0",
+  "class-variance-authority": "^0.7.1",
+  clsx: "^2.1.1",
+  "react-day-picker": "^9.7.0",
+  "tailwind-merge": "^3.6.0",
+};
+for (const [dependency, range] of Object.entries(expectedRuntimeDependencies)) {
+  if (packageManifest.dependencies?.[dependency] !== range) {
+    throw new Error(`${dependency} must remain a verified runtime dependency (${range}).`);
+  }
+  if (!entry.includes(`from "${dependency}`)) {
+    throw new Error(`${dependency} must remain external in the renderer entry.`);
+  }
+}
+if (packageManifest.dependencies?.tailwindcss ||
+  packageManifest.dependencies?.["@tailwindcss/postcss"] ||
+  !packageManifest.devDependencies?.tailwindcss ||
+  !packageManifest.devDependencies?.["@tailwindcss/postcss"]) {
+  throw new Error("Tailwind must remain build-only; consumers receive precompiled CSS.");
+}
+if (entry.includes("@base-ui/utils") || entry.includes("BaseUI")) {
+  throw new Error("Base UI implementation code was bundled into the renderer entry.");
+}
+if (!entry.includes('from "react-day-picker"') ||
+  !entry.includes('from "react-day-picker/locale"')) {
+  throw new Error("The private Calendar must retain external react-day-picker imports.");
+}
+if (/(?:from|import\()\s*["'](?:@\/|#)/.test(entry)) {
+  throw new Error("A source alias leaked into the built renderer entry.");
+}
+if (/components\/ui|ButtonProps|buttonVariants/.test(entryTypes)) {
+  throw new Error("Private shadcn/Base UI wrappers leaked from the public types.");
 }
 if (!entry.includes("micromark") || !entry.includes("mdast")) {
   throw new Error(
@@ -108,7 +180,7 @@ const sharedBytes = (await stat(
 )).size;
 console.log(
   "Build contract verified: ESM, bundled Markdown parser, import-time DOM/network safety, "
-  + "schema subpath, declarations, scoped CSS, React external, lazy VChart chunk.",
+  + "schema subpath, declarations, single scoped CSS artifact, React external, lazy VChart chunk.",
 );
 console.log(
   `Bundle metrics (raw): eager renderer ${entryBytes} B + shared ${sharedBytes} B; `

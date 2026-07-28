@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ButtonElement, CheckerElement, DatePickerElement, DateTimePickerElement,
   InputElement, MultiSelectPersonElement, MultiSelectStaticElement,
@@ -10,7 +10,30 @@ import {
   actionsFor, browserTimezone, serializableValue, sourceFor,
 } from "../../interactions/behaviors";
 import { ConfirmDialog } from "../primitives/ConfirmDialog";
-import { useImageResource } from "../../renderer/resources";
+import { useImageResource, usePersonResource } from "../../renderer/resources";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import {
+  ChoiceField,
+  type ChoiceOption,
+} from "../ui/choice-field";
+import { Button as UiButton } from "../ui/button";
+import { Calendar } from "../ui/calendar";
+import { Checkbox } from "../ui/checkbox";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "../ui/field";
+import { Input as UiInput } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Textarea } from "../ui/textarea";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -24,28 +47,56 @@ const optionText = (option: SelectOption) => option.text?.content ??
     typeof option.value === "boolean" ? String(option.value) : "");
 const checkerMissing = (value: unknown) => value !== true;
 
+function useElementIds(path: string) {
+  const { domIdPrefix } = useRendererContext();
+  const pathId = path.replace(/[^A-Za-z0-9_-]/g, "-");
+  const prefix = `${domIdPrefix}-${pathId}`;
+  return {
+    choiceName: `${prefix}-choice`,
+    control: `${prefix}-control`,
+    description: `${prefix}-description`,
+    error: `${prefix}-error`,
+    label: `${prefix}-label`,
+  };
+}
+
 function useTips(element: {
   disabled?: boolean;
   hover_tips?: { content?: string };
   disabled_tips?: { content?: string };
-}) {
-  const id = useId().replace(/[^A-Za-z0-9_-]/g, "");
+}, descriptionId: string) {
   const tips = [
     element.hover_tips?.content,
     element.disabled ? element.disabled_tips?.content : undefined,
   ].filter((value): value is string => typeof value === "string" && value.length > 0);
-  const describedBy = tips.length > 0 ? `fcr-tips-${id}` : undefined;
+  const describedBy = tips.length > 0 ? descriptionId : undefined;
   return {
     describedBy,
     nodes: tips.length > 0
-      ? <span id={describedBy} className="fcr-field-tips">
+      ? <FieldDescription id={describedBy} className="fcr-field-tips">
           {tips.map((tip, index) => <span key={index}>{tip}</span>)}
-        </span>
+        </FieldDescription>
       : null,
   };
 }
 
-const rawOptionValue = (option: SelectOption): OptionValue | undefined => {
+function fieldFeedback(
+  errorId: string,
+  describedBy: string | undefined,
+  invalid: boolean,
+) {
+  return {
+    describedBy: [describedBy, invalid ? errorId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined,
+    error: invalid
+      ? <FieldError id={errorId}>此项为必填项</FieldError>
+      : null,
+  };
+}
+
+const rawOptionValue = (option?: SelectOption): OptionValue | undefined => {
+  if (!option) return undefined;
   if (typeof option.value === "number" && !Number.isFinite(option.value)) {
     return undefined;
   }
@@ -81,6 +132,7 @@ function useField(element: InteractiveElement, initial: unknown,
   latestInitial.current = initial;
   const registerField = form?.registerField;
   const updateField = form?.updateField;
+  const setFieldControl = form?.setFieldControl;
   useEffect(() => {
     if (!registerField || !name) return;
     return registerField(name, element.tag, latestInitial.current, isMissing);
@@ -91,6 +143,9 @@ function useField(element: InteractiveElement, initial: unknown,
   }, [element.required, element.tag, initial, isMissing, name, updateField]);
   const value = form && name && Object.hasOwn(form.values, name)
     ? form.values[name] : local;
+  const controlRef = useCallback((control: HTMLElement | null) => {
+    if (name && setFieldControl) setFieldControl(name, control);
+  }, [name, setFieldControl]);
   const apply = (next: unknown, path: string, timezone = false) => {
     if (form && name) form.setValue(name, next);
     else {
@@ -113,10 +168,13 @@ function useField(element: InteractiveElement, initial: unknown,
     setPending({ next, path, timezone });
     setConfirming(true);
   };
-  return { value, set, disabled: element.disabled === true ||
+  return { value, set, controlRef,
+    invalid: Boolean(form && name && form.invalidFields.has(name)),
+    disabled: element.disabled === true ||
     (!form && !onAction && !allowLocalWithoutAction),
-    confirmDialog: confirming
-      ? <ConfirmDialog title={element.confirm?.title} text={element.confirm?.text}
+    confirmDialog: element.confirm
+      ? <ConfirmDialog open={confirming}
+          title={element.confirm.title} text={element.confirm.text}
           trigger={trigger} onCancel={() => setConfirming(false)}
           onConfirm={() => {
             const request = pending as { next: unknown; path: string; timezone: boolean };
@@ -128,118 +186,333 @@ function useField(element: InteractiveElement, initial: unknown,
 
 export function Input({ element, path }: { element: InputElement; path: string }) {
   const field = useField(element, element.default_value ?? "");
-  const tips = useTips(element);
-  const id = `fcr-${path.replace(/[^a-z0-9]/gi, "-")}`;
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
+  const id = ids.control;
   const shared = { id, disabled: field.disabled, required: element.required,
-    "aria-describedby": tips.describedBy,
+    "aria-describedby": feedback.describedBy,
+    "aria-invalid": field.invalid || undefined,
     maxLength: element.max_length, value: String(field.value ?? ""),
     placeholder: element.placeholder?.content,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       field.set(event.target.value, path) };
-  return <><label className="fcr-field" htmlFor={id}>
-    {element.label?.content ?? element.name ?? "输入"}
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel htmlFor={id}>
+      {element.label?.content ?? element.name ?? "输入"}
+    </FieldLabel>
     {element.input_type === "multiline_text"
-      ? <textarea {...shared} rows={element.rows ?? 5} />
-      : <input {...shared} type={element.input_type === "password" ? "password" : "text"} />}
-  </label>{tips.nodes}{field.confirmDialog}</>;
+      ? <Textarea ref={(node) => field.controlRef(node)}
+          {...shared} rows={element.rows ?? 5} />
+      : <UiInput ref={(node) => field.controlRef(node)}
+          {...shared}
+          type={element.input_type === "password" ? "password" : "text"} />}
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 type Single = SelectStaticElement | SelectPersonElement;
+
+type PersonResolution = Readonly<{
+  status: "loading" | "ready" | "error";
+  name?: string;
+}>;
+
+function PersonNameProbe({ id, token, onResolution }: {
+  id: string;
+  token: string;
+  onResolution: (token: string, resolution: PersonResolution) => void;
+}) {
+  const resource = usePersonResource(id);
+  const status = resource?.status ?? "error";
+  const name = resource?.status === "ready" ? resource.value?.name : undefined;
+  useEffect(
+    () => onResolution(token, { status, ...(name ? { name } : {}) }),
+    [name, onResolution, status, token],
+  );
+  return null;
+}
+
+function useChoiceOptions(
+  element: Single | Multi,
+  path: string,
+): {
+  choices: readonly ChoiceOption[];
+  probes: React.ReactNode;
+} {
+  const [personResolutions, setPersonResolutions] = useState<
+    Record<string, PersonResolution>
+  >({});
+  const isPerson = element.tag === "select_person" ||
+    element.tag === "multi_select_person";
+  const onResolution = useCallback((
+    token: string,
+    resolution: PersonResolution,
+  ) => {
+    setPersonResolutions((current) => {
+      const previous = current[token];
+      if (previous?.status === resolution.status &&
+        previous.name === resolution.name) return current;
+      return { ...current, [token]: resolution };
+    });
+  }, []);
+  const choices = useMemo(() => (element.options ?? []).map((option, index) => {
+    const token = optionToken(path, index);
+    const raw = rawOptionValue(option);
+    const supplied = isPerson ? option.text?.content ?? "" : optionText(option);
+    const resolution = personResolutions[token];
+    const resolved = resolution?.name;
+    const fallback = resolution?.status === "loading"
+      ? "人员信息加载中"
+      : resolution?.status === "error"
+        ? "人员信息不可用"
+        : "未命名选项";
+    const label = option.text?.content ?? resolved ?? (supplied || fallback);
+    return {
+      token,
+      label,
+      searchText: [label, supplied, resolved].filter(Boolean).join(" "),
+      disabled: option.disabled === true || raw === undefined,
+      ...(resolution?.status === "loading" || resolution?.status === "error"
+        ? { resourceState: resolution.status }
+        : {}),
+    };
+  }), [element.options, isPerson, path, personResolutions]);
+  const probes = isPerson
+    ? (element.options ?? []).map((option, index) => {
+        const value = rawOptionValue(option);
+        return typeof value === "string"
+          ? <PersonNameProbe
+              id={value}
+              key={optionToken(path, index)}
+              onResolution={onResolution}
+              token={optionToken(path, index)}
+            />
+          : null;
+      })
+    : null;
+  return { choices, probes };
+}
+
 export function SingleSelect({ element, path }: { element: Single; path: string }) {
   const indexed = typeof element.initial_index === "number"
-    ? element.options?.[element.initial_index]?.value : undefined;
-  const initial = element.initial_option ??
-    (typeof indexed === "string" || typeof indexed === "boolean" ||
-      typeof indexed === "number" && Number.isFinite(indexed) ? indexed : "");
+    ? rawOptionValue(element.options?.[element.initial_index] as SelectOption)
+    : undefined;
+  const initial = element.initial_option ?? indexed ?? "";
   const field = useField(element, initial);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const { device, locale } = useRendererContext();
+  const { choices, probes } = useChoiceOptions(element, path);
   const selectedIndex = (element.options ?? []).findIndex((option) =>
     sameOptionValue(rawOptionValue(option), field.value));
-  return <><label className="fcr-field">{element.label?.content ??
-    element.placeholder?.content ?? element.name ?? "选择"}
-    <select aria-label={element.label?.content ?? element.placeholder?.content ??
-      element.name ?? "选择"} value={selectedIndex < 0
-        ? "" : optionToken(path, selectedIndex)}
-      aria-describedby={tips.describedBy}
-      disabled={field.disabled} required={element.required}
-      onChange={(event) => {
+  const label = element.label?.content ?? element.placeholder?.content ??
+    element.name ?? "选择";
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel>{label}</FieldLabel>
+    <ChoiceField
+      controlRef={field.controlRef}
+      describedBy={feedback.describedBy}
+      disabled={field.disabled}
+      invalid={field.invalid}
+      label={label}
+      locale={locale}
+      mobile={device === "mobile"}
+      multiple={false}
+      onValueChange={(token) => {
+        if (typeof token !== "string") return;
         const index = (element.options ?? []).findIndex((_, optionIndex) =>
-          optionToken(path, optionIndex) === event.target.value);
+          optionToken(path, optionIndex) === token);
         const value = index < 0 ? "" :
           rawOptionValue(element.options?.[index] as SelectOption);
         if (value !== undefined || index < 0) field.set(value ?? "", path);
-      }}>
-      <option value="">{element.placeholder?.content ?? "请选择"}</option>
-      {(element.options ?? []).map((option, index) =>
-        <option key={optionToken(path, index)} value={optionToken(path, index)}
-          disabled={option.disabled || rawOptionValue(option) === undefined}>
-          {optionText(option)}
-        </option>)}
-    </select>
-  </label>{tips.nodes}{field.confirmDialog}</>;
+      }}
+      options={choices}
+      placeholder={element.placeholder?.content ?? "请选择"}
+      required={element.required}
+      searchable={element.tag === "select_person" || choices.length >= 8}
+      value={selectedIndex < 0 ? "" : optionToken(path, selectedIndex)}
+    />
+    {tips.nodes}{feedback.error}
+  </Field>{probes}{field.confirmDialog}</>;
 }
 
 type Multi = MultiSelectStaticElement | MultiSelectPersonElement;
 export function MultiSelect({ element, path }: { element: Multi; path: string }) {
   const field = useField(element, element.selected_values ?? []);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const { device, locale } = useRendererContext();
+  const { choices, probes } = useChoiceOptions(element, path);
   const selectedTokens = (element.options ?? []).flatMap((option, index) => {
     const value = rawOptionValue(option);
     return value !== undefined && includesOption(field.value, value)
       ? [optionToken(path, index)] : [];
   });
-  return <><label className="fcr-field">{element.label?.content ?? element.name ?? "多选"}
-    <select multiple aria-label={element.label?.content ?? element.name ?? "多选"}
-      value={selectedTokens}
-      aria-describedby={tips.describedBy}
-      disabled={field.disabled} required={element.required}
-      onChange={(event) => field.set([...event.target.selectedOptions]
-        .flatMap(({ value: token }) => {
+  const label = element.label?.content ?? element.name ?? "多选";
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel>{label}</FieldLabel>
+    <ChoiceField
+      controlRef={field.controlRef}
+      describedBy={feedback.describedBy}
+      disabled={field.disabled}
+      invalid={field.invalid}
+      label={label}
+      locale={locale}
+      mobile={device === "mobile"}
+      multiple
+      onValueChange={(tokens) => {
+        if (!Array.isArray(tokens)) return;
+        field.set(tokens.flatMap((token) => {
           const index = (element.options ?? []).findIndex((_, optionIndex) =>
             optionToken(path, optionIndex) === token);
           const value = index < 0 ? undefined :
             rawOptionValue(element.options?.[index] as SelectOption);
           return value === undefined ? [] : [value];
-        }), path)}>
-      {(element.options ?? []).map((option, index) =>
-        <option key={optionToken(path, index)} value={optionToken(path, index)}
-          disabled={option.disabled || rawOptionValue(option) === undefined}>
-          {optionText(option)}
-        </option>)}
-    </select>
-  </label>{tips.nodes}{field.confirmDialog}</>;
+        }), path);
+      }}
+      options={choices}
+      placeholder="请选择"
+      required={element.required}
+      searchable
+      value={selectedTokens}
+    />
+    {tips.nodes}{feedback.error}
+  </Field>{probes}{field.confirmDialog}</>;
 }
 
 type Picker = DatePickerElement | TimePickerElement | DateTimePickerElement;
+
+function parseDateValue(value: unknown): Date | undefined {
+  if (typeof value !== "string") return undefined;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+    ? date
+    : undefined;
+}
+
+function formatDateValue(date: Date): string {
+  return [
+    String(date.getFullYear()).padStart(4, "0"),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 export function Picker({ element, path }: { element: Picker; path: string }) {
   const tag = element.tag;
   const initial = tag === "date_picker" ? element.initial_date :
     tag === "picker_time" ? element.initial_time :
     element.initial_datetime?.replace(" ", "T");
   const field = useField(element, initial ?? "");
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const { device, locale } = useRendererContext();
+  const [open, setOpen] = useState(false);
   const type = tag === "date_picker" ? "date" : tag === "picker_time" ? "time" :
     "datetime-local";
-  return <><label className="fcr-field">{element.label?.content ?? element.name ?? "日期时间"}
-    <input aria-label={element.label?.content ?? element.name ?? "日期时间"}
-      type={type} value={String(field.value ?? "")} disabled={field.disabled}
-      aria-describedby={tips.describedBy}
-      required={element.required}
-      onChange={(event) => field.set(event.target.value, path, true)} />
-  </label>{tips.nodes}{field.confirmDialog}</>;
+  const label = element.label?.content ?? element.name ?? "日期时间";
+  const id = ids.control;
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
+  const value = String(field.value ?? "");
+  const selected = parseDateValue(value);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    {tag === "date_picker" && device === "pc"
+      ? <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            render={<UiButton
+              ref={(node) => field.controlRef(node)}
+              id={id}
+              type="button"
+              variant="outline"
+            />}
+            aria-describedby={feedback.describedBy}
+            aria-invalid={field.invalid || undefined}
+            aria-label={`${label}：${value || "请选择"}`}
+            aria-required={element.required || undefined}
+            role="combobox"
+            disabled={field.disabled}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <span>{value || "请选择"}</span>
+            <svg aria-hidden="true" className="fcr-date-icon"
+              viewBox="0 0 16 16">
+              <path d="M4 1.5v2M12 1.5v2M2.5 6h11M3 3h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+                fill="none" stroke="currentColor" strokeWidth="1.25" />
+            </svg>
+          </PopoverTrigger>
+          <PopoverContent
+            aria-label={`选择${label}`}
+            initialFocus
+            role="dialog"
+          >
+            <Calendar
+              autoFocus
+              defaultMonth={selected}
+              mode="single"
+              onSelect={(date) => {
+                if (!date) return;
+                field.set(formatDateValue(date), path, true);
+                setOpen(false);
+              }}
+              rendererLocale={locale}
+              selected={selected}
+            />
+          </PopoverContent>
+        </Popover>
+      : <UiInput
+          ref={(node) => field.controlRef(node)}
+          id={id}
+          aria-describedby={feedback.describedBy}
+          aria-invalid={field.invalid || undefined}
+          aria-label={label}
+          disabled={field.disabled}
+          required={element.required}
+          type={type}
+          value={value}
+          onChange={(event) => field.set(event.target.value, path, true)}
+        />}
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 export function Checker({ element, path }: { element: CheckerElement; path: string }) {
   const field = useField(element, element.checked ?? false, false, true,
     checkerMissing);
-  const tips = useTips(element);
-  return <><label className="fcr-checker"><input type="checkbox"
-    checked={Boolean(field.value)} disabled={field.disabled}
-    aria-describedby={tips.describedBy}
-    required={element.required}
-    onChange={(event) => field.set(event.target.checked, path)} />
-    {element.text?.content ?? element.label?.content ?? element.name ?? "确认"}</label>
-    {tips.nodes}{field.confirmDialog}</>;
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const id = ids.control;
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
+  return <><Field data-invalid={field.invalid || undefined}>
+    <div className="fcr-checker">
+      <Checkbox
+        ref={(node) => field.controlRef(node)}
+        id={id}
+        aria-describedby={feedback.describedBy}
+        aria-invalid={field.invalid || undefined}
+        checked={Boolean(field.value)}
+        disabled={field.disabled}
+        required={element.required}
+        onCheckedChange={(checked) => field.set(checked, path)}
+      />
+      <FieldLabel htmlFor={id}>
+        {element.text?.content ?? element.label?.content ??
+          element.name ?? "确认"}
+      </FieldLabel>
+    </div>
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 function SelectImageVisual({ option }: { option: SelectOption }) {
@@ -257,44 +530,105 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
   const initial = element.multi_select ? element.selected_values ?? [] :
     element.selected_values?.[0] ?? "";
   const field = useField(element, initial);
-  const tips = useTips(element);
-  return <><fieldset className="fcr-select-image" disabled={field.disabled}
-    aria-describedby={tips.describedBy}>
-    <legend>{element.label?.content ?? element.name ?? "选择图片"}</legend>
-    {(element.options ?? []).map((option, index) => {
-      const value = rawOptionValue(option);
-      const token = optionToken(path, index);
-      const checked = element.multi_select ? Array.isArray(field.value) &&
-        value !== undefined && includesOption(field.value, value) :
-        value !== undefined && sameOptionValue(field.value, value);
-      return <label key={token}><input type={element.multi_select ? "checkbox" : "radio"}
-        name={`fcr-choice-${path}`} checked={checked}
-        disabled={value === undefined || option.disabled} onChange={() => {
-          if (value === undefined) return;
-          const next = element.multi_select
-            ? checked ? (field.value as OptionValue[])
-                .filter((item) => !sameOptionValue(item, value))
-              : [...(field.value as OptionValue[]), value]
-            : value;
-          field.set(next, path);
-        }} /><SelectImageVisual option={option} />{optionText(option)}</label>;
-    })}
-  </fieldset>{tips.nodes}{field.confirmDialog}</>;
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
+  const label = element.label?.content ?? element.name ?? "选择图片";
+  const labelId = ids.label;
+  const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
+  const options = element.options ?? [];
+  const firstFocusableIndex = options.findIndex((option) =>
+    rawOptionValue(option) !== undefined && option.disabled !== true);
+  const selectedToken = options.findIndex((option) =>
+    sameOptionValue(rawOptionValue(option), field.value));
+  return <><Field data-invalid={field.invalid || undefined}>
+    <FieldLabel id={labelId}>{label}</FieldLabel>
+    <fieldset className="fcr-select-image"
+      aria-describedby={feedback.describedBy}
+      aria-invalid={field.invalid || undefined}
+      aria-labelledby={labelId}
+      disabled={field.disabled}>
+      <legend className="fcr-sr-only">{label}</legend>
+      {element.multi_select
+        ? <div className="fcr-select-image-options">
+            {options.map((option, index) => {
+              const value = rawOptionValue(option);
+              const token = optionToken(path, index);
+              const checked = Array.isArray(field.value) &&
+                value !== undefined && includesOption(field.value, value);
+              return <label className="fcr-select-image-option" key={token}>
+                <Checkbox
+                  ref={index === firstFocusableIndex
+                    ? (node) => field.controlRef(node)
+                    : undefined}
+                  checked={checked}
+                  disabled={field.disabled || value === undefined ||
+                    option.disabled}
+                  onCheckedChange={() => {
+                    if (value === undefined) return;
+                    const next = checked
+                      ? (field.value as OptionValue[])
+                          .filter((item) => !sameOptionValue(item, value))
+                      : [...(field.value as OptionValue[]), value];
+                    field.set(next, path);
+                  }}
+                />
+                <SelectImageVisual option={option} />
+                <span>{optionText(option)}</span>
+              </label>;
+            })}
+          </div>
+        : <RadioGroup
+            aria-describedby={feedback.describedBy}
+            aria-invalid={field.invalid || undefined}
+            aria-labelledby={labelId}
+            disabled={field.disabled}
+            name={ids.choiceName}
+            required={element.required}
+            value={selectedToken < 0 ? "" : optionToken(path, selectedToken)}
+            onValueChange={(token) => {
+              const index = options.findIndex((_, optionIndex) =>
+                optionToken(path, optionIndex) === token);
+              const value = index < 0
+                ? undefined
+                : rawOptionValue(options[index]);
+              if (value !== undefined) field.set(value, path);
+            }}
+          >
+            {options.map((option, index) => {
+              const value = rawOptionValue(option);
+              const token = optionToken(path, index);
+              return <label className="fcr-select-image-option" key={token}>
+                <RadioGroupItem
+                  inputRef={index === firstFocusableIndex
+                    ? (node) => field.controlRef(node)
+                    : undefined}
+                  disabled={field.disabled || value === undefined ||
+                    option.disabled}
+                  value={token}
+                />
+                <SelectImageVisual option={option} />
+                <span>{optionText(option)}</span>
+              </label>;
+            })}
+          </RadioGroup>}
+    </fieldset>
+    {tips.nodes}{feedback.error}
+  </Field>{field.confirmDialog}</>;
 }
 
 export function Button({ element, path }: { element: ButtonElement; path: string }) {
   const { form } = useRecursiveContext();
   const { onAction } = useRendererContext();
-  const [error, setError] = useState(false);
   const [confirm, setConfirm] = useState(false);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const trigger = useRef<HTMLButtonElement>(null);
   const business = element.form_action_type !== "reset";
-  const run = () => {
-    if (element.form_action_type === "reset") { form?.reset(); setError(false); return; }
-    if (form?.hasMissingRequired()) {
-      setError(true); return;
-    }
+  const validate = () => element.form_action_type === "submit" &&
+    Boolean(form?.validateRequired());
+  const run = (validated = false) => {
+    if (element.form_action_type === "reset") { form?.reset(); return; }
+    if (!validated && validate()) return;
     const extra = form
       ? { formValue: { ...form.values }, timezone: browserTimezone() }
       : {};
@@ -313,21 +647,20 @@ export function Button({ element, path }: { element: ButtonElement; path: string
     }
   };
   const activate = () => {
-    if (form && element.form_action_type === "submit" &&
-      form.hasMissingRequired()) {
-      setError(true);
-      return;
-    }
+    if (validate()) return;
     if (element.confirm) setConfirm(true);
-    else run();
+    else run(true);
   };
-  return <><button ref={trigger} type={element.form_action_type === "submit" ? "submit" : "button"}
+  return <><UiButton ref={trigger}
+    type={element.form_action_type === "submit" ? "submit" : "button"}
     className="fcr-button" disabled={element.disabled || (business && !onAction)}
     aria-describedby={tips.describedBy}
+    onKeyDown={(event) => event.stopPropagation()}
     onClick={(event) => { event.stopPropagation(); event.preventDefault(); activate(); }}>
-    {element.text?.content ?? "按钮"}</button>
-    {tips.nodes}{error && <span role="alert">有必填项未填写</span>}
-    {confirm && <ConfirmDialog title={element.confirm?.title} text={element.confirm?.text}
+    {element.text?.content ?? "按钮"}</UiButton>
+    {tips.nodes}
+    {element.confirm && <ConfirmDialog open={confirm}
+      title={element.confirm.title} text={element.confirm.text}
       trigger={trigger} onCancel={() => setConfirm(false)}
       onConfirm={() => { setConfirm(false); run(); }} />}
   </>;
@@ -337,69 +670,70 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
   const { onAction } = useRendererContext();
   const [open, setOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const tips = useTips(element);
+  const ids = useElementIds(path);
+  const tips = useTips(element, ids.description);
   const trigger = useRef<HTMLButtonElement>(null);
-  const menu = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (open) menu.current?.querySelector<HTMLButtonElement>(
-      "[role='menuitem']:not(:disabled)",
-    )?.focus();
-  }, [open]);
-  const close = () => {
-    setOpen(false);
-    queueMicrotask(() => trigger.current?.focus());
-  };
-  return <div className="fcr-overflow"><button ref={trigger} type="button"
-    aria-label="更多操作" disabled={element.disabled}
-    aria-describedby={tips.describedBy}
-    aria-expanded={open} onClick={(event) => {
-      event.stopPropagation(); setOpen(!open);
-    }}>⋯</button>
-    {open && <div ref={menu} role="menu" tabIndex={-1}
-      aria-label="更多操作"
-      onKeyDown={(event) => {
-        if (event.key === "Escape") { event.preventDefault(); close(); }
-        const items = [...(menu.current?.querySelectorAll<HTMLButtonElement>(
-          "[role='menuitem']:not(:disabled)",
-        ) ?? [])];
-        if (items.length === 0) return;
-        const current = items.indexOf(document.activeElement as HTMLButtonElement);
-        const target = event.key === "Home" ? 0 :
-          event.key === "End" ? items.length - 1 :
-          event.key === "ArrowDown" ? (current + 1) % items.length :
-          event.key === "ArrowUp"
-            ? (current <= 0 ? items.length - 1 : current - 1) : undefined;
-        if (target !== undefined) {
-          event.preventDefault();
-          items[target]?.focus();
-        }
-      }}>{(element.options ?? []).map((option, index) =>
-      <button role="menuitem" type="button"
-        disabled={element.disabled || !onAction ||
-          rawOptionValue(option) === undefined}
-        key={index} onClick={(event) => {
-          event.stopPropagation();
-          const run = () => {
-            const optionBehaviors = [
-              ...(element.behaviors ?? []),
-              ...(option.behaviors ?? []),
-              ...(option.multi_url ? [{ type: "open_url",
-                pc_url: option.multi_url.pc_url,
-                default_url: option.multi_url.url ?? option.multi_url.default_url }] : []),
-            ];
-            const actions = actionsFor({ ...element, value: option.value,
-              behaviors: optionBehaviors }, path);
-            if (actions.length) actions.forEach((action) => onAction?.(action));
-            else onAction?.({ type: "callback", source: sourceFor(element, path),
-              value: serializableValue(option.value) });
-            close();
-          };
-          if (element.confirm) setPendingAction(() => run);
-          else run();
-        }}>{optionText(option)}</button>)}</div>}
-    {tips.nodes}{pendingAction && <ConfirmDialog title={element.confirm?.title}
-      text={element.confirm?.text} trigger={trigger}
+  return <div className="fcr-overflow">
+    <DropdownMenu
+      open={open}
+      onOpenChange={setOpen}
+      disabled={element.disabled}
+    >
+      <DropdownMenuTrigger
+        ref={trigger}
+        aria-label="更多操作"
+        disabled={element.disabled}
+        aria-describedby={tips.describedBy}
+        onKeyDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        ⋯
+      </DropdownMenuTrigger>
+      <DropdownMenuContent aria-label="更多操作">
+        {(element.options ?? []).map((option, index) =>
+          <DropdownMenuItem
+            disabled={element.disabled || !onAction ||
+              rawOptionValue(option) === undefined || option.disabled}
+            key={index}
+            onClick={(event) => {
+              event.stopPropagation();
+              const run = () => {
+                const optionBehaviors = [
+                  ...(element.behaviors ?? []),
+                  ...(option.behaviors ?? []),
+                  ...(option.multi_url ? [{ type: "open_url",
+                    pc_url: option.multi_url.pc_url,
+                    default_url: option.multi_url.url ??
+                      option.multi_url.default_url }] : []),
+                ];
+                const actions = actionsFor({ ...element, value: option.value,
+                  behaviors: optionBehaviors }, path);
+                if (actions.length) {
+                  actions.forEach((action) => onAction?.(action));
+                } else {
+                  onAction?.({
+                    type: "callback",
+                    source: sourceFor(element, path),
+                    value: serializableValue(option.value),
+                  });
+                }
+              };
+              if (element.confirm) setPendingAction(() => run);
+              else run();
+            }}
+          >
+            {optionText(option)}
+          </DropdownMenuItem>)}
+      </DropdownMenuContent>
+    </DropdownMenu>
+    {tips.nodes}{element.confirm && <ConfirmDialog open={pendingAction !== null}
+      title={element.confirm.title}
+      text={element.confirm.text} trigger={trigger}
       onCancel={() => setPendingAction(null)}
-      onConfirm={() => { const run = pendingAction; setPendingAction(null); run(); }} />}
+      onConfirm={() => {
+        const run = pendingAction;
+        setPendingAction(null);
+        run?.();
+      }} />}
   </div>;
 }

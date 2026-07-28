@@ -18,6 +18,7 @@ export type ImageCacheEntry = ResourceCacheEntry<string>;
 export type PersonCacheEntry = ResourceCacheEntry<Person>;
 
 type RendererContextValue = Readonly<{
+  domIdPrefix: string;
   locale: string;
   colorScheme: "light" | "dark";
   device: "pc" | "mobile";
@@ -45,8 +46,10 @@ export type FormScope = Readonly<{
   updateField: (name: string, fieldType: string, initialValue: unknown,
     required: boolean, isMissing: (value: unknown) => boolean) => void;
   setValue: (name: string, value: unknown) => void;
+  setFieldControl: (name: string, control: HTMLElement | null) => void;
+  invalidFields: ReadonlySet<string>;
   reset: () => void;
-  hasMissingRequired: () => boolean;
+  validateRequired: () => boolean;
 }>;
 
 export type RecursiveContextValue = Readonly<{

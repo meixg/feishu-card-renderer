@@ -19,6 +19,11 @@
 
 - [x] 版本 `1.0.0`，公开 ESM、声明和 scoped CSS。
 - [x] React/ReactDOM 是 peer dependencies，不打入 bundle。
+- [x] `@base-ui/react`、`react-day-picker`、CVA、`clsx` 和
+  `tailwind-merge` 是 externalized runtime dependencies；私有 shadcn wrapper
+  编译进 renderer，未从公共入口导出。
+- [x] Tailwind CSS 4 与 PostCSS 只用于构建；发布包只有一个预编译
+  `dist/styles.css`，无 preflight、宿主全局 selector 或消费者 Tailwind 要求。
 - [x] VChart 仅存在于独立懒加载 chunk。
 - [x] 根入口提供 renderer，`./schema` 子路径提供纯函数和确认的协议类型；资源
   resolver 接收 `AbortSignal`；fixture
@@ -26,6 +31,48 @@
 - [x] 安装、集成、SSR、限制和迁移文档已就绪。
 - [x] 根 ESM 入口可在无 DOM 的 Node 环境导入，导入时不访问网络；Markdown
   解析依赖进入 ESM 产物，React/ReactDOM 保持 external。
+
+## shadcn/Base UI 交互升级发布说明
+
+- Tailwind 3.4 隔离构建已迁移到 Tailwind 4；继续保持 `.fcr-root` 主题作用域、
+  `fcr` 命名空间和单一预编译 CSS。
+- confirm、preview、overflow、choice、form field、checkbox/radio、PC date 和
+  collapsible 已迁移到私有 shadcn/Base UI 交互层；time/datetime 与 mobile date
+  按规格保留原生输入。
+- 每张卡片拥有独立 portal host。SSR import 不读取 DOM，hydration 复用服务端 host；
+  打开 overlay 时卸载卡片会清理 portal、focus trap 和 inert 状态。
+- 多卡 confirm 在 host 程序化切换时执行单活动 modal handoff；真实 Chrome 验证
+  两个 portal DOM 的退出/进入同时挂载窗口、焦点隔离、卸载与 inert 清理。
+- 选择器新增已有选项的本地搜索、100 项展示上限、对象值 opaque token、多选 chips
+  和 mobile Drawer；不新增网络查询或业务校验。
+- mobile Drawer 消费 Base UI `--drawer-keyboard-inset`。自动化以 390×844
+  layout viewport 和 390×420 模拟 visual viewport 验证 bounds、overflow 与焦点
+  返回；真实 OS 软键盘、IME 和 Safari viewport 仍是发布前人工设备检查项。
+- 飞书 JSON 2.0、normalization、form state、安全校验和 `CardAction` 契约保持不变。
+  内部 DOM、未文档化 class、Base UI `data-*` 和历史视觉快照不兼容，且没有 legacy
+  interaction mode。
+
+## Base UI initiative bundle 影响
+
+使用 Node `zlib.gzipSync(..., { level: 9 })`，在同一 Node/pnpm 环境分别构建
+initiative 前 `main@6f87080`、集成点 `93ef06e` 和本 #29 验收头。数值为精确字节；
+Vite 控制台的两位小数仅用于交叉核对。
+
+| 产物 | `main@6f87080` | 集成点 `93ef06e` | #29 验收头 | 基线 → 验收变化 |
+| --- | ---: | ---: | ---: | ---: |
+| eager renderer raw | 192,873 B | 225,734 B | 226,025 B | +33,152 B |
+| eager renderer gzip | 51,194 B | 57,860 B | 57,935 B | +6,741 B |
+| shared renderer/schema chunk raw/gzip | 28,000 / 7,343 B | 28,000 / 7,343 B | 28,000 / 7,343 B | 0 / 0 B |
+| CSS raw | 14,196 B | 23,557 B | 23,536 B | +9,340 B |
+| CSS gzip | 3,134 B | 4,763 B | 4,766 B | +1,632 B |
+| lazy VChart raw/gzip | 2,810,352 / 643,635 B | 2,810,352 / 643,635 B | 2,810,352 / 643,635 B | 0 / 0 B |
+
+增长来自 Base UI/shadcn 交互组合和完整的 popup/Drawer/Field/Calendar 样式。Base UI、
+Calendar、CVA、`clsx`、`tailwind-merge`、React 和 ReactDOM 保持 external；
+VChart lazy chunk 与 shared schema chunk 没有变化。#29 删除了未使用的通用 portal
+与 cleanup helper 及一条原生 multi-select CSS；Spec 审查修复又加入单活动 modal
+handoff 和 Drawer keyboard inset。相对集成点，最终 eager renderer 为
++291 B raw / +75 B gzip，CSS 为 -21 B raw / +3 B gzip。
 
 ## Markdown bundle 影响
 
@@ -52,6 +99,7 @@ pnpm component
 pnpm accessibility
 pnpm visual
 pnpm build
+pnpm site:build
 npm pack --dry-run
 ```
 

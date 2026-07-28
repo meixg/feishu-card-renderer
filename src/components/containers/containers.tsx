@@ -18,6 +18,11 @@ import { actionsFor } from "../../interactions/behaviors";
 import { useFormScope } from "../../interactions/form-state";
 import { ContainerLayout, layoutStyle, safeRadius } from "./layout";
 import { keyForElement } from "../../schema/identity";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 
 function childPath(path: string, collection: "columns" | "elements", index: number) {
   return `${path}.${collection}[${index}]`;
@@ -180,31 +185,32 @@ export function CollapsiblePanel({ element, path }: {
     right: "fcr-icon-right",
   }[element.header?.icon_position ?? "left"];
   const header = (
-    <button type="button" className={[
+    <CollapsibleTrigger type="button" className={[
       "fcr-collapsible-trigger",
       iconPositionClass,
     ].join(" ")}
-      aria-expanded={expanded} aria-controls={contentId}
-      onClick={() => setExpanded((value) => !value)}
-      onKeyDown={(event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        setExpanded((value) => !value);
-      }}>
+      aria-controls={contentId}>
       <span aria-hidden="true" className="fcr-collapse-icon">⌄</span>
       <span>{title}</span>
-    </button>
+    </CollapsibleTrigger>
   );
   return (
-    <section className="fcr-collapsible-panel" data-fcr-path={path}
+    <Collapsible
+      render={<section />}
+      className="fcr-collapsible-panel"
+      data-fcr-path={path}
       data-fcr-depth={containerDepth}
+      open={expanded}
+      onOpenChange={setExpanded}
       style={{ borderRadius: safeRadius(element.border?.corner_radius) }}>
       {(element.header?.position ?? "top") === "top" && header}
-      <div id={contentId} className="fcr-collapsible-content"
-        hidden={!expanded}>
+      <CollapsibleContent
+        id={contentId}
+        className="fcr-collapsible-content"
+        keepMounted>
         <Children elements={element.elements} path={path} />
-      </div>
+      </CollapsibleContent>
       {element.header?.position === "bottom" && header}
-    </section>
+    </Collapsible>
   );
 }

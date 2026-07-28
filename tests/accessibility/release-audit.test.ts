@@ -58,6 +58,7 @@ describe("1.0 accessibility release audit", () => {
       ".fcr-field :focus-visible",
       ".fcr-button:focus-visible",
       ".fcr-overflow button:focus-visible",
+      ".fcr-overflow-menu-item:focus-visible",
       ".fcr-checker input:focus-visible",
     ]) {
       expect(css).toContain(selector);

@@ -114,9 +114,11 @@ describe("complete field semantics", () => {
           });
         } else if (tag === "select_static") {
           const select = within(result.container).getByRole("combobox");
-          fireEvent.change(select, {
-            target: { value: select.querySelectorAll("option")[1]?.value },
-          });
+          fireEvent.click(select);
+          const option = within(result.container)
+            .getByRole("option", { name: "A" });
+          fireEvent.pointerDown(option, { pointerType: "mouse" });
+          fireEvent.click(option);
         } else if (tag === "overflow") {
           fireEvent.click(within(result.container)
             .getByRole("button", { name: "更多操作" }));
@@ -126,7 +128,7 @@ describe("complete field semantics", () => {
         } else {
           fireEvent.click(within(result.container)
             .getByRole("button", { name: "Button" }));
-          const dialog = within(result.container).queryByRole("dialog");
+          const dialog = within(result.container).queryByRole("alertdialog");
           dialogShown = dialog !== null;
           if (dialog) {
             fireEvent.click(within(dialog)
@@ -327,7 +329,7 @@ describe("complete field semantics", () => {
     />);
 
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
-    const dialog = screen.getByRole("dialog");
+    const dialog = screen.getByRole("alertdialog");
     expect(within(dialog).getByText("Continue?")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "确认" }));
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
@@ -361,9 +363,10 @@ describe("complete field semantics", () => {
       card={compatibilityFixturesByTag.select_static.complete}
       onAction={onAction}
     />);
-    fireEvent.change(within(select.container).getByRole("combobox"), {
-      target: { value: "$.body.elements[0]:0" },
-    });
+    fireEvent.click(within(select.container).getByRole("combobox"));
+    const option = within(select.container).getByRole("option", { name: "A" });
+    fireEvent.pointerDown(option, { pointerType: "mouse" });
+    fireEvent.click(option);
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
       type: "callback",
       source: expect.objectContaining({ tag: "select_static", name: "static" }),
@@ -406,6 +409,6 @@ describe("complete field semantics", () => {
       }] },
     }} />);
     expect(screen.getByRole("checkbox", { name: "Disabled checker" }))
-      .toBeDisabled();
+      .toHaveAttribute("aria-disabled", "true");
   });
 });

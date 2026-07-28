@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { CardRenderer } from "../../src";
@@ -12,6 +12,11 @@ import {
 import { completeContainerCard } from "../../src/fixtures/container-cards";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 import { completeInteractiveCard } from "../../src/fixtures/interactive-card";
+import {
+  formControlsValidationCard,
+  singleSelectImageCard,
+  standaloneDateControlsCard,
+} from "../../src/fixtures/form-controls-card";
 import {
   feishuChartCardsByType,
 } from "../../src/fixtures/chart-compatibility";
@@ -37,6 +42,265 @@ const releaseAllTagsCard = {
     ],
   },
 };
+
+const choiceVisualCard = {
+  schema: "2.0" as const,
+  config: { update_multi: true, width_mode: "compact" as const },
+  body: {
+    elements: [{
+      tag: "form",
+      name: "choice-visuals",
+      elements: [
+        {
+          tag: "select_static",
+          name: "small",
+          label: { tag: "plain_text", content: "Small Select" },
+          initial_option: "two",
+          options: ["one", "two", "three"].map((value) => ({
+            text: { tag: "plain_text", content: `Option ${value}` },
+            value,
+          })),
+        },
+        {
+          tag: "select_static",
+          name: "large",
+          label: { tag: "plain_text", content: "Searchable Combobox" },
+          options: Array.from({ length: 12 }, (_, index) => ({
+            text: { tag: "plain_text", content: `Search option ${index + 1}` },
+            value: { index },
+          })),
+        },
+        {
+          tag: "multi_select_static",
+          name: "multi",
+          label: { tag: "plain_text", content: "Multiple choices" },
+          selected_values: ["one", "two", "three", "four", "five"],
+          options: ["one", "two", "three", "four", "five", "six"].map((value) => ({
+            text: { tag: "plain_text", content: `Long ${value} choice` },
+            value,
+          })),
+        },
+        {
+          tag: "select_person",
+          name: "person",
+          label: { tag: "plain_text", content: "Person" },
+          options: [{ value: "ou_ada" }, { value: "ou_grace" }],
+        },
+        {
+          tag: "button",
+          form_action_type: "submit",
+          text: { tag: "plain_text", content: "Submit choices" },
+        },
+      ],
+    }],
+  },
+};
+
+export function OverlayCases(): React.JSX.Element {
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id="case-overlays">
+      <CardRenderer
+        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+        onAction={(action) => setActions((current) => [...current, action])}
+        card={{
+          schema: "2.0",
+          body: {
+            elements: [
+              {
+                tag: "interactive_container",
+                behaviors: [{
+                  type: "callback",
+                  value: { owner: "confirm-parent" },
+                }],
+                elements: [{
+                  tag: "button",
+                  text: { tag: "plain_text", content: "打开确认" },
+                  confirm: {
+                    title: { tag: "plain_text", content: "确认执行" },
+                    text: { tag: "plain_text", content: "只执行一次？" },
+                  },
+                  behaviors: [{
+                    type: "callback",
+                    value: { owner: "confirm-child" },
+                  }],
+                }],
+              },
+              {
+                tag: "interactive_container",
+                behaviors: [{
+                  type: "callback",
+                  value: { owner: "container-parent" },
+                }],
+                elements: [{
+                  tag: "overflow",
+                  confirm: {
+                    title: { tag: "plain_text", content: "确认菜单操作" },
+                    text: { tag: "plain_text", content: "继续执行？" },
+                  },
+                  options: [
+                    {
+                      text: { tag: "plain_text", content: "第一项" },
+                      value: { owner: "overflow-first" },
+                    },
+                    {
+                      text: { tag: "plain_text", content: "禁用项" },
+                      value: { owner: "overflow-disabled" },
+                      disabled: true,
+                    },
+                    {
+                      text: { tag: "plain_text", content: "最后项" },
+                      value: { owner: "overflow-last" },
+                    },
+                  ],
+                }],
+              },
+              {
+                tag: "interactive_container",
+                behaviors: [{
+                  type: "callback",
+                  value: { owner: "image-parent" },
+                }],
+                elements: [{
+                  tag: "img_combination",
+                  img_list: [
+                    {
+                      img_key: "overlay-one",
+                      alt: { tag: "plain_text", content: "第一张" },
+                    },
+                    {
+                      img_key: "overlay-two",
+                      alt: { tag: "plain_text", content: "第二张" },
+                    },
+                  ],
+                }],
+              },
+              {
+                tag: "button",
+                text: { tag: "plain_text", content: "不可操作" },
+                disabled: true,
+                hover_tips: {
+                  tag: "plain_text",
+                  content: "悬停提示也会内联显示",
+                },
+                disabled_tips: {
+                  tag: "plain_text",
+                  content: "当前操作已禁用",
+                },
+                behaviors: [{ type: "callback", value: "disabled" }],
+              },
+            ],
+          },
+        }}
+      />
+      <output id="overlay-actions">{JSON.stringify(actions)}</output>
+    </section>
+  );
+}
+
+const portalLifecycleCard = (owner: "first" | "second", title: string) => ({
+  schema: "2.0" as const,
+  body: {
+    elements: [{
+      tag: "interactive_container" as const,
+      behaviors: [{
+        type: "callback" as const,
+        value: { owner: `${owner}-parent` },
+      }],
+      elements: [{
+        tag: "button" as const,
+        text: { tag: "plain_text" as const, content: `打开${title}` },
+        confirm: {
+          title: { tag: "plain_text" as const, content: title },
+          text: { tag: "plain_text" as const, content: `${title}内容` },
+        },
+        behaviors: [{
+          type: "callback" as const,
+          value: { owner },
+        }],
+      }],
+    }],
+  },
+});
+
+export function PortalLifecycleCases(): React.JSX.Element {
+  const [showFirst, setShowFirst] = useState(true);
+  const [showSecond, setShowSecond] = useState(true);
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id="case-portal-lifecycle">
+      <button id="remove-first-card" type="button"
+        onClick={() => setShowFirst(false)}>
+        卸载第一张卡
+      </button>
+      <button id="remove-second-card" type="button"
+        onClick={() => setShowSecond(false)}>
+        卸载第二张卡
+      </button>
+      {showFirst && (
+        <div data-portal-card="first">
+          <CardRenderer
+            card={portalLifecycleCard("first", "第一张卡确认")}
+            colorScheme="dark"
+            onAction={(action) => setActions((current) => [...current, action])}
+          />
+        </div>
+      )}
+      {showSecond && (
+        <div data-portal-card="second">
+          <CardRenderer
+            card={portalLifecycleCard("second", "第二张卡确认")}
+            colorScheme="light"
+            onAction={(action) => setActions((current) => [...current, action])}
+          />
+        </div>
+      )}
+      <output hidden data-portal-actions="">{JSON.stringify(actions)}</output>
+    </section>
+  );
+}
+
+export function FormControlCases({
+  colorScheme = "light",
+  device = "pc",
+  id,
+  widthMode,
+}: {
+  colorScheme?: "light" | "dark";
+  device?: "pc" | "mobile";
+  id: string;
+  widthMode: "compact" | "default" | "fill";
+}): React.JSX.Element {
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id={id}>
+      <CardRenderer
+        card={{
+          ...formControlsValidationCard,
+          config: { update_multi: true, width_mode: widthMode },
+        }}
+        colorScheme={colorScheme}
+        device={device}
+        onAction={(action) => setActions((current) => [...current, action])}
+        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+      />
+      <CardRenderer
+        card={standaloneDateControlsCard}
+        colorScheme={colorScheme}
+        device={device}
+        onAction={(action) => setActions((current) => [...current, action])}
+      />
+      <CardRenderer
+        card={singleSelectImageCard}
+        colorScheme={colorScheme}
+        device={device}
+        onAction={(action) => setActions((current) => [...current, action])}
+        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+      />
+      <output hidden data-form-control-actions="">{JSON.stringify(actions)}</output>
+    </section>
+  );
+}
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -101,6 +365,45 @@ createRoot(document.getElementById("root")!).render(
               config: { update_multi: true, width_mode: width } }} />
         </section>
       ))}
+      <OverlayCases />
+      <PortalLifecycleCases />
+      <section id="case-choices-pc" style={{ width: 400 }}>
+        <CardRenderer
+          card={choiceVisualCard}
+          onAction={() => {}}
+          resolvePerson={(id) => ({
+            id,
+            name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+          })}
+        />
+      </section>
+      <section id="case-choices-mobile" style={{ width: 390 }}>
+        <CardRenderer
+          card={choiceVisualCard}
+          device="mobile"
+          onAction={() => {}}
+          resolvePerson={(id) => ({
+            id,
+            name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+          })}
+        />
+      </section>
+      <FormControlCases
+        id="case-form-controls-pc"
+        widthMode="compact"
+      />
+      <FormControlCases
+        colorScheme="dark"
+        id="case-form-controls-dark"
+        widthMode="default"
+      />
+      <div style={{ width: 390 }}>
+        <FormControlCases
+          device="mobile"
+          id="case-form-controls-mobile"
+          widthMode="fill"
+        />
+      </div>
     </main>
   </React.StrictMode>,
 );

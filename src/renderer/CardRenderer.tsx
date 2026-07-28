@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useId, useMemo } from "react";
 
 import type { CardDiagnostic } from "../schema/diagnostics";
 import type { CardAction, Person } from "../types";
@@ -17,6 +17,7 @@ import {
 } from "../schema/identity";
 import { ownDataValue, safeDataSnapshot } from "../schema/safe-data";
 import { collectMarkdownAnalyses } from "../markdown/bounded";
+import { UiPortalProvider } from "./portal";
 
 export type { ResourceResolver } from "./context";
 export type FatalFallback = (
@@ -70,6 +71,7 @@ function hasBusinessAction(value: unknown): boolean {
 }
 
 export function CardRenderer(props: CardRendererProps): React.JSX.Element {
+  const rendererId = useId().replace(/[^A-Za-z0-9_-]/g, "");
   const { onDiagnostic } = props;
   const safeCard = useMemo(() => safeDataSnapshot(props.card), [props.card]);
   const result = useMemo(() => normalizeCard(safeCard), [safeCard]);
@@ -137,6 +139,7 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
   const header = card.header as CardHeader | undefined;
   const width = card.config.width_mode;
   const context = {
+    domIdPrefix: `fcr-${rendererId}`,
     locale: props.locale ?? "zh_cn",
     colorScheme: props.colorScheme ?? "light",
     device: props.device ?? "pc",
@@ -171,17 +174,19 @@ export function CardRenderer(props: CardRendererProps): React.JSX.Element {
         data-fcr-card-renderer="ready"
         data-locale={context.locale}
       >
-        {header && <Header header={header} />}
-        <div className={`fcr-body fcr-direction-${card.body.direction}`}
-          style={bodyStyle}>
-          {card.body.elements.map((element, index) => (
-            <ComponentRenderer key={keyForElement(
-              element,
-              `$.body.elements[${index}]`,
-              uniqueElementIds,
-            )} element={element} path={`$.body.elements[${index}]`} />
-          ))}
-        </div>
+        <UiPortalProvider>
+          {header && <Header header={header} />}
+          <div className={`fcr-body fcr-direction-${card.body.direction}`}
+            style={bodyStyle}>
+            {card.body.elements.map((element, index) => (
+              <ComponentRenderer key={keyForElement(
+                element,
+                `$.body.elements[${index}]`,
+                uniqueElementIds,
+              )} element={element} path={`$.body.elements[${index}]`} />
+            ))}
+          </div>
+        </UiPortalProvider>
       </article>
     </RendererContext.Provider>
   );

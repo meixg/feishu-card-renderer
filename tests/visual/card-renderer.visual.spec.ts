@@ -17,6 +17,13 @@ async function settleVisualLayout(
   }));
 }
 
+async function overlayActions(
+  page: import("@playwright/test").Page,
+): Promise<unknown[]> {
+  return page.locator("#overlay-actions").evaluate((node) =>
+    JSON.parse(node.textContent || "[]"));
+}
+
 test("theme, device, and width visual baselines", async ({ page }) => {
   await page.goto("/tests/visual/");
 
@@ -205,4 +212,670 @@ test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", a
       }
     }
   }
+});
+
+test("Alert Dialog traps focus, cancels safely, and confirms exactly once", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const overlay = page.locator("#case-overlays");
+  const trigger = overlay.getByRole("button", { name: "打开确认" });
+
+  await trigger.focus();
+  await trigger.press("Enter");
+  let dialog = overlay.getByRole("alertdialog", { name: "确认执行" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "取消" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(dialog.getByRole("button", { name: "确认" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("button", { name: "取消" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(await overlayActions(page)).toEqual([]);
+
+  await trigger.press("Space");
+  dialog = overlay.getByRole("alertdialog", { name: "确认执行" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "确认" }).press("Enter");
+
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  const actions = await overlayActions(page) as Array<{
+    type?: string;
+    value?: { owner?: string };
+  }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]).toMatchObject({
+    type: "callback",
+    value: { owner: "confirm-child" },
+  });
+});
+
+test("an open card portal tears down without disturbing another card", async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/tests/visual/");
+  const lifecycle = page.locator("#case-portal-lifecycle");
+  const firstCard = lifecycle.locator("[data-portal-card='first']");
+  const secondCard = lifecycle.locator("[data-portal-card='second']");
+
+  await firstCard.getByRole("button", { name: "打开第一张卡确认" }).click();
+  const firstDialog = firstCard.getByRole("alertdialog", {
+    name: "第一张卡确认",
+  });
+  await expect(firstDialog).toBeVisible();
+  expect(await firstDialog.evaluate((node) =>
+    node.closest("[data-portal-card]")?.getAttribute("data-portal-card")))
+    .toBe("first");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#remove-first-card")?.click();
+  });
+  await expect(firstCard).toHaveCount(0);
+  await expect(firstDialog).toHaveCount(0);
+  await expect(lifecycle.locator("[data-fcr-portal-host]")).toHaveCount(1);
+
+  const secondTrigger = secondCard.getByRole("button", {
+    name: "打开第二张卡确认",
+  });
+  await expect(secondTrigger).toBeVisible();
+  expect(await secondTrigger.evaluate((node) =>
+    node.closest("[data-base-ui-inert]"))).toBeNull();
+  await secondTrigger.focus();
+  await secondTrigger.press("Enter");
+  const secondDialog = secondCard.getByRole("alertdialog", {
+    name: "第二张卡确认",
+  });
+  await expect(secondDialog).toBeVisible();
+  await expect(secondDialog.getByRole("button", { name: "取消" }))
+    .toBeFocused();
+  expect(await secondDialog.evaluate((node) =>
+    node.closest("[data-portal-card]")?.getAttribute("data-portal-card")))
+    .toBe("second");
+
+  await secondDialog.getByRole("button", { name: "确认" }).press("Enter");
+  await expect(secondDialog).toBeHidden();
+  await expect(secondTrigger).toBeFocused();
+  const actions = await lifecycle.locator("[data-portal-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ value?: { owner?: string } }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]?.value).toEqual({ owner: "second" });
+  expect(pageErrors).toEqual([]);
+});
+
+test("simultaneous card modal mounts hand off safely and clean up independently", async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/tests/visual/");
+  const lifecycle = page.locator("#case-portal-lifecycle");
+  const firstCard = lifecycle.locator("[data-portal-card='first']");
+  const secondCard = lifecycle.locator("[data-portal-card='second']");
+  const firstTrigger = firstCard.getByRole("button", {
+    name: "打开第一张卡确认",
+  });
+
+  await firstTrigger.click();
+  const mountedOwners = await page.evaluate(async () => {
+    document.querySelector<HTMLButtonElement>(
+      "[data-portal-card='second'] button",
+    )?.click();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    return Array.from(document.querySelectorAll("[role='alertdialog']"))
+      .map((node) => node.closest("[data-portal-card]")
+        ?.getAttribute("data-portal-card"));
+  });
+  expect(mountedOwners).toEqual(["first", "second"]);
+
+  const firstDialog = firstCard.locator("[role='alertdialog']");
+  const secondDialog = secondCard.locator("[role='alertdialog']");
+  await expect(secondDialog).toHaveCount(1);
+  expect(await secondDialog.evaluate((node) =>
+    node.closest("[data-fcr-portal-host]")?.closest("[data-portal-card]")
+      ?.getAttribute("data-portal-card"))).toBe("second");
+  expect(await secondDialog.evaluate((node) =>
+    node.closest("[inert], [aria-hidden='true']") === null)).toBe(true);
+  await expect(secondDialog.getByRole("button", { name: "取消" })).toBeFocused();
+  await expect(firstDialog).toBeHidden();
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#remove-second-card")?.click();
+  });
+  await expect(secondCard).toHaveCount(0);
+  await expect(firstCard.locator("[data-fcr-portal-host]")).toHaveCount(1);
+  await expect(page.locator("[data-base-ui-inert]")).toHaveCount(0);
+
+  await firstTrigger.focus();
+  await firstTrigger.press("Enter");
+  const reopened = firstCard.getByRole("alertdialog", {
+    name: "第一张卡确认",
+  });
+  await expect(reopened.getByRole("button", { name: "取消" })).toBeFocused();
+  await reopened.getByRole("button", { name: "取消" }).press("Enter");
+  await expect(reopened).toBeHidden();
+  await expect(firstTrigger).toBeFocused();
+  await expect(page.locator("[data-base-ui-inert]")).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+});
+
+test("Dropdown Menu supports roving keys, outside press, and confirm handoff", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const overlay = page.locator("#case-overlays");
+  const trigger = overlay.getByRole("button", { name: "更多操作" });
+
+  await trigger.focus();
+  await trigger.press("Enter");
+  let menu = overlay.getByRole("menu", { name: "更多操作" });
+  let first = overlay.getByRole("menuitem", { name: "第一项" });
+  const disabled = overlay.getByRole("menuitem", { name: "禁用项" });
+  let last = overlay.getByRole("menuitem", { name: "最后项" });
+  await expect(first).toBeFocused();
+  await first.press("End");
+  await expect(last).toBeFocused();
+  await last.press("Home");
+  await expect(first).toBeFocused();
+  await first.press("ArrowDown");
+  await expect(disabled).toBeFocused();
+  await expect(disabled).toHaveAttribute("aria-disabled", "true");
+  await disabled.press("Enter");
+  await expect(menu).toBeVisible();
+  expect(await overlayActions(page)).toEqual([]);
+  await disabled.press("ArrowDown");
+  await expect(last).toBeFocused();
+  await last.press("Escape");
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.press("Space");
+  menu = overlay.getByRole("menu", { name: "更多操作" });
+  await expect(menu).toBeVisible();
+  await page.mouse.click(1, 1);
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  first = overlay.getByRole("menuitem", { name: "第一项" });
+  await first.click();
+  await expect(overlay.getByRole("menu")).toBeHidden();
+  let dialog = overlay.getByRole("alertdialog", { name: "确认菜单操作" });
+  await dialog.getByRole("button", { name: "取消" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(await overlayActions(page)).toEqual([]);
+
+  await trigger.click();
+  last = overlay.getByRole("menuitem", { name: "最后项" });
+  await last.click();
+  dialog = overlay.getByRole("alertdialog", { name: "确认菜单操作" });
+  await dialog.getByRole("button", { name: "确认" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  const actions = await overlayActions(page) as Array<{
+    type?: string;
+    value?: { owner?: string };
+  }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]).toMatchObject({
+    type: "callback",
+    value: { owner: "overflow-last" },
+  });
+  expect(actions).not.toContainEqual(expect.objectContaining({
+    value: { owner: "container-parent" },
+  }));
+});
+
+test("image Dialog handles arrows, trapped Tab, Escape, and outside press", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const overlay = page.locator("#case-overlays");
+  const trigger = overlay.getByRole("button", { name: "打开图片组预览" });
+
+  await trigger.focus();
+  await trigger.press("Space");
+  let dialog = overlay.getByRole("dialog", { name: "第一张" });
+  await expect(dialog).toBeVisible();
+  await dialog.press("ArrowRight");
+  dialog = overlay.getByRole("dialog", { name: "第二张" });
+  await expect(dialog).toContainText("2 / 2");
+  await page.keyboard.press("Tab");
+  expect(await dialog.evaluate((node) => node.contains(document.activeElement)))
+    .toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  dialog = overlay.getByRole("dialog", { name: "第一张" });
+  await expect(dialog).toBeVisible();
+  await overlay.locator(".fcr-preview-backdrop").click({
+    position: { x: 4, y: 4 },
+  });
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(await overlayActions(page)).toEqual([]);
+});
+
+test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-pc");
+  const root = host.locator(".fcr-root");
+  await expect(root).toBeVisible();
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  expect(await host.locator(".fcr-choice-chip").count()).toBe(3);
+  await host.getByRole("combobox", { name: "Searchable Combobox" }).click();
+  const popup = host.getByRole("dialog", { name: "Searchable Combobox选项" });
+  await expect(popup).toBeVisible();
+  await expect(host).toHaveScreenshot("card-choices-pc-compact.png");
+});
+
+test("mobile choices use a keyboard-safe Drawer without horizontal overflow", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  const root = host.locator(".fcr-root");
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  await host.getByRole("button", { name: "Multiple choices，打开选项" }).click();
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByRole("combobox", { name: "搜索Multiple choices" }))
+    .toBeFocused();
+  const bounds = await drawer.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
+  await expect(drawer).toHaveScreenshot("card-choices-mobile-drawer.png");
+});
+
+test("mobile Drawer follows a simulated soft-keyboard visual viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const state = {
+      height: window.innerHeight,
+      offsetLeft: 0,
+      offsetTop: 0,
+      width: window.innerWidth,
+    };
+    const viewport = new EventTarget();
+    Object.defineProperties(viewport, {
+      height: { get: () => state.height },
+      offsetLeft: { get: () => state.offsetLeft },
+      offsetTop: { get: () => state.offsetTop },
+      pageLeft: { get: () => state.offsetLeft },
+      pageTop: { get: () => state.offsetTop },
+      scale: { get: () => 1 },
+      width: { get: () => state.width },
+    });
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: viewport,
+    });
+    Object.defineProperty(window, "__setTestVisualViewport", {
+      configurable: true,
+      value: (next: Partial<typeof state>) => {
+        Object.assign(state, next);
+        viewport.dispatchEvent(new Event("resize"));
+      },
+    });
+  });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  const root = host.locator(".fcr-root");
+  const trigger = host.getByRole("button", {
+    name: "Multiple choices，打开选项",
+  });
+  await trigger.click();
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  const search = drawer.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  await expect(search).toBeFocused();
+
+  await page.evaluate(() => {
+    const testWindow = window as unknown as Window & {
+      __setTestVisualViewport: (next: {
+        height: number;
+        offsetTop: number;
+        width: number;
+      }) => void;
+    };
+    testWindow.__setTestVisualViewport({
+      height: 420,
+      offsetTop: 0,
+      width: 390,
+    });
+  });
+  await expect.poll(() => host.locator(".fcr-drawer-viewport").evaluate(
+    (node) => getComputedStyle(node).getPropertyValue("--drawer-keyboard-inset"),
+  )).toBe("424px");
+
+  const bounds = await drawer.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  expect(bounds!.y).toBeGreaterThanOrEqual(0);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(420);
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  await expect(search).toBeFocused();
+
+  await search.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page.locator("[data-base-ui-inert]")).toHaveCount(0);
+});
+
+test("Select and Combobox preserve real-browser keyboard selection semantics", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-pc");
+  const select = host.getByRole("combobox", { name: "Small Select" });
+  await select.focus();
+  await select.press("Space");
+  const selected = host.getByRole("option", { name: "Option two" });
+  await expect(selected).toBeFocused();
+  await selected.press("Home");
+  const first = host.getByRole("option", { name: "Option one" });
+  await expect(first).toBeFocused();
+  await first.press("Space");
+  await expect(select).toBeFocused();
+  await expect(select).toContainText("Option one");
+
+  await select.press("Space");
+  await first.press("End");
+  const last = host.getByRole("option", { name: "Option three" });
+  await expect(last).toBeFocused();
+  await last.press("Escape");
+  await expect(select).toBeFocused();
+  await expect(select).toContainText("Option one");
+
+  const combobox = host.getByRole("combobox", { name: "Searchable Combobox" });
+  await combobox.click();
+  const search = host.getByRole("combobox", { name: "搜索Searchable Combobox" });
+  await expect(search).toBeFocused();
+  await search.fill("option 12");
+  const match = host.getByRole("option", { name: "Search option 12" });
+  await expect(match).toBeVisible();
+  await search.press("ArrowDown");
+  await search.press("Enter");
+  await expect(host.getByRole("dialog", {
+    name: "Searchable Combobox选项",
+  })).toBeHidden();
+
+  await combobox.click();
+  await host.getByText("Small Select", { exact: true }).click();
+  await expect(host.getByRole("dialog", {
+    name: "Searchable Combobox选项",
+  })).toBeHidden();
+
+  const multi = host.getByRole("combobox", {
+    name: "Multiple choices，打开选项",
+  });
+  await multi.click();
+  const multiSearch = host.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  const done = host.getByRole("button", { name: "完成" });
+  await expect(multiSearch).toBeFocused();
+  await multiSearch.press("Tab");
+  await expect(done).toBeFocused();
+  await done.press("Shift+Tab");
+  await expect(multiSearch).toBeFocused();
+  await multiSearch.press("Escape");
+  await expect(done).toBeHidden();
+  await expect(multi).toBeFocused();
+});
+
+test("mobile Drawer closes by Esc, close button, and downward swipe with focus return", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  const trigger = host.getByRole("button", {
+    name: "Multiple choices，打开选项",
+  });
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  const search = host.getByRole("combobox", { name: "搜索Multiple choices" });
+
+  await trigger.click();
+  await expect(search).toBeFocused();
+  await search.press("Shift+Tab");
+  await expect(host.getByRole("button", { name: "关闭选择器" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(search).toBeFocused();
+  await search.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await host.getByRole("button", { name: "关闭选择器" }).click();
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await expect(drawer).toBeVisible();
+  const handle = host.locator(".fcr-drawer-handle");
+  const bounds = await handle.boundingBox();
+  expect(bounds).not.toBeNull();
+  const x = bounds!.x + bounds!.width / 2;
+  const startY = bounds!.y + bounds!.height / 2;
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x, y: startY }],
+  });
+  for (const offset of [100, 200, 300, 400]) {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x, y: Math.min(startY + offset, 830) }],
+    });
+  }
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await session.detach();
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("form controls validate, focus, clear, reset, and submit once in a real browser", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-form-controls-pc");
+  const form = host.locator("form");
+  const title = form.getByRole("textbox", { name: "标题" });
+  const details = form.getByRole("textbox", { name: "详情" });
+  const terms = form.getByRole("checkbox", { name: "同意条款" });
+  const firstImage = form.getByRole("checkbox", { name: "图片一" });
+
+  await title.fill("");
+  await form.getByRole("button", { name: "提交" }).click();
+  await expect(title).toBeFocused();
+  await expect(title).toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("此项为必填项")).toBeVisible();
+
+  await title.fill("已修正");
+  await expect(title).not.toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("此项为必填项")).toBeHidden();
+  await details.fill("已修改");
+  await terms.click();
+  await firstImage.click();
+  await form.getByRole("button", { name: "重置" }).click();
+  await expect(title).toHaveValue("初始标题");
+  await expect(details).toHaveValue("初始详情");
+  await expect(terms).toBeChecked();
+  await expect(firstImage).toBeChecked();
+  await expect(form.getByText("此项为必填项")).toBeHidden();
+
+  await form.getByRole("button", { name: "提交" }).click();
+  const actions = await host.locator("[data-form-control-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ formValue?: Record<string, unknown> }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]?.formValue).toMatchObject({
+    title: "初始标题",
+    details: "初始详情",
+    terms: true,
+    images: ["one"],
+    date: "2026-07-28",
+    time: "09:30",
+    datetime: "2026-07-28T09:30",
+  });
+});
+
+test("PC Calendar supports focus, arrows, Escape, and timezone-preserving selection", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-form-controls-pc");
+  const standalone = host.locator(".fcr-root").nth(1);
+  const trigger = standalone.getByRole("combobox", {
+    name: /^预约日期：/,
+  });
+
+  await trigger.focus();
+  await trigger.press("Enter");
+  let dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
+  const selected = dialog.getByRole("button", {
+    name: "2026-07-28，已选择",
+  });
+  await expect(selected).toBeFocused();
+  await selected.press("ArrowRight");
+  const next = dialog.getByRole("button", { name: "2026-07-29" });
+  await expect(next).toBeFocused();
+  await next.press("Enter");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  const actions = await host.locator("[data-form-control-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ value?: unknown; timezone?: string }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]).toEqual({
+    type: "callback",
+    source: {
+      tag: "date_picker",
+      name: "date",
+      elementId: "standalone_date",
+      path: "$.body.elements[0]",
+    },
+    value: "2026-07-29",
+    timezone: await page.evaluate(() =>
+      Intl.DateTimeFormat().resolvedOptions().timeZone),
+  });
+
+  await trigger.press("Space");
+  dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("select_img preserves pointer, keyboard, and touch semantics in a real browser", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-form-controls-pc");
+  const form = host.locator("form");
+  const multi = form.getByRole("checkbox", { name: "图片二" });
+  await multi.focus();
+  await multi.press("Space");
+  await expect(multi).toBeChecked();
+  const bounds = await multi.boundingBox();
+  expect(bounds).not.toBeNull();
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  const touchPoint = {
+    x: bounds!.x + bounds!.width / 2,
+    y: bounds!.y + bounds!.height / 2,
+  };
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [touchPoint],
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect(multi).not.toBeChecked();
+  await session.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+  await session.detach();
+
+  const singleCard = host.locator(".fcr-root").nth(2);
+  const second = singleCard.getByRole("radio", { name: "单图二" });
+  await second.focus();
+  await second.press("Space");
+  await expect(second).toBeChecked();
+  const actions = await host.locator("[data-form-control-actions]").evaluate(
+    (node) => JSON.parse(node.textContent || "[]"),
+  ) as Array<{ value?: unknown }>;
+  expect(actions).toHaveLength(1);
+  expect(actions[0]?.value).toBe("two");
+});
+
+test("form controls cover light/dark, PC/mobile, widths, reduced motion, and scoped overflow", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/tests/visual/");
+
+  for (const id of [
+    "case-form-controls-pc",
+    "case-form-controls-dark",
+    "case-form-controls-mobile",
+  ]) {
+    const host = page.locator(`#${id}`);
+    const root = host.locator(".fcr-root").first();
+    await expect(root).toBeVisible();
+    expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true);
+  }
+
+  const pc = page.locator("#case-form-controls-pc");
+  const form = pc.locator("form");
+  await form.getByRole("textbox", { name: "标题" }).fill("");
+  await form.getByRole("button", { name: "提交" }).click();
+  await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
+
+  const standalone = pc.locator(".fcr-root").nth(1);
+  await standalone.getByRole("combobox", {
+    name: "预约日期：2026-07-28",
+  }).click();
+  const calendar = standalone.getByRole("dialog", { name: "选择预约日期" });
+  await expect(calendar).toBeVisible();
+  expect(await calendar.evaluate((node) =>
+    getComputedStyle(node).transitionDuration)).toBe("0s");
+  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
+
+  await expect(page.locator("#case-form-controls-dark"))
+    .toHaveScreenshot("card-form-controls-dark.png");
+  await expect(page.locator("#case-form-controls-mobile"))
+    .toHaveScreenshot("card-form-controls-mobile.png");
 });

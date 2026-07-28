@@ -6,10 +6,17 @@ import { completeContainerCard } from "../../src/fixtures/container-cards";
 import { renderCardToString } from "../utils/ssr";
 
 describe("package entry", () => {
+  it("does not require browser globals to import and render in node", () => {
+    expect("window" in globalThis).toBe(false);
+    expect("document" in globalThis).toBe(false);
+    expect(() => renderCardToString({ schema: "2.0" })).not.toThrow();
+  });
+
   it("exports an SSR-safe CardRenderer", () => {
     const html = renderToString(<CardRenderer card={{ schema: "2.0" }} />);
 
     expect(html).toContain('data-fcr-card-renderer="ready"');
+    expect(html).toContain('data-fcr-portal-host=""');
     expect(renderCardToString({ schema: "2.0" })).toBe(html);
   });
 
