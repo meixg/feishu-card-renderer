@@ -1,52 +1,7 @@
-import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import {
-  evaluateReleaseImpact,
-  findActiveSkipLabelEvent,
-  isChangesetDocumentPath,
-  isChangesetsReleasePullRequest,
-  isMaintainerPermission,
-  validateChangesetDocument,
-} from "./release-impact-policy.mjs";
+import { assessReleaseImpact } from "./release-impact-check.mjs";
 
-const root = resolve(import.meta.dirname, "..");
 const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, "utf8"));
-const pullRequest = event.pull_request;
-
-if (!pullRequest) {
-  throw new Error("release-impact check 只能处理 pull_request 事件。");
-}
-
-const releasePullRequest = isChangesetsReleasePullRequest({
-  baseRef: pullRequest.base.ref,
-  headRef: pullRequest.head.ref,
-  author: pullRequest.user.login,
-});
-
-function changedChangesets() {
-  const output = execFileSync(
-    "git",
-    ["diff", "--name-only", "--diff-filter=ACMR", process.env.BASE_SHA, process.env.HEAD_SHA, "--", ".changeset/*.md"],
-    { cwd: root, encoding: "utf8" },
-  );
-  return output.split(/\r?\n/u).filter(isChangesetDocumentPath);
-}
-
-const changesets = changedChangesets();
-if (changesets.length > 0) {
-  execFileSync(
-    "pnpm",
-    ["changeset", "status", `--since=${process.env.BASE_SHA}`],
-    { cwd: root, encoding: "utf8", stdio: "inherit" },
-  );
-}
-for (const file of changesets) {
-  const result = validateChangesetDocument(await readFile(resolve(root, file), "utf8"));
-  if (!result.ok) {
-    throw new Error(`${file}: ${result.message}`);
-  }
-}
 
 async function githubJson(path) {
   const response = await fetch(`${process.env.GITHUB_API_URL}${path}`, {
@@ -62,34 +17,34 @@ async function githubJson(path) {
   return response.json();
 }
 
-async function getAllLabelEvents() {
-  const events = [];
-  for (let page = 1; ; page += 1) {
-    const batch = await githubJson(
-      `/repos/${process.env.GITHUB_REPOSITORY}/issues/${pullRequest.number}/events?per_page=100&page=${page}`,
+const repositoryPath = `/repos/${process.env.GITHUB_REPOSITORY}`;
+const github = {
+  listPullRequestFiles(number, page, perPage) {
+    return githubJson(`${repositoryPath}/pulls/${number}/files?per_page=${perPage}&page=${page}`);
+  },
+  listLabelEvents(number, page, perPage) {
+    return githubJson(`${repositoryPath}/issues/${number}/events?per_page=${perPage}&page=${page}`);
+  },
+  async getActorPermission(login) {
+    const result = await githubJson(
+      `${repositoryPath}/collaborators/${encodeURIComponent(login)}/permission`,
     );
-    events.push(...batch);
-    if (batch.length < 100) return events;
-  }
-}
+    return result.permission;
+  },
+  async readFileAtRef(path, ref) {
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    const result = await githubJson(
+      `${repositoryPath}/contents/${encodedPath}?ref=${encodeURIComponent(ref)}`,
+    );
+    if (result.type !== "file" || result.encoding !== "base64" || typeof result.content !== "string") {
+      throw new Error(`GitHub API 未返回 ${path} 的 base64 文件内容。`);
+    }
+    return Buffer.from(result.content.replace(/\s/gu, ""), "base64").toString("utf8");
+  },
+};
 
-const skipEvent = findActiveSkipLabelEvent(await getAllLabelEvents());
-let skipAuthorized = false;
-if (skipEvent?.actor?.login) {
-  const permission = await githubJson(
-    `/repos/${process.env.GITHUB_REPOSITORY}/collaborators/${encodeURIComponent(skipEvent.actor.login)}/permission`,
-  );
-  skipAuthorized = isMaintainerPermission(permission.permission);
-}
-
-const result = evaluateReleaseImpact({
-  hasChangeset: changesets.length > 0,
-  hasSkip: Boolean(skipEvent),
-  skipAuthorized,
-  releasePullRequest,
-});
-
+const result = await assessReleaseImpact({ event, github });
 if (!result.ok) {
-  throw new Error(`发布影响声明不符合策略：${result.code}`);
+  throw new Error(`发布影响声明不符合策略：${result.code}${result.path ? ` (${result.path})` : ""}`);
 }
 console.log(`发布影响声明通过：${result.code}`);

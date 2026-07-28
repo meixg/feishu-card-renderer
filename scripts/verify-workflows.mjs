@@ -43,8 +43,8 @@ requireContract(releaseImpact, "release-impact.yml is required");
 requireContract(changesets, "changesets.yml is required");
 
 requireContract(
-  /^on:\n {2}push:\n {4}branches: \["main"\]\n {2}pull_request:\n {4}branches: \["main"\]\n\npermissions:\n {2}contents: read\n/m.test(ci),
-  "CI must trigger only on push main and pull_request main with read-only contents",
+  /^on:\n {2}push:\n {4}branches: \["main"\]\n {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, ready_for_review\]\n\npermissions:\n {2}contents: read\n/m.test(ci),
+  "CI must trigger on main pushes and all trusted PR readiness events with read-only contents",
 );
 requireContract(!/\bpull_request_target\b/.test(ci), "CI must not use pull_request_target");
 requireContract(!/^\s*paths(?:-ignore)?:/m.test(ci), "CI must not use path filters");
@@ -94,6 +94,10 @@ requireContract(!/\bnpm\s+publish\b/.test(allAutomation), "current workflows mus
 requireContract(/^name: Deploy project site$/m.test(pages), "Pages must remain an independent workflow");
 requireContract(/^permissions:\n {2}contents: read$/m.test(pages), "Pages build must default to contents read");
 requireContract(
+  /pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, ready_for_review\]/.test(pages),
+  "Pages PR build must run when a maintainer marks a bot PR ready",
+);
+requireContract(
   /deploy:\n(?:.|\n)*?permissions:\n {6}pages: write\n {6}id-token: write/.test(pages),
   "Pages deploy must request only pages write and OIDC",
 );
@@ -126,10 +130,10 @@ requireContract(
 );
 
 requireContract(
-  /^name: Release impact policy\n\non:\n {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, labeled, unlabeled\]\n\npermissions:\n {2}contents: read\n {2}pull-requests: read\n/m.test(releaseImpact),
-  "release impact must use the read-only pull_request event for main",
+  /^name: Release impact policy\n\non:\n {2}pull_request_target:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, labeled, unlabeled, ready_for_review\]\n\npermissions:\n {2}contents: read\n {2}pull-requests: read\n/m.test(releaseImpact),
+  "release impact must use a read-only trusted-base event including ready_for_review",
 );
-requireContract(!/\bpull_request_target\b/.test(releaseImpact), "release impact must not use pull_request_target");
+requireContract(!/^ {2}pull_request:/m.test(releaseImpact), "release impact must not execute a PR-controlled workflow");
 requireContract(!/^\s*[a-z-]+:\s*write\s*$/m.test(releaseImpact), "release impact must remain read-only");
 requireContract(!/^\s*id-token:/m.test(releaseImpact), "release impact must not request OIDC");
 requireContract(
@@ -138,11 +142,17 @@ requireContract(
 );
 requireContract(
   /run: node scripts\/check-release-impact\.mjs/.test(releaseImpact),
-  "release impact must execute the tested policy seam",
+  "release impact must execute the trusted-base policy adapter",
 );
 requireContract(
-  /ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/.test(releaseImpact),
-  "release impact must explicitly inspect the pull request head in its read-only context",
+  /ref: \$\{\{ github\.event\.pull_request\.base\.sha \}\}\n {10}persist-credentials: false/.test(releaseImpact),
+  "release impact must checkout only the trusted base without persisted credentials",
+);
+requireContract(
+  !/\$\{\{[^}\n]*pull_request\.head/.test(releaseImpact)
+    && !/\b(?:pnpm|npm|yarn)\b/.test(releaseImpact)
+    && !/actions\/setup-node|pnpm\/action-setup/.test(releaseImpact),
+  "release impact must not checkout or execute PR head code, package scripts, or dependencies",
 );
 
 requireContract(
@@ -157,10 +167,10 @@ requireContract(
 );
 requireContract(
   /commitMode: github-api/.test(changesets)
-    && /prDraft: create/.test(changesets)
+    && /prDraft: always/.test(changesets)
     && /createGithubReleases: false/.test(changesets)
     && /GITHUB_TOKEN: \$\{\{ github\.token \}\}/.test(changesets),
-  "Changesets must use GitHub API commits, draft PR creation, no releases, and the built-in token",
+  "Changesets must use GitHub API commits, restore draft on every update, create no releases, and use the built-in token",
 );
 requireContract(
   /group: changesets-release-pr\n {2}cancel-in-progress: false/.test(changesets),
@@ -172,9 +182,24 @@ requireContract(
 );
 
 requireContract(
-  /^ {2}pull_request:\n {4}branches: \["main"\]$/m.test(ci)
+  /^ {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, ready_for_review\]$/m.test(ci)
     && !/\b(?:changeset-release\/main|release-pr-exempt)\b/.test(ci),
   "the Release PR exception must not bypass any existing CI check",
+);
+
+const releaseImpactAdapter = await readFile(resolve(root, "scripts/check-release-impact.mjs"), "utf8");
+const releaseImpactCheck = await readFile(resolve(root, "scripts/release-impact-check.mjs"), "utf8");
+requireContract(
+  /\/pulls\/\$\{number\}\/files\?/.test(releaseImpactAdapter)
+    && /\/issues\/\$\{number\}\/events\?/.test(releaseImpactAdapter)
+    && /\/collaborators\/\$\{encodeURIComponent\(login\)\}\/permission/.test(releaseImpactAdapter)
+    && /\/contents\/\$\{encodedPath\}\?ref=\$\{encodeURIComponent\(ref\)\}/.test(releaseImpactAdapter),
+  "release impact adapter must read changed files, label events, actor permission, and head-pinned content via GitHub API",
+);
+requireContract(
+  !/node:child_process|\bexecFile|\bspawn\b|pnpm|package\.json|\.changeset\/config|changelog/.test(releaseImpactAdapter)
+    && !/\bfetch\(/.test(releaseImpactCheck),
+  "release impact policy must not execute PR code/config/dependencies and its orchestration seam must remain injectable",
 );
 
 for (const [file, source] of workflows) {

@@ -18,8 +18,11 @@ Commits，也不使用 commitlint 从提交信息推断版本。
 能力用 `minor`；breaking change 也用 `minor`，并逐项说明影响契约、消费者影响和
 迁移方式。自动检查只验证结构和基本中文内容，语义质量由评审负责。
 
-Release PR 来自标准分支 `changeset-release/main`，默认保持 Draft。它只豁免上述
-二选一检查，仍必须通过仓库所有其它 required checks。
+Release PR 来自标准分支 `changeset-release/main`。每次 Changesets 创建或更新它
+都会设回 Draft；维护者重新审阅版本与 CHANGELOG 后点击 **Ready for review**，
+该可信人工事件触发 Release impact、三个稳定 CI checks 和其它 PR checks。
+`GITHUB_TOKEN` 创建或更新 PR 本身不会递归触发这些 workflow。Release PR 只豁免
+上述二选一检查，仍必须通过仓库所有其它 required checks。
 
 ## 本地验证
 

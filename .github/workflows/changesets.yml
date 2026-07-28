@@ -38,7 +38,7 @@ jobs:
           title: "chore: release feishu-card-renderer"
           commit: "chore: release feishu-card-renderer"
           commitMode: github-api
-          prDraft: create
+          prDraft: always
           setupGitUser: false
           createGithubReleases: false
         env:
