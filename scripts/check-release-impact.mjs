@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import {
   evaluateReleaseImpact,
   findActiveSkipLabelEvent,
+  isChangesetDocumentPath,
   isChangesetsReleasePullRequest,
   isMaintainerPermission,
   validateChangesetDocument,
@@ -29,7 +30,7 @@ function changedChangesets() {
     ["diff", "--name-only", "--diff-filter=ACMR", process.env.BASE_SHA, process.env.HEAD_SHA, "--", ".changeset/*.md"],
     { cwd: root, encoding: "utf8" },
   );
-  return output.split(/\r?\n/u).filter((file) => /^\.changeset\/[^/]+\.md$/u.test(file));
+  return output.split(/\r?\n/u).filter(isChangesetDocumentPath);
 }
 
 const changesets = changedChangesets();

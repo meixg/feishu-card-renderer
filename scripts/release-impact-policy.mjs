@@ -46,6 +46,10 @@ export function isMaintainerPermission(permission) {
   return permission === "admin" || permission === "maintain";
 }
 
+export function isChangesetDocumentPath(file) {
+  return /^\.changeset\/(?!README\.md$)[^/]+\.md$/u.test(file);
+}
+
 export function validateChangesetDocument(source) {
   const match = /^---\r?\n"feishu-card-renderer": (patch|minor)\r?\n---\r?\n+([\s\S]+?)\s*$/.exec(source);
   if (!match) {

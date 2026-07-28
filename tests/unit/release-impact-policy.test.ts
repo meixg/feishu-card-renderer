@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluateReleaseImpact,
   findActiveSkipLabelEvent,
+  isChangesetDocumentPath,
   isChangesetsReleasePullRequest,
   isMaintainerPermission,
   validateChangesetDocument,
@@ -46,6 +47,12 @@ describe("release impact policy", () => {
     expect(isMaintainerPermission("maintain")).toBe(true);
     expect(isMaintainerPermission("admin")).toBe(true);
     expect(isMaintainerPermission("write")).toBe(false);
+  });
+
+  it("recognizes Changeset documents without treating Changesets README as one", () => {
+    expect(isChangesetDocumentPath(".changeset/friendly-bats.md")).toBe(true);
+    expect(isChangesetDocumentPath(".changeset/README.md")).toBe(false);
+    expect(isChangesetDocumentPath(".changeset/config.json")).toBe(false);
   });
 });
 

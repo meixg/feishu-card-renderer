@@ -26,6 +26,7 @@ export function evaluateReleaseImpact(input: ReleaseImpactInput): {
 };
 export function findActiveSkipLabelEvent(events: LabelEvent[]): LabelEvent | undefined;
 export function isMaintainerPermission(permission: string): boolean;
+export function isChangesetDocumentPath(file: string): boolean;
 export function validateChangesetDocument(source: string):
   | { ok: true; releaseType: "patch" | "minor"; summary: string }
   | { ok: false; message: string };
