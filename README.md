@@ -256,7 +256,6 @@ const normalized = normalizeCard(payload);
 
 - [集成指南](docs/integration.md)：公共 API、资源适配、SSR、限制和从 JSON 1.0 迁移
 - [兼容矩阵](docs/compatibility-matrix.md)：组件、字段、交互、资源和视觉验收范围
-- [发布检查清单](docs/release-checklist.md)：安全与发布验收
 - [飞书卡片 JSON 2.0 结构](https://open.larkoffice.com/document/feishu-cards/card-json-v2-structure)
 - [飞书卡片 JSON 2.0 组件概述](https://open.larkoffice.com/document/feishu-cards/card-json-v2-components/component-json-v2-overview)
 - [JSON 2.0 不兼容变更与更新说明](https://open.feishu.cn/document/uAjLw4CM/ukzMukzMukzM/feishu-cards/card-json-v2-breaking-changes-release-notes)

@@ -84,6 +84,12 @@ try {
   }
 
   const tarball = join(packDirectory, packResult.filename);
+  const packedReadme = await readFile(join(repositoryRoot, "README.md"), "utf8");
+  if (packedReadme.includes("docs/release-checklist.md")) {
+    throw new Error(
+      "The packed README must not link to the internal release checklist.",
+    );
+  }
   const sourceManifest = JSON.parse(await readFile(
     join(repositoryRoot, "package.json"),
     "utf8",
