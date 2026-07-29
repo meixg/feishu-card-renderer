@@ -90,6 +90,35 @@ describe("release recovery state", () => {
     })).toThrow("must include provenance");
   });
 
+  it("does not grant the 0.0.1 bootstrap exception to this workflow", () => {
+    const currentNpm = { version: "0.0.1", latest: "0.0.1", gitHead: commit };
+    expect(() => planReleaseRecovery({
+      version: "0.0.1",
+      triggerCommit: commit,
+      sourcePolicy: "current-workflow",
+      npm: { ...currentNpm, provenance: false },
+      sourceVerification: verification,
+    })).toThrow("must include provenance");
+    expect(() => planReleaseRecovery({
+      version: "0.0.1",
+      triggerCommit: commit,
+      sourcePolicy: "current-workflow",
+      npm: { ...currentNpm, provenance: true },
+      tag: { name: "feishu-card-renderer@0.0.1", commit, kind: "annotated" },
+      sourceVerification: verification,
+    })).toThrow("immutable release tag");
+  });
+
+  it("does not grant later existing releases the manual bootstrap exception", () => {
+    expect(() => planReleaseRecovery({
+      version: "0.0.2",
+      triggerCommit: "5dcc12a5f26819241ee1ebda8fb9824421fc021a",
+      sourcePolicy: "existing-release",
+      npm: { ...npm, provenance: false },
+      sourceVerification: verification,
+    })).toThrow("must include provenance");
+  });
+
   it.each([
     ["npm source", { npm: { ...npm, gitHead: "a".repeat(40) }, tag, release }],
     ["latest", { npm: { ...npm, latest: "0.0.1" }, tag, release }],

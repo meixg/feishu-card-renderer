@@ -51,6 +51,8 @@ export function planReleaseRecovery({
     throw new Error("published npm version does not contain a valid source commit");
   }
   const sourceCommit = npm.gitHead;
+  const manualBootstrap = version === BOOTSTRAP_VERSION
+    && sourcePolicy === "existing-release";
   if (sourcePolicy === "current-workflow" && sourceCommit !== triggerCommit) {
     throw new Error("this workflow publication does not point to its trigger commit");
   }
@@ -63,13 +65,13 @@ export function planReleaseRecovery({
   if (npm.latest !== version) {
     throw new Error("npm latest does not match the release version");
   }
-  if (version !== BOOTSTRAP_VERSION && !npm.provenance) {
+  if (!manualBootstrap && !npm.provenance) {
     throw new Error("an automated npm release must include provenance");
   }
   if (tag && (
     tag.name !== tagName
     || tag.commit !== sourceCommit
-    || (version !== BOOTSTRAP_VERSION && tag.kind !== "lightweight")
+    || (!manualBootstrap && tag.kind !== "lightweight")
   )) {
     throw new Error("the immutable release tag points to a different source commit");
   }

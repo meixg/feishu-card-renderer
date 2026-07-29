@@ -144,8 +144,10 @@ workflow 在发布尝试后重新读取 `package.json`、npm registry、tag 与 
    `consistent`，安全 no-op。现有人工 bootstrap `0.0.1` 是唯一允许没有 provenance
    的版本。
 4. 创建或接受 tag 前，GitHub commits API 必须确认 source SHA 精确且
-   `verification.verified=true`。除人工 bootstrap `0.0.1` 可保留既有 unsigned
-   annotated tag 外，后续 tag 必须是 lightweight。任一 tag 指向其它 commit、Release
+   `verification.verified=true`。只有 preflight 已确认 registry 中此前存在的人工
+   bootstrap `0.0.1`（`source_policy=existing-release`）可保留既有无 provenance、
+   unsigned annotated tag；`current-workflow` 即使版本号是 `0.0.1` 也必须具备正常
+   OIDC provenance 和 lightweight tag。任一 tag 指向其它 commit、Release
    是 draft/prerelease、Release 有 package asset、`latest` 偏离当前正常发布，或自动
    版本缺 provenance：fail closed，先调查，不自动改写不可变历史。
 

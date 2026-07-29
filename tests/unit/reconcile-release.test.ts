@@ -140,7 +140,8 @@ fs.appendFileSync(process.env.FAKE_NPM_CALLS, process.argv.slice(2).join(" ") + 
 process.stdout.write(JSON.stringify({
   version: "0.0.1",
   "dist-tags.latest": "0.0.1",
-  gitHead: "${laterMainCommit}"
+  gitHead: "${laterMainCommit}",
+  "dist.attestations": { provenance: { predicateType: "https://slsa.dev/provenance/v1" } }
 }));
 `);
     await command(directory, "gh", `

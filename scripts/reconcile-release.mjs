@@ -200,5 +200,9 @@ if (plan.state !== "consistent") {
 
 console.log(
   `Release record verified: ${plan.tagName} -> ${plan.sourceCommit}`
-  + (version === "0.0.1" ? " (documented manual bootstrap provenance exception)" : ""),
+  + (
+    version === "0.0.1" && current.sourcePolicy === "existing-release"
+      ? " (documented manual bootstrap provenance exception)"
+      : ""
+  ),
 );

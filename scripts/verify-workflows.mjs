@@ -354,8 +354,9 @@ requireContract(
     && /sourceCommit: triggerCommit/.test(releaseState)
     && /sourcePolicy === "current-workflow" && sourceCommit !== triggerCommit/.test(releaseState)
     && /sourceVerification\.verified !== true/.test(releaseState)
-    && /version !== BOOTSTRAP_VERSION && tag\.kind !== "lightweight"/.test(releaseState)
-    && /version !== BOOTSTRAP_VERSION && !npm\.provenance/.test(releaseState),
+    && /version === BOOTSTRAP_VERSION\n {4}&& sourcePolicy === "existing-release"/.test(releaseState)
+    && /!manualBootstrap && tag\.kind !== "lightweight"/.test(releaseState)
+    && /!manualBootstrap && !npm\.provenance/.test(releaseState),
   "release state must bind new versions to the trigger and existing versions to npm gitHead",
 );
 requireContract(
