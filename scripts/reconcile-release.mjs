@@ -1,15 +1,16 @@
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { appendFile, readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import {
   PACKAGE_NAME,
+  expectedTag,
   planReleaseRecovery,
 } from "./release-state.mjs";
 
 const runFile = promisify(execFile);
 const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const version = manifest.version;
-const commit = process.env.RELEASE_COMMIT;
+const triggerCommit = process.env.RELEASE_TRIGGER_COMMIT;
 const repository = process.env.GITHUB_REPOSITORY;
 
 if (manifest.name !== PACKAGE_NAME || typeof repository !== "string") {
@@ -96,24 +97,36 @@ async function releaseState(tagName) {
 }
 
 async function inspect() {
-  const tagName = `${PACKAGE_NAME}@${version}`;
+  const tagName = expectedTag(version);
   const [npm, tag, release] = await Promise.all([
     npmState(),
     tagState(tagName),
     releaseState(tagName),
   ]);
-  return { version, commit, npm, tag, release };
+  return { version, triggerCommit, npm, tag, release };
 }
 
 let current = await inspect();
 let plan = planReleaseRecovery(current);
 const readOnly = process.env.RELEASE_READ_ONLY === "1";
 
-if (plan.state === "npm-unpublished") {
+if (plan.state === "npm-unpublished" && process.env.RELEASE_PHASE !== "before-publish") {
   throw new Error(
-    `npm does not contain ${PACKAGE_NAME}@${version}; Changesets outcome was `
-    + `${process.env.CHANGESETS_OUTCOME ?? "unknown"}, so metadata recovery is forbidden`,
+    `npm does not contain ${PACKAGE_NAME}@${version}; publish outcome was `
+    + `${process.env.PUBLISH_OUTCOME ?? "unknown"}, so metadata recovery is forbidden`,
   );
+}
+if (process.env.RELEASE_PHASE === "before-publish") {
+  if (process.env.GITHUB_OUTPUT) {
+    await appendFile(
+      process.env.GITHUB_OUTPUT,
+      `should-publish=${plan.state === "npm-unpublished" ? "true" : "false"}\n`,
+    );
+  }
+  if (plan.state === "npm-unpublished") {
+    console.log(`${plan.tagName} is unpublished; publish is bound to ${plan.sourceCommit}`);
+    process.exit(0);
+  }
 }
 if (readOnly && (plan.repairTag || plan.repairRelease)) {
   throw new Error(`read-only verification found incomplete metadata: ${plan.state}`);
@@ -128,7 +141,7 @@ if (plan.repairTag) {
     "-f",
     `ref=refs/tags/${plan.tagName}`,
     "-f",
-    `sha=${commit}`,
+    `sha=${plan.sourceCommit}`,
   ]);
 }
 if (plan.repairRelease) {
@@ -141,7 +154,7 @@ if (plan.repairRelease) {
     plan.tagName,
     "--generate-notes",
     "--target",
-    commit,
+    plan.sourceCommit,
   ]);
 }
 
@@ -154,6 +167,6 @@ if (plan.state !== "consistent") {
 }
 
 console.log(
-  `Release record verified: ${plan.tagName} -> ${commit}`
+  `Release record verified: ${plan.tagName} -> ${plan.sourceCommit}`
   + (version === "0.0.1" ? " (documented manual bootstrap provenance exception)" : ""),
 );

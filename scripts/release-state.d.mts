@@ -18,13 +18,14 @@ export const BOOTSTRAP_VERSION: "0.0.1";
 export function expectedTag(version: string): string;
 export function planReleaseRecovery(input: {
   version: string;
-  commit: string;
+  triggerCommit: string;
   npm?: RegistryRelease;
   tag?: TagState;
   release?: ReleaseState;
 }): {
   state: "npm-unpublished" | "npm-published-metadata-missing" | "consistent";
   tagName: string;
+  sourceCommit: string;
   repairTag: boolean;
   repairRelease: boolean;
 };

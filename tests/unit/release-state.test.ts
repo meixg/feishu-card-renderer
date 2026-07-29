@@ -20,10 +20,11 @@ describe("release recovery state", () => {
   it("keeps an unpublished version distinct and forbids metadata repair", () => {
     expect(planReleaseRecovery({
       version: "0.0.2",
-      commit,
+      triggerCommit: commit,
     })).toEqual({
       state: "npm-unpublished",
       tagName: "feishu-card-renderer@0.0.2",
+      sourceCommit: commit,
       repairTag: false,
       repairRelease: false,
     });
@@ -32,17 +33,18 @@ describe("release recovery state", () => {
   it("repairs only missing GitHub metadata after npm publication", () => {
     expect(planReleaseRecovery({
       version: "0.0.2",
-      commit,
+      triggerCommit: commit,
       npm,
     })).toEqual({
       state: "npm-published-metadata-missing",
       tagName: "feishu-card-renderer@0.0.2",
+      sourceCommit: commit,
       repairTag: true,
       repairRelease: true,
     });
     expect(planReleaseRecovery({
       version: "0.0.2",
-      commit,
+      triggerCommit: commit,
       npm,
       tag,
     })).toMatchObject({ repairTag: false, repairRelease: true });
@@ -51,7 +53,7 @@ describe("release recovery state", () => {
   it("recognizes a complete cross-system record", () => {
     expect(planReleaseRecovery({
       version: "0.0.2",
-      commit,
+      triggerCommit: commit,
       npm,
       tag,
       release,
@@ -61,14 +63,14 @@ describe("release recovery state", () => {
   it("allows only 0.0.1 to use the manual bootstrap provenance exception", () => {
     expect(planReleaseRecovery({
       version: "0.0.1",
-      commit,
+      triggerCommit: "5dcc12a5f26819241ee1ebda8fb9824421fc021a",
       npm: { version: "0.0.1", latest: "0.0.1", gitHead: commit, provenance: false },
       tag: { name: "feishu-card-renderer@0.0.1", commit },
       release: { ...release, tagName: "feishu-card-renderer@0.0.1" },
     }).state).toBe("consistent");
     expect(() => planReleaseRecovery({
       version: "0.0.2",
-      commit,
+      triggerCommit: commit,
       npm: { ...npm, provenance: false },
       tag,
       release,
@@ -83,8 +85,30 @@ describe("release recovery state", () => {
   ])("fails closed on conflicting %s metadata", (_name, state) => {
     expect(() => planReleaseRecovery({
       version: "0.0.2",
-      commit,
+      triggerCommit: commit,
       ...state,
     })).toThrow();
+  });
+
+  it("verifies an existing release by its npm source on later main pushes", () => {
+    const laterMainCommit = "5dcc12a5f26819241ee1ebda8fb9824421fc021a";
+    expect(planReleaseRecovery({
+      version: "0.0.2",
+      triggerCommit: laterMainCommit,
+      npm,
+      tag,
+      release,
+    })).toMatchObject({
+      state: "consistent",
+      sourceCommit: commit,
+    });
+  });
+
+  it("fails closed when GitHub metadata exists before npm publication", () => {
+    expect(() => planReleaseRecovery({
+      version: "0.0.2",
+      triggerCommit: commit,
+      tag,
+    })).toThrow("must not exist before npm publication");
   });
 });

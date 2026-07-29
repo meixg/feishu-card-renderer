@@ -320,13 +320,19 @@ requireContract(
   "release must rebuild and verify the real tarball consumer at the accepted main commit",
 );
 requireContract(
-  /uses: changesets\/action@[0-9a-f]{40}\s+#\s+v1\.8\.0/.test(release)
-    && /publish: pnpm changeset publish/.test(release)
-    && /commitMode: github-api/.test(release)
-    && /createGithubReleases: true/.test(release)
+  !/uses: changesets\/action@/.test(release)
+    && /id: release-state/.test(release)
+    && /RELEASE_PHASE: before-publish/.test(release)
+    && /if: steps\.release-state\.outputs\.should-publish == 'true'/.test(release)
+    && /run: pnpm changeset publish/.test(release)
     && /continue-on-error: true/.test(release)
     && /run: node scripts\/reconcile-release\.mjs/.test(release),
-  "release must delegate normal publication and signed metadata to Changesets, then reconcile",
+  "release must leave Release PR maintenance to changesets.yml and publish only after preflight",
+);
+requireContract(
+  occurrences(allAutomation, /uses: changesets\/action@[0-9a-f]{40}/g) === 1
+    && occurrences(changesets, /uses: changesets\/action@[0-9a-f]{40}/g) === 1,
+  "changesets.yml must be the single owner of the Draft Release PR",
 );
 requireContract(
   !/\b(?:NPM_TOKEN|NODE_AUTH_TOKEN|_authToken|npm-token|registry-token)\b/i.test(release),
@@ -343,15 +349,19 @@ requireContract(
   /state: "npm-unpublished"/.test(releaseState)
     && /"npm-published-metadata-missing" : "consistent"/.test(releaseState)
     && /repairTag: false,\n {6}repairRelease: false/.test(releaseState)
+    && /const sourceCommit = npm\.gitHead/.test(releaseState)
+    && /sourceCommit: triggerCommit/.test(releaseState)
     && /version !== BOOTSTRAP_VERSION && !npm\.provenance/.test(releaseState),
-  "release state machine must distinguish unpublished and metadata-only recovery with provenance",
+  "release state must bind new versions to the trigger and existing versions to npm gitHead",
 );
 requireContract(
-  /if \(plan\.state === "npm-unpublished"\)/.test(releaseReconcile)
+  /if \(plan\.state === "npm-unpublished"/.test(releaseReconcile)
     && /metadata recovery is forbidden/.test(releaseReconcile)
+    && /expectedTag\(version\)/.test(releaseReconcile)
     && /if \(plan\.repairTag\)/.test(releaseReconcile)
     && /if \(plan\.repairRelease\)/.test(releaseReconcile)
     && /process\.env\.RELEASE_READ_ONLY === "1"/.test(releaseReconcile)
+    && /sha=\$\{plan\.sourceCommit\}/.test(releaseReconcile)
     && /"release",\n {4}"create"/.test(releaseReconcile)
     && !/\bnpm\s+(?:publish|unpublish|deprecate|dist-tag)\b/.test(releaseReconcile),
   "reconciliation must repair only missing GitHub metadata and never mutate npm",

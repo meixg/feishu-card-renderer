@@ -53,21 +53,23 @@ jobs:
       - name: Verify the real packed consumer
         run: pnpm package:verify
 
-      - name: Publish with Changesets and create GitHub metadata
-        id: changesets
-        continue-on-error: true
-        uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
-        with:
-          publish: pnpm changeset publish
-          commitMode: github-api
-          setupGitUser: false
-          createGithubReleases: true
+      - name: Inspect registry and reconcile an existing release
+        id: release-state
+        run: node scripts/reconcile-release.mjs
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TRIGGER_COMMIT: ${{ github.sha }}
+          RELEASE_PHASE: before-publish
+
+      - name: Publish an unpublished version with Changesets
+        id: publish
+        if: steps.release-state.outputs.should-publish == 'true'
+        continue-on-error: true
+        run: pnpm changeset publish
 
       - name: Reconcile and verify npm, tag, Release, source and provenance
         run: node scripts/reconcile-release.mjs
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_COMMIT: ${{ github.sha }}
-          CHANGESETS_OUTCOME: ${{ steps.changesets.outcome }}
+          RELEASE_TRIGGER_COMMIT: ${{ github.sha }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}

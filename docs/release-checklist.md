@@ -117,9 +117,10 @@ npm Trusted Publisher 中配置的 workflow filename 精确一致。它只响应
 Release PR 合并后，workflow checkout 事件的完整 `github.sha`，重新 frozen install、
 build，并执行真实 `npm pack` tarball 的隔离消费者验证。正常路径委托
 Changesets CLI 直接 publish；Trusted Publishing 自动为 `0.0.1` 之后的公开版本生成
-provenance。Changesets Action 使用 GitHub API commit mode 创建
+provenance。发布后的 reconcile 使用 GitHub API 创建精确
 `feishu-card-renderer@<version>` tag 与 GitHub Release；Release 只有 notes 与 source，
-不上传 `.tgz` 或 `dist/`。
+不上传 `.tgz` 或 `dist/`。`changesets.yml` 是 Draft Release PR 的唯一 owner；
+`release.yml` 不运行 Changesets Action，也不创建或更新 Release PR。
 
 发布队列使用独立 `npm-release` concurrency group，且 `cancel-in-progress: false`。
 因此新的 `main` 更新会等待正在运行的发布，不会取消或并发进入 npm publish。
@@ -128,11 +129,12 @@ provenance。Changesets Action 使用 GitHub API commit mode 创建
 
 workflow 在发布尝试后重新读取 `package.json`、npm registry、tag 与 GitHub Release：
 
-1. npm 中不存在本地版本：状态为 `npm-unpublished`。Changesets publish 失败时整个
-   run 失败；禁止创建 tag/Release 来伪装已发布。
-2. npm 已有该版本且 `gitHead` 是当前 release commit，但 tag 或 Release 缺失：状态为
-   `npm-published-metadata-missing`。只用 GitHub API 创建缺失 metadata，不再次调用
-   publish。
+1. npm 中不存在本地版本：状态为 `npm-unpublished`，此时才将待发布 source 绑定到
+   当前 workflow 的 `github.sha`。若 publish 失败，整个 run 失败；禁止创建
+   tag/Release 来伪装已发布，且 npm 前已有 metadata 也会 fail closed。
+2. npm 已有本地版本：以该版本不可变的 npm `gitHead` 作为 source record，不要求它
+   等于触发本次 workflow 的后续 `main` SHA。若 tag 或 Release 缺失，状态为
+   `npm-published-metadata-missing`，只用 GitHub API 补缺失 metadata，不再次 publish。
 3. npm、`latest`、tag、Release、source commit 与 provenance 一致：状态为
    `consistent`，安全 no-op。现有人工 bootstrap `0.0.1` 是唯一允许没有 provenance
    的版本。
@@ -151,7 +153,7 @@ Release、零 assets、npm `latest=<version>`、npm `gitHead=<release commit>`�
 
 - 任意失败先使用 GitHub 的 **Re-run failed jobs**；不要从本机补发 npm。若 npm 尚未
   发布，重跑仍由同一固定 workflow 和 OIDC 完成 publish。
-- 若 npm publish 已成功但 Changesets 在 tag/Release 阶段失败，重跑会由 registry
+- 若 npm publish 已成功但后续 tag/Release reconcile 失败，重跑会由 registry
   检测到已存在版本，并只补缺失 tag/Release。它绝不再次 publish 同一版本。
 - 若 tag 或 Release 已存在但指向错误 source，停止重跑并开 incident；release tag
   ruleset 禁止覆盖或删除，不能用 force/update 绕过。

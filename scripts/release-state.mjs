@@ -10,34 +10,39 @@ export function expectedTag(version) {
 
 export function planReleaseRecovery({
   version,
-  commit,
+  triggerCommit,
   npm,
   tag,
   release,
 }) {
   const tagName = expectedTag(version);
-  if (!/^[0-9a-f]{40}$/u.test(commit)) {
-    throw new Error("release commit must be a full SHA");
+  if (!/^[0-9a-f]{40}$/u.test(triggerCommit)) {
+    throw new Error("release trigger commit must be a full SHA");
   }
 
   if (!npm) {
+    if (tag || release) {
+      throw new Error("GitHub metadata must not exist before npm publication");
+    }
     return {
       state: "npm-unpublished",
       tagName,
+      sourceCommit: triggerCommit,
       repairTag: false,
       repairRelease: false,
     };
   }
-  if (npm.version !== version || npm.gitHead !== commit) {
-    throw new Error("published npm version does not point to the accepted release commit");
+  if (npm.version !== version || !/^[0-9a-f]{40}$/u.test(npm.gitHead)) {
+    throw new Error("published npm version does not contain a valid source commit");
   }
+  const sourceCommit = npm.gitHead;
   if (npm.latest !== version) {
     throw new Error("npm latest does not match the release version");
   }
   if (version !== BOOTSTRAP_VERSION && !npm.provenance) {
     throw new Error("an automated npm release must include provenance");
   }
-  if (tag && (tag.name !== tagName || tag.commit !== commit)) {
+  if (tag && (tag.name !== tagName || tag.commit !== sourceCommit)) {
     throw new Error("the immutable release tag points to a different source commit");
   }
   if (release && (
@@ -54,6 +59,7 @@ export function planReleaseRecovery({
   return {
     state: repairTag || repairRelease ? "npm-published-metadata-missing" : "consistent",
     tagName,
+    sourceCommit,
     repairTag,
     repairRelease,
   };
