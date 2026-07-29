@@ -67,7 +67,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm unit && pnpm component && pnpm accessibility && pnpm visual && pnpm build && pnpm site:build"
   },
   "devDependencies": {
-    "@changesets/cli": "2.29.7",
+    "@changesets/cli": "2.31.1",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.54.1",
     "@tailwindcss/postcss": "^4.1.0",
