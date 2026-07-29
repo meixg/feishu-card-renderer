@@ -103,8 +103,90 @@ pnpm site:build
 pnpm package:verify
 ```
 
-本清单不执行 `npm publish`，也不创建 GitHub Release。发布者仍须核对 tag、
-changelog、registry 身份和组织发布权限。
+以上本地清单不执行 `npm publish`，也不创建 GitHub Release。正式自动发布与恢复
+流程见下文；发布者仍须核对 tag、changelog、registry 身份和组织发布权限。
+
+## OIDC 自动发布
+
+固定入口是 [`.github/workflows/release.yml`](../.github/workflows/release.yml)，与
+npm Trusted Publisher 中配置的 workflow filename 精确一致。它只响应 `main` push，
+发布 job 使用 GitHub 托管 runner、Node 24 和固定 npm `11.18.0`；仅该 job 申请
+`id-token: write`。仓库不保存或传递 `NPM_TOKEN`、`NODE_AUTH_TOKEN` 或其它 registry
+写 token。
+
+Release PR 合并后，workflow checkout 事件的完整 `github.sha`，重新 frozen install、
+build，并执行真实 `npm pack` tarball 的隔离消费者验证。正常路径委托
+Changesets CLI 直接 publish；Trusted Publishing 自动为 `0.0.1` 之后的公开版本生成
+provenance。发布后的 reconcile 使用 GitHub API 创建精确
+`feishu-card-renderer@<version>` lightweight tag 与 GitHub Release；tag 自身不声称
+signed，必须严格指向 GitHub API 验证为 `verified=true` 的准确 release commit，并由
+tag ruleset 禁止更新和删除。Release 只有 notes 与 source，不上传 `.tgz` 或 `dist/`。
+`changesets.yml` 是 Draft Release PR 的唯一 owner；
+`release.yml` 不运行 Changesets Action，也不创建或更新 Release PR。
+
+发布队列使用独立 `npm-release` concurrency group，且 `cancel-in-progress: false`。
+因此新的 `main` 更新会等待正在运行的发布，不会取消或并发进入 npm publish。
+
+### 每次运行的状态机
+
+workflow 在发布尝试后重新读取 `package.json`、npm registry、tag 与 GitHub Release：
+
+1. npm 中不存在本地版本：状态为 `npm-unpublished`，preflight 输出
+   `source_policy=current-workflow`，此时才将待发布 source 绑定到当前 workflow 的
+   `github.sha`。publish 后（包括 registry 已接受但命令失败的部分成功、或并发 actor
+   抢先发布的竞态）必须看到 npm `gitHead === github.sha`；否则 fail closed，禁止创建
+   tag/Release。npm 前已有 metadata 也会 fail closed。
+2. npm 已有本地版本：以该版本不可变的 npm `gitHead` 作为 source record，不要求它
+   等于触发本次 workflow 的后续 `main` SHA；preflight 输出
+   `source_policy=existing-release` 并由 final reconcile 原样消费。若 tag 或 Release 缺失，状态为
+   `npm-published-metadata-missing`，只用 GitHub API 补缺失 metadata，不再次 publish。
+3. npm、`latest`、tag、Release、source commit 与 provenance 一致：状态为
+   `consistent`，安全 no-op。现有人工 bootstrap `0.0.1` 是唯一允许没有 provenance
+   的版本。
+4. 创建或接受 tag 前，GitHub commits API 必须确认 source SHA 精确且
+   `verification.verified=true`。只有 preflight 已确认 registry 中此前存在的人工
+   bootstrap `0.0.1`（`source_policy=existing-release`）可保留既有无 provenance、
+   unsigned annotated tag；`current-workflow` 即使版本号是 `0.0.1` 也必须具备正常
+   OIDC provenance 和 lightweight tag。任一 tag 指向其它 commit、Release
+   是 draft/prerelease、Release 有 package asset、`latest` 偏离当前正常发布，或自动
+   版本缺 provenance：fail closed，先调查，不自动改写不可变历史。
+
+发布成功后必须看到精确 tag `feishu-card-renderer@<version>`、非 Draft/非 prerelease
+Release、零 assets、npm `latest=<version>`、npm `gitHead=<release commit>`，并在
+`0.0.1` 之后看到 npm provenance。自动化分别报告 tag 类型/target 与 source commit
+verification；不得把 lightweight tag 或“指向 signed commit”描述成 signed tag。
+
+维护者需要在本机做绝对只读核验时，为 reconcile 命令设置
+`RELEASE_READ_ONLY=1`；任何缺失 metadata 会直接报错，不进入 tag/Release 修复。
+
+### 重跑与部分成功恢复
+
+- 任意失败先使用 GitHub 的 **Re-run failed jobs**；不要从本机补发 npm。若 npm 尚未
+  发布，重跑仍由同一固定 workflow 和 OIDC 完成 publish。
+- 若 npm publish 已成功但后续 tag/Release reconcile 失败，重跑会由 registry
+  检测到已存在版本，并只补缺失 tag/Release。它绝不再次 publish 同一版本。
+- 若 tag 或 Release 已存在但指向错误 source，停止重跑并开 incident；release tag
+  ruleset 禁止覆盖或删除，不能用 force/update 绕过。
+- metadata 修复完成后再次只读核对 npm version、`latest`、`gitHead`、provenance、
+  tag 解引用 commit、Release 状态与 assets。将 workflow run 与核对结果记录到关联
+  Issue。
+
+### 错误版本恢复
+
+已公开的版本视为不可变历史。正常恢复明确禁止 `npm unpublish`、删除/移动 release
+tag、覆写 GitHub Release 对应版本或复用版本号。
+
+1. 评估影响并准备包含中文 Changeset 的修复 PR；安全修复仍走同一 Release PR 审计。
+2. 用维护者 2FA 在 npm 执行
+   `npm deprecate feishu-card-renderer@<bad-version> "<reason and replacement>"`。
+3. 严重回归且替代版尚未就绪时，可临时执行
+   `npm dist-tag add feishu-card-renderer@<previous-stable> latest`。记录操作者、UTC、
+   原因、旧/新 dist-tag；这不是删除坏版本。
+4. 合并修复的 Release PR，发布新的替代版本。自动发布成功后 `latest` 应回到新版本；
+   再完成跨系统核对，并更新 deprecation 文案指向替代版本。
+
+deprecate 与临时回移 `latest` 是有意保留的人工 2FA incident 操作，不放进普通
+workflow，也不使用 automation token。
 
 ## Draft Release PR 初始化
 
