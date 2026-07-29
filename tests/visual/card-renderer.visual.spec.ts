@@ -843,6 +843,7 @@ test("select_img preserves pointer, keyboard, and touch semantics in a real brow
 test("form controls cover light/dark, PC/mobile, widths, reduced motion, and scoped overflow", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date("2026-07-28T12:00:00Z"));
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/tests/visual/");
 
