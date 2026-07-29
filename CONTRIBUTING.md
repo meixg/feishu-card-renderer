@@ -13,6 +13,24 @@ Commits，也不使用 commitlint 从提交信息推断版本。
    文档可以使用。标签必须由具备 `maintain` 或 `admin` 权限的维护者实际添加；
    检查会审计 GitHub label 事件及该 actor 的权限。
 
+### 首次发布 bootstrap 一次性例外
+
+只有以下条件同时成立时，维护者才可以对首次发布前的 Changesets 记账修正添加
+`release:skip`：
+
+- 包从未发布，且不存在对应的 release tag 或 GitHub Release。
+- `package.json` 已经是计划的首次发布版本（本项目为 `0.0.1`）。
+- 待处理 Changeset 描述的内容已经包含在尚未发布的同一 `0.0.1` 源码中，不是相对
+  该版本新增的消费者变化。
+
+此例外只允许删除该待处理 Changeset，并把其摘要折入现有的 `0.0.1` Initial release
+CHANGELOG；PR 必须记录适用理由，并由维护者只读验证 npm registry 上仍不存在
+`feishu-card-renderer@0.0.1`，再添加 `release:skip`。这解释了首次发布前的 bootstrap
+修正为何可以修改随包发布的 CHANGELOG 而不产生新的版本。
+
+一旦任何正式版本已经发布，此例外永久失效。不得用它绕过已发布版本之后的公开 API、
+运行时行为或随包发布文档变化所需的 Changeset。
+
 运行 `pnpm changeset` 创建声明。摘要必须是面向消费者的中文，具体模板见
 [`.changeset/README.md`](.changeset/README.md)。`0.x` 中兼容修复用 `patch`，新增
 能力用 `minor`；breaking change 也用 `minor`，并逐项说明影响契约、消费者影响和
