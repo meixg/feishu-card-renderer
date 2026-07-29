@@ -11,18 +11,33 @@ export function expectedTag(version) {
 export function planReleaseRecovery({
   version,
   triggerCommit,
+  sourcePolicy,
   npm,
   tag,
   release,
+  sourceVerification,
 }) {
   const tagName = expectedTag(version);
   if (!/^[0-9a-f]{40}$/u.test(triggerCommit)) {
     throw new Error("release trigger commit must be a full SHA");
   }
 
+  if (sourcePolicy !== "current-workflow" && sourcePolicy !== "existing-release") {
+    throw new Error("release source policy is invalid");
+  }
+
   if (!npm) {
+    if (sourcePolicy === "existing-release") {
+      throw new Error("a previously published version disappeared from npm");
+    }
     if (tag || release) {
       throw new Error("GitHub metadata must not exist before npm publication");
+    }
+    if (
+      sourceVerification?.sha !== triggerCommit
+      || sourceVerification.verified !== true
+    ) {
+      throw new Error("the release commit must be verified by GitHub");
     }
     return {
       state: "npm-unpublished",
@@ -36,13 +51,26 @@ export function planReleaseRecovery({
     throw new Error("published npm version does not contain a valid source commit");
   }
   const sourceCommit = npm.gitHead;
+  if (sourcePolicy === "current-workflow" && sourceCommit !== triggerCommit) {
+    throw new Error("this workflow publication does not point to its trigger commit");
+  }
+  if (
+    sourceVerification?.sha !== sourceCommit
+    || sourceVerification.verified !== true
+  ) {
+    throw new Error("the release commit must be verified by GitHub");
+  }
   if (npm.latest !== version) {
     throw new Error("npm latest does not match the release version");
   }
   if (version !== BOOTSTRAP_VERSION && !npm.provenance) {
     throw new Error("an automated npm release must include provenance");
   }
-  if (tag && (tag.name !== tagName || tag.commit !== sourceCommit)) {
+  if (tag && (
+    tag.name !== tagName
+    || tag.commit !== sourceCommit
+    || (version !== BOOTSTRAP_VERSION && tag.kind !== "lightweight")
+  )) {
     throw new Error("the immutable release tag points to a different source commit");
   }
   if (release && (

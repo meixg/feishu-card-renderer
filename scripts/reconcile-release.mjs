@@ -57,7 +57,9 @@ async function tagState(tagName) {
     ]);
     const ref = JSON.parse(source);
     let object = ref.object;
+    let kind = "lightweight";
     if (object?.type === "tag") {
+      kind = "annotated";
       const annotated = JSON.parse(await run("gh", [
         "api",
         `repos/${repository}/git/tags/${object.sha}`,
@@ -67,7 +69,7 @@ async function tagState(tagName) {
     if (object?.type !== "commit" || !/^[0-9a-f]{40}$/u.test(object.sha)) {
       throw new Error(`release tag ${tagName} does not resolve to a commit`);
     }
-    return { name: tagName, commit: object.sha };
+    return { name: tagName, commit: object.sha, kind };
   } catch (error) {
     if (error?.stderr?.includes("HTTP 404")) return undefined;
     throw error;
@@ -96,17 +98,46 @@ async function releaseState(tagName) {
   }
 }
 
-async function inspect() {
-  const tagName = expectedTag(version);
-  const [npm, tag, release] = await Promise.all([
-    npmState(),
-    tagState(tagName),
-    releaseState(tagName),
+async function sourceVerification(sourceCommit) {
+  const source = await run("gh", [
+    "api",
+    `repos/${repository}/commits/${sourceCommit}`,
   ]);
-  return { version, triggerCommit, npm, tag, release };
+  const commit = JSON.parse(source);
+  return {
+    sha: commit.sha,
+    verified: commit.commit?.verification?.verified === true,
+    reason: commit.commit?.verification?.reason,
+  };
 }
 
-let current = await inspect();
+async function inspect(requestedSourcePolicy) {
+  const tagName = expectedTag(version);
+  const npm = await npmState();
+  const sourcePolicy = process.env.RELEASE_PHASE === "before-publish"
+    ? (npm ? "existing-release" : "current-workflow")
+    : requestedSourcePolicy;
+  const sourceCommit = npm?.gitHead ?? triggerCommit;
+  if (!/^[0-9a-f]{40}$/u.test(sourceCommit)) {
+    throw new Error("release source commit must be a full SHA");
+  }
+  const [tag, release, verification] = await Promise.all([
+    tagState(tagName),
+    releaseState(tagName),
+    sourceVerification(sourceCommit),
+  ]);
+  return {
+    version,
+    triggerCommit,
+    sourcePolicy,
+    npm,
+    tag,
+    release,
+    sourceVerification: verification,
+  };
+}
+
+let current = await inspect(process.env.RELEASE_SOURCE_POLICY);
 let plan = planReleaseRecovery(current);
 const readOnly = process.env.RELEASE_READ_ONLY === "1";
 
@@ -120,7 +151,8 @@ if (process.env.RELEASE_PHASE === "before-publish") {
   if (process.env.GITHUB_OUTPUT) {
     await appendFile(
       process.env.GITHUB_OUTPUT,
-      `should-publish=${plan.state === "npm-unpublished" ? "true" : "false"}\n`,
+      `should-publish=${plan.state === "npm-unpublished" ? "true" : "false"}\n`
+      + `source_policy=${current.sourcePolicy}\n`,
     );
   }
   if (plan.state === "npm-unpublished") {
@@ -159,7 +191,7 @@ if (plan.repairRelease) {
 }
 
 if (plan.repairTag || plan.repairRelease) {
-  current = await inspect();
+  current = await inspect(current.sourcePolicy);
   plan = planReleaseRecovery(current);
 }
 if (plan.state !== "consistent") {

@@ -23,6 +23,42 @@ async function command(directory: string, name: string, source: string) {
   await chmod(path, 0o755);
 }
 
+async function fakeReleaseCommands(
+  directory: string,
+  {
+    gitHead = publishedCommit,
+    verified = true,
+  }: { gitHead?: string; verified?: boolean } = {},
+) {
+  await command(directory, "npm", `
+process.stdout.write(JSON.stringify({
+  version: "0.0.1",
+  "dist-tags.latest": "0.0.1",
+  gitHead: "${gitHead}"
+}));
+`);
+  await command(directory, "gh", `
+const args = process.argv.slice(2).join(" ");
+if (args.includes("/commits/")) {
+  process.stdout.write(JSON.stringify({
+    sha: "${gitHead}",
+    commit: { verification: { verified: ${verified}, reason: "${verified ? "valid" : "unsigned"}" } }
+  }));
+} else if (args.includes("git/ref/tags/")) {
+  process.stdout.write(JSON.stringify({ object: { type: "tag", sha: "b".repeat(40) } }));
+} else if (args.includes("git/tags/")) {
+  process.stdout.write(JSON.stringify({ object: { type: "commit", sha: "${gitHead}" } }));
+} else {
+  process.stdout.write(JSON.stringify({
+    tagName: "feishu-card-renderer@0.0.1",
+    isDraft: false,
+    isPrerelease: false,
+    assets: []
+  }));
+}
+`);
+}
+
 afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) =>
     rm(directory, { recursive: true, force: true })));
@@ -34,26 +70,7 @@ describe("release reconciliation adapter", () => {
     temporaryDirectories.push(directory);
     const output = join(directory, "github-output");
     await writeFile(output, "");
-    await command(directory, "npm", `
-process.stdout.write(JSON.stringify({
-  version: "0.0.1",
-  "dist-tags.latest": "0.0.1",
-  gitHead: "${publishedCommit}"
-}));
-`);
-    await command(directory, "gh", `
-const args = process.argv.slice(2).join(" ");
-if (args.includes("git/ref/tags/")) {
-  process.stdout.write(JSON.stringify({ object: { type: "commit", sha: "${publishedCommit}" } }));
-} else {
-  process.stdout.write(JSON.stringify({
-    tagName: "feishu-card-renderer@0.0.1",
-    isDraft: false,
-    isPrerelease: false,
-    assets: []
-  }));
-}
-`);
+    await fakeReleaseCommands(directory);
 
     const { stdout } = await runFile(process.execPath, [releaseSource], {
       env: {
@@ -68,6 +85,117 @@ if (args.includes("git/ref/tags/")) {
     });
 
     expect(stdout).toContain(`feishu-card-renderer@0.0.1 -> ${publishedCommit}`);
-    expect(await readFile(output, "utf8")).toBe("should-publish=false\n");
+    expect(await readFile(output, "utf8")).toBe(
+      "should-publish=false\nsource_policy=existing-release\n",
+    );
+  });
+
+  it("rejects a publish race before creating metadata", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "release-reconcile-"));
+    temporaryDirectories.push(directory);
+    const otherCommit = "a".repeat(40);
+    await fakeReleaseCommands(directory, { gitHead: otherCommit });
+
+    await expect(runFile(process.execPath, [releaseSource], {
+      env: {
+        ...process.env,
+        PATH: `${directory}:${process.env.PATH}`,
+        GITHUB_REPOSITORY: "meixg/feishu-card-renderer",
+        RELEASE_READ_ONLY: "1",
+        RELEASE_SOURCE_POLICY: "current-workflow",
+        RELEASE_TRIGGER_COMMIT: laterMainCommit,
+      },
+    })).rejects.toMatchObject({
+      stderr: expect.stringContaining("does not point to its trigger commit"),
+    });
+  });
+
+  it("rejects an unverified source before metadata repair", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "release-reconcile-"));
+    temporaryDirectories.push(directory);
+    await fakeReleaseCommands(directory, { verified: false });
+
+    await expect(runFile(process.execPath, [releaseSource], {
+      env: {
+        ...process.env,
+        PATH: `${directory}:${process.env.PATH}`,
+        GITHUB_REPOSITORY: "meixg/feishu-card-renderer",
+        RELEASE_READ_ONLY: "1",
+        RELEASE_SOURCE_POLICY: "existing-release",
+        RELEASE_TRIGGER_COMMIT: laterMainCommit,
+      },
+    })).rejects.toMatchObject({
+      stderr: expect.stringContaining("must be verified by GitHub"),
+    });
+  });
+
+  it("repairs only missing lightweight tag and Release after this workflow publishes", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "release-reconcile-"));
+    temporaryDirectories.push(directory);
+    const npmCalls = join(directory, "npm-calls");
+    await writeFile(npmCalls, "");
+    await command(directory, "npm", `
+const fs = require("node:fs");
+fs.appendFileSync(process.env.FAKE_NPM_CALLS, process.argv.slice(2).join(" ") + "\\n");
+process.stdout.write(JSON.stringify({
+  version: "0.0.1",
+  "dist-tags.latest": "0.0.1",
+  gitHead: "${laterMainCommit}"
+}));
+`);
+    await command(directory, "gh", `
+const fs = require("node:fs");
+const path = require("node:path");
+const args = process.argv.slice(2).join(" ");
+const tagState = path.join(process.env.FAKE_STATE_DIRECTORY, "tag-created");
+const releaseState = path.join(process.env.FAKE_STATE_DIRECTORY, "release-created");
+if (args.includes("/commits/")) {
+  process.stdout.write(JSON.stringify({
+    sha: "${laterMainCommit}",
+    commit: { verification: { verified: true, reason: "valid" } }
+  }));
+} else if (args.includes("--method POST") && args.includes("git/refs")) {
+  fs.writeFileSync(tagState, "lightweight");
+} else if (args.includes("git/ref/tags/")) {
+  if (!fs.existsSync(tagState)) {
+    process.stderr.write("HTTP 404");
+    process.exit(1);
+  }
+  process.stdout.write(JSON.stringify({
+    object: { type: "commit", sha: "${laterMainCommit}" }
+  }));
+} else if (args.includes("release create")) {
+  fs.writeFileSync(releaseState, "release");
+} else if (args.includes("release view")) {
+  if (!fs.existsSync(releaseState)) {
+    process.stderr.write("release not found");
+    process.exit(1);
+  }
+  process.stdout.write(JSON.stringify({
+    tagName: "feishu-card-renderer@0.0.1",
+    isDraft: false,
+    isPrerelease: false,
+    assets: []
+  }));
+}
+`);
+
+    const { stdout } = await runFile(process.execPath, [releaseSource], {
+      env: {
+        ...process.env,
+        PATH: `${directory}:${process.env.PATH}`,
+        FAKE_NPM_CALLS: npmCalls,
+        FAKE_STATE_DIRECTORY: directory,
+        GITHUB_REPOSITORY: "meixg/feishu-card-renderer",
+        RELEASE_SOURCE_POLICY: "current-workflow",
+        RELEASE_TRIGGER_COMMIT: laterMainCommit,
+      },
+    });
+
+    expect(stdout).toContain(`feishu-card-renderer@0.0.1 -> ${laterMainCommit}`);
+    expect(await readFile(join(directory, "tag-created"), "utf8")).toBe("lightweight");
+    expect(await readFile(join(directory, "release-created"), "utf8")).toBe("release");
+    expect(await readFile(npmCalls, "utf8")).toMatch(/^view /);
+    expect(await readFile(npmCalls, "utf8")).not.toContain("publish");
   });
 });

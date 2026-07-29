@@ -72,4 +72,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TRIGGER_COMMIT: ${{ github.sha }}
+          RELEASE_SOURCE_POLICY: ${{ steps.release-state.outputs.source_policy }}
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}

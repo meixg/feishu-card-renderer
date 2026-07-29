@@ -324,6 +324,7 @@ requireContract(
     && /id: release-state/.test(release)
     && /RELEASE_PHASE: before-publish/.test(release)
     && /if: steps\.release-state\.outputs\.should-publish == 'true'/.test(release)
+    && /RELEASE_SOURCE_POLICY: \$\{\{ steps\.release-state\.outputs\.source_policy \}\}/.test(release)
     && /run: pnpm changeset publish/.test(release)
     && /continue-on-error: true/.test(release)
     && /run: node scripts\/reconcile-release\.mjs/.test(release),
@@ -351,6 +352,9 @@ requireContract(
     && /repairTag: false,\n {6}repairRelease: false/.test(releaseState)
     && /const sourceCommit = npm\.gitHead/.test(releaseState)
     && /sourceCommit: triggerCommit/.test(releaseState)
+    && /sourcePolicy === "current-workflow" && sourceCommit !== triggerCommit/.test(releaseState)
+    && /sourceVerification\.verified !== true/.test(releaseState)
+    && /version !== BOOTSTRAP_VERSION && tag\.kind !== "lightweight"/.test(releaseState)
     && /version !== BOOTSTRAP_VERSION && !npm\.provenance/.test(releaseState),
   "release state must bind new versions to the trigger and existing versions to npm gitHead",
 );
@@ -361,8 +365,12 @@ requireContract(
     && /if \(plan\.repairTag\)/.test(releaseReconcile)
     && /if \(plan\.repairRelease\)/.test(releaseReconcile)
     && /process\.env\.RELEASE_READ_ONLY === "1"/.test(releaseReconcile)
+    && /source_policy=\$\{current\.sourcePolicy\}/.test(releaseReconcile)
+    && /repos\/\$\{repository\}\/commits\/\$\{sourceCommit\}/.test(releaseReconcile)
+    && /verification\?\.verified === true/.test(releaseReconcile)
     && /sha=\$\{plan\.sourceCommit\}/.test(releaseReconcile)
     && /"release",\n {4}"create"/.test(releaseReconcile)
+    && !/--method",\n {4}"POST",\n {4}`repos\/\$\{repository\}\/git\/tags/.test(releaseReconcile)
     && !/\bnpm\s+(?:publish|unpublish|deprecate|dist-tag)\b/.test(releaseReconcile),
   "reconciliation must repair only missing GitHub metadata and never mutate npm",
 );
