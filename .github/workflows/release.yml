@@ -1,0 +1,73 @@
+name: Publish package
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish npm package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Check out the accepted release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Install fixed npm
+        run: npm install --global npm@11.18.0
+
+      - name: Verify release toolchain
+        run: |
+          node --version
+          test "$(npm --version)" = "11.18.0"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build from the accepted release commit
+        run: pnpm build
+
+      - name: Verify the real packed consumer
+        run: pnpm package:verify
+
+      - name: Publish with Changesets and create GitHub metadata
+        id: changesets
+        continue-on-error: true
+        uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
+        with:
+          publish: pnpm changeset publish
+          commitMode: github-api
+          setupGitUser: false
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Reconcile and verify npm, tag, Release, source and provenance
+        run: node scripts/reconcile-release.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          CHANGESETS_OUTCOME: ${{ steps.changesets.outcome }}

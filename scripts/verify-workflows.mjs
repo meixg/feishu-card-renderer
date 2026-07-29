@@ -136,11 +136,13 @@ const pages = workflows.get("pages.yml");
 const visualRefresh = workflows.get("visual-refresh.yml");
 const releaseImpact = workflows.get("release-impact.yml");
 const changesets = workflows.get("changesets.yml");
+const release = workflows.get("release.yml");
 requireContract(ci, "ci.yml is required");
 requireContract(pages, "pages.yml is required");
 requireContract(visualRefresh, "visual-refresh.yml is required");
 requireContract(releaseImpact, "release-impact.yml is required");
 requireContract(changesets, "changesets.yml is required");
+requireContract(release, "the npm Trusted Publisher requires release.yml");
 
 requireContract(
   /^on:\n {2}push:\n {4}branches: \["main"\]\n {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, ready_for_review\]\n\npermissions:\n {2}contents: read\n/m.test(ci),
@@ -189,7 +191,6 @@ requireContract(
   !/\b(?:NPM_TOKEN|NODE_AUTH_TOKEN)\b/.test(allAutomation),
   "automation must not expose npm token variables",
 );
-requireContract(!/\bnpm\s+publish\b/.test(allAutomation), "current workflows must not publish to npm");
 
 requireContract(/^name: Deploy project site$/m.test(pages), "Pages must remain an independent workflow");
 requireContract(/^permissions:\n {2}contents: read$/m.test(pages), "Pages build must default to contents read");
@@ -279,6 +280,81 @@ requireContract(
 requireContract(
   !/\b(?:publish:|npm\s+publish|changeset\s+publish|NPM_TOKEN|NODE_AUTH_TOKEN)\b/.test(changesets),
   "Changesets maintenance must not publish or receive registry credentials",
+);
+
+requireContract(
+  /^name: Publish package\n\non:\n {2}push:\n {4}branches: \["main"\]\n\npermissions:\n {2}contents: read\n/m.test(release),
+  "release.yml must run only for trusted main pushes and default to contents read",
+);
+requireContract(
+  !/\bpull_request(?:_target)?\b/.test(release)
+    && !/^\s*workflow_(?:dispatch|call):/m.test(release)
+    && !/^\s*paths(?:-ignore)?:/m.test(release),
+  "release.yml must not publish from PR, reusable, manual-bypass, or path-filtered triggers",
+);
+requireContract(
+  /concurrency:\n {2}group: npm-release\n {2}cancel-in-progress: false/.test(release),
+  "npm publication must use its own non-cancelling concurrency group",
+);
+requireContract(
+  occurrences(release, /^\s*id-token: write\s*$/gm) === 1
+    && /publish:\n(?:.|\n)*?permissions:\n {6}contents: write\n {6}id-token: write/.test(release)
+    && !/^permissions:\n(?:.|\n)*?id-token: write/m.test(release.split("jobs:")[0]),
+  "only the publish job may request OIDC, alongside the GitHub metadata permission",
+);
+requireContract(
+  /node-version: "24"/.test(release)
+    && /registry-url: "https:\/\/registry\.npmjs\.org"/.test(release)
+    && /package-manager-cache: false/.test(release)
+    && occurrences(release, /npm@11\.18\.0/g) === 1
+    && /test "\$\(npm --version\)" = "11\.18\.0"/.test(release),
+  "release must use Node 24 and verify the fixed supported npm 11.18.0 toolchain",
+);
+requireContract(
+  /ref: \$\{\{ github\.sha \}\}/.test(release)
+    && /fetch-depth: 0/.test(release)
+    && /persist-credentials: false/.test(release)
+    && /run: pnpm install --frozen-lockfile/.test(release)
+    && /run: pnpm build/.test(release)
+    && /run: pnpm package:verify/.test(release),
+  "release must rebuild and verify the real tarball consumer at the accepted main commit",
+);
+requireContract(
+  /uses: changesets\/action@[0-9a-f]{40}\s+#\s+v1\.8\.0/.test(release)
+    && /publish: pnpm changeset publish/.test(release)
+    && /commitMode: github-api/.test(release)
+    && /createGithubReleases: true/.test(release)
+    && /continue-on-error: true/.test(release)
+    && /run: node scripts\/reconcile-release\.mjs/.test(release),
+  "release must delegate normal publication and signed metadata to Changesets, then reconcile",
+);
+requireContract(
+  !/\b(?:NPM_TOKEN|NODE_AUTH_TOKEN|_authToken|npm-token|registry-token)\b/i.test(release),
+  "release.yml must not contain a traditional npm write token",
+);
+requireContract(
+  !/\b(?:upload-artifact|\.tgz|gh release upload)\b/.test(release),
+  "GitHub Releases must not duplicate the npm tarball",
+);
+
+const releaseState = await readFile(resolve(root, "scripts/release-state.mjs"), "utf8");
+const releaseReconcile = await readFile(resolve(root, "scripts/reconcile-release.mjs"), "utf8");
+requireContract(
+  /state: "npm-unpublished"/.test(releaseState)
+    && /"npm-published-metadata-missing" : "consistent"/.test(releaseState)
+    && /repairTag: false,\n {6}repairRelease: false/.test(releaseState)
+    && /version !== BOOTSTRAP_VERSION && !npm\.provenance/.test(releaseState),
+  "release state machine must distinguish unpublished and metadata-only recovery with provenance",
+);
+requireContract(
+  /if \(plan\.state === "npm-unpublished"\)/.test(releaseReconcile)
+    && /metadata recovery is forbidden/.test(releaseReconcile)
+    && /if \(plan\.repairTag\)/.test(releaseReconcile)
+    && /if \(plan\.repairRelease\)/.test(releaseReconcile)
+    && /process\.env\.RELEASE_READ_ONLY === "1"/.test(releaseReconcile)
+    && /"release",\n {4}"create"/.test(releaseReconcile)
+    && !/\bnpm\s+(?:publish|unpublish|deprecate|dist-tag)\b/.test(releaseReconcile),
+  "reconciliation must repair only missing GitHub metadata and never mutate npm",
 );
 
 requireContract(

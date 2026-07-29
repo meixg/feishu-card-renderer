@@ -1,0 +1,60 @@
+export const PACKAGE_NAME = "feishu-card-renderer";
+export const BOOTSTRAP_VERSION = "0.0.1";
+
+export function expectedTag(version) {
+  if (typeof version !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(version)) {
+    throw new Error("package version is not a supported release version");
+  }
+  return `${PACKAGE_NAME}@${version}`;
+}
+
+export function planReleaseRecovery({
+  version,
+  commit,
+  npm,
+  tag,
+  release,
+}) {
+  const tagName = expectedTag(version);
+  if (!/^[0-9a-f]{40}$/u.test(commit)) {
+    throw new Error("release commit must be a full SHA");
+  }
+
+  if (!npm) {
+    return {
+      state: "npm-unpublished",
+      tagName,
+      repairTag: false,
+      repairRelease: false,
+    };
+  }
+  if (npm.version !== version || npm.gitHead !== commit) {
+    throw new Error("published npm version does not point to the accepted release commit");
+  }
+  if (npm.latest !== version) {
+    throw new Error("npm latest does not match the release version");
+  }
+  if (version !== BOOTSTRAP_VERSION && !npm.provenance) {
+    throw new Error("an automated npm release must include provenance");
+  }
+  if (tag && (tag.name !== tagName || tag.commit !== commit)) {
+    throw new Error("the immutable release tag points to a different source commit");
+  }
+  if (release && (
+    release.tagName !== tagName
+    || release.draft
+    || release.prerelease
+    || release.assets.length !== 0
+  )) {
+    throw new Error("GitHub Release metadata does not match the release contract");
+  }
+
+  const repairTag = !tag;
+  const repairRelease = !release;
+  return {
+    state: repairTag || repairRelease ? "npm-published-metadata-missing" : "consistent",
+    tagName,
+    repairTag,
+    repairRelease,
+  };
+}
