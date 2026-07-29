@@ -17,6 +17,7 @@
   兼容层。
 - ESM 根入口、独立纯 schema 子路径、TypeScript 声明和单一预编译 CSS；
   React 18.2–19 作为 peer dependency，根入口支持 SSR 导入。
+- 在线站点展示最新 `main` 源码，npm `latest` 指向消费者应采用的正式不可变版本。
 
 ### 已知限制
 
