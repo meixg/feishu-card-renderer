@@ -1,13 +1,14 @@
 import { useRef, useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
+import { Button } from "../ui/button";
 
 export type PreviewItem = {
   label: string;
@@ -41,7 +42,8 @@ export function PreviewDialog({
     >
       <DialogTrigger
         ref={trigger}
-        render={<button type="button" className="fcr-preview-trigger" />}
+        render={<Button type="button" variant="ghost"
+          className="fcr-preview-trigger" />}
         aria-label={label}
         onKeyDown={(event) => event.stopPropagation()}
       >
@@ -49,14 +51,15 @@ export function PreviewDialog({
       </DialogTrigger>
       {current && (
         <DialogContent
+          closeLabel="关闭预览"
           onKeyDown={(event) => {
             if (event.key === "ArrowLeft" && items.length > 1) {
               event.preventDefault();
-              setIndex((value) => (value + items.length - 1) % items.length);
+              setIndex((value) => Math.max(0, value - 1));
             }
             if (event.key === "ArrowRight" && items.length > 1) {
               event.preventDefault();
-              setIndex((value) => (value + 1) % items.length);
+              setIndex((value) => Math.min(items.length - 1, value + 1));
             }
           }}
         >
@@ -67,31 +70,31 @@ export function PreviewDialog({
             </DialogDescription>
             <span className="fcr-preview-toolbar-actions">
               {items.length > 1 && <span aria-live="polite">{index + 1} / {items.length}</span>}
-              <DialogClose
-                render={<button type="button" />}
-                aria-label="关闭预览"
-              >
-                ×
-              </DialogClose>
             </span>
           </DialogHeader>
           <div className="fcr-preview-result">{current.content}</div>
           {items.length > 1 && (
             <>
               <div className="fcr-preview-nav">
-                <button type="button" onClick={() =>
-                  setIndex((index + items.length - 1) % items.length)}>上一张</button>
-                <button type="button" onClick={() =>
-                  setIndex((index + 1) % items.length)}>下一张</button>
+                <Button type="button" variant="outline" size="icon"
+                  disabled={index === 0} aria-label="上一张"
+                  onClick={() => setIndex(index - 1)}>
+                  <ChevronLeftIcon aria-hidden="true" />
+                </Button>
+                <Button type="button" variant="outline" size="icon"
+                  disabled={index === items.length - 1} aria-label="下一张"
+                  onClick={() => setIndex(index + 1)}>
+                  <ChevronRightIcon aria-hidden="true" />
+                </Button>
               </div>
               <div className="fcr-preview-thumbnails" aria-label="缩略图导航">
                 {items.map((item, itemIndex) => (
-                  <button type="button" key={itemIndex}
+                  <Button type="button" variant="ghost" key={itemIndex}
                     aria-label={`查看第 ${itemIndex + 1} 张`}
                     aria-current={itemIndex === index}
                     onClick={() => setIndex(itemIndex)}>
                     {item.thumbnail ?? itemIndex + 1}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </>

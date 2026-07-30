@@ -1,9 +1,11 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { XIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 import { UiPortalEventBoundary } from "@/renderer/portal";
 import { useUiPortalHost } from "@/renderer/portal-context";
+import { Button } from "./button";
 
 function Dialog(props: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -20,8 +22,13 @@ function DialogClose(props: DialogPrimitive.Close.Props) {
 function DialogContent({
   className,
   children,
+  showCloseButton = true,
+  closeLabel = "关闭",
   ...props
-}: DialogPrimitive.Popup.Props) {
+}: DialogPrimitive.Popup.Props & {
+  showCloseButton?: boolean;
+  closeLabel?: string;
+}) {
   const portalHost = useUiPortalHost();
   if (!portalHost) return null;
   return (
@@ -38,6 +45,16 @@ function DialogContent({
             {...props}
           >
             {children}
+            {showCloseButton && (
+              <DialogPrimitive.Close
+                data-slot="dialog-close"
+                render={<Button variant="ghost" size="icon-sm"
+                  className="fcr-ui-dialog-close" />}
+                aria-label={closeLabel}
+              >
+                <XIcon aria-hidden="true" />
+              </DialogPrimitive.Close>
+            )}
           </DialogPrimitive.Popup>
         </div>
       </UiPortalEventBoundary>

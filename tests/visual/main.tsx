@@ -174,6 +174,10 @@ const selectImageResourceUrl = new URL(
   "/tests/visual/assets/select-image-resource.svg",
   window.location.origin,
 ).href;
+const mediaPreviewUrl = new URL(
+  "/tests/visual/assets/media-preview.svg",
+  window.location.origin,
+).href;
 
 function SelectImageResourceCase({
   id,
@@ -197,12 +201,16 @@ function SelectImageResourceCase({
   );
 }
 
-export function OverlayCases(): React.JSX.Element {
+export function OverlayCases({
+  resolveImage = (key: string) => `https://cdn.example.com/${key}.png`,
+}: {
+  resolveImage?: (key: string) => string;
+} = {}): React.JSX.Element {
   const [actions, setActions] = useState<unknown[]>([]);
   return (
     <section id="case-overlays">
       <CardRenderer
-        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+        resolveImage={resolveImage}
         onAction={(action) => setActions((current) => [...current, action])}
         card={{
           schema: "2.0",
@@ -608,7 +616,9 @@ createRoot(document.getElementById("root")!).render(
               config: { update_multi: true, width_mode: width } }} />
         </section>
       ))}
-      <OverlayCases />
+      <OverlayCases resolveImage={isolatedVisualCase === "media"
+        ? () => mediaPreviewUrl
+        : undefined} />
       <PortalLifecycleCases />
       <ButtonBaselineCases />
       <section id="case-choices-pc" style={{ width: 400 }}>

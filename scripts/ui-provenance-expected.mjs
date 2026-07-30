@@ -16,6 +16,8 @@ export const PINNED_SHADCN_UPSTREAM_HASHES = Object.freeze({
     "dce5089f19f0bcdbb8bd137ccc8167eb51197f9c4f626e3b3c1ec9d31cb0d686",
   "apps/v4/registry/bases/base/ui/drawer.tsx":
     "c3b8efa83260e1622d88b216bb794dbe46b803ced695040e7750f172d91bec79",
+  "apps/v4/registry/bases/base/ui/dialog.tsx":
+    "85f9a33d1a8c495b0faecd066dae1581b8feb5d27f912ecf65f814386f6da3a9",
   "apps/v4/registry/bases/base/ui/field.tsx":
     "b965ae608453b047c11c71154df817764dbe5c5e38b5c6bb1a2c6a07c38edd68",
   "apps/v4/registry/bases/base/ui/input.tsx":
@@ -98,6 +100,14 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
       "d72d43a2a2a7c3ec62cda51f6dcf12f521c456bd3e271f6b878bdad2c776cb8a",
     "src/styles/overlays-nova.css":
       "300ec02b2445c8ac5535a4ece39d07a0b20610a2a7773c283623c0e8cc37a6c4",
+  }),
+  "media dialog": Object.freeze({
+    "src/components/ui/dialog.tsx":
+      "7f5f6a7afdcf2e429d2495c56005b311f34528ca8993ebc3c100cf71f580244f",
+    "src/components/primitives/PreviewDialog.tsx":
+      "8a5da715b188bb7d90bf49b39565431b0baf8c6634213dc845e547f93cd59590",
+    "src/styles/media-dialog-nova.css":
+      "b06dda444733a0232dd6efc23ebdc56558b3f2795f12230d7fb89cfeabc9712a",
   }),
   containers: Object.freeze({
     "src/components/ui/collapsible.tsx":

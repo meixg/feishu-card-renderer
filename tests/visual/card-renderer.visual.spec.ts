@@ -559,7 +559,7 @@ test("scoped Dropdown Menu and Alert Dialog match the pinned light/dark snapshot
 test("image Dialog handles arrows, trapped Tab, Escape, and outside press", async ({
   page,
 }) => {
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=media");
   const overlay = page.locator("#case-overlays");
   const trigger = overlay.getByRole("button", { name: "打开图片组预览" });
 
@@ -567,9 +567,14 @@ test("image Dialog handles arrows, trapped Tab, Escape, and outside press", asyn
   await trigger.press("Space");
   let dialog = overlay.getByRole("dialog", { name: "第一张" });
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "上一张" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "下一张" })).toBeEnabled();
+  await expect(dialog).toHaveScreenshot("card-renderer-image-preview.png");
   await dialog.press("ArrowRight");
   dialog = overlay.getByRole("dialog", { name: "第二张" });
   await expect(dialog).toContainText("2 / 2");
+  await expect(dialog.getByRole("button", { name: "上一张" })).toBeEnabled();
+  await expect(dialog.getByRole("button", { name: "下一张" })).toBeDisabled();
   await page.keyboard.press("Tab");
   expect(await dialog.evaluate((node) => node.contains(document.activeElement)))
     .toBe(true);
