@@ -35,7 +35,7 @@ test("theme, device, and width visual baselines", async ({ page }) => {
       await expect(chart).toHaveAttribute("data-state", "ready");
     }
     await settleVisualLayout(page, `#case-${name}`);
-    await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
+    await expect.soft(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
   }
 });
 
@@ -136,7 +136,7 @@ test("Markdown native theme covers light/dark, PC/mobile, and every width", asyn
         expect(overflow.tableScroll).toBeGreaterThanOrEqual(overflow.table);
         expect(overflow.codeOverflow).toBe("auto");
         expect(overflow.tableOverflow).toBe("auto");
-        await expect(host).toHaveScreenshot(`markdown-theme-${name}.png`);
+        await expect.soft(host).toHaveScreenshot(`markdown-theme-${name}.png`);
       }
     }
   }
@@ -149,7 +149,7 @@ test("chart light, dark, and mobile visual baselines", async ({ page }) => {
     await expect(renderer).toBeVisible();
     await expect(renderer.locator(".fcr-chart")).toHaveAttribute("data-state", "ready");
     await settleVisualLayout(page, `#case-${name}`);
-    await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
+    await expect.soft(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
   }
 });
 
@@ -208,7 +208,7 @@ test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", a
         expect(await renderer.locator(".fcr-root").evaluate(
           (node) => node.scrollWidth === node.clientWidth,
         )).toBe(true);
-        await expect(renderer).toHaveScreenshot(`card-matrix-${name}.png`);
+        await expect.soft(renderer).toHaveScreenshot(`card-matrix-${name}.png`);
       }
     }
   }
@@ -1086,11 +1086,11 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   const form = pc.locator("form");
   await form.getByRole("textbox", { name: "标题" }).fill("");
   await form.getByRole("button", { name: "提交" }).click();
-  await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
+  await expect.soft(form).toHaveScreenshot("card-form-controls-error-compact.png");
 
-  await expect(page.locator("#case-form-controls-dark"))
+  await expect.soft(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");
-  await expect(page.locator("#case-form-controls-mobile"))
+  await expect.soft(page.locator("#case-form-controls-mobile"))
     .toHaveScreenshot("card-form-controls-mobile.png");
 
   await page.goto("/tests/visual/?case=date");
@@ -1102,5 +1102,5 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await expect(calendar).toBeVisible();
   expect(await calendar.evaluate((node) =>
     getComputedStyle(node).transitionDuration)).toBe("0s");
-  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
+  await expect.soft(calendar).toHaveScreenshot("card-date-picker-popover.png");
 });
