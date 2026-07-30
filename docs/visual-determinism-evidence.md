@@ -83,6 +83,31 @@ Attempts 1 and 4 used runner image `ubuntu24/20260720.247` (image version
 Button's one-pixel variant does not correlate with image release: attempt 3 on
 the newer image matches attempts 1 and 4 on the older image.
 
+## PR #92 single-worker confirmation
+
+PR #92 run `30575919784` tested head
+`3fe1667019cd6ffed2f532cbb48896a112d134f3` through synthetic merge commit
+`86f407363b8be12ecfe788cc81ebe67b8161533b`. The checkout log confirms that
+merge commit, and its tree contains the PR's replacement snapshot blobs rather
+than the `origin/main` blobs. The run nevertheless reported the same
+1,346/3,598 mismatch counts because expected and actual raster families had
+been reversed.
+
+Full Quality run `30575919773` at the same PR head uploaded artifact
+`8772767855` (`visual-failure-1`, archive SHA-256
+`678c42d4579bea9345281b7604e5b0ffdf63247615ddff498e125c4766938bea`).
+It proves that CI read the replacement PNGs as expected:
+
+| Snapshot | Replacement expected SHA-256 | One-worker actual SHA-256 | Existing `origin/main` SHA-256 | Exact pixels different from existing baseline |
+| --- | --- | --- | --- | ---: |
+| Button | `0c28f261a3c3a55278bd885c15e41a0e58eb53229db01245d228ef93036c161c` | `b7ae04c89b22f31fe3775627659768ad9a8cd3eca340bea618c35b26c34e9490` | `b189c00ebfc5b164d5d8ddf3947399f97582e6011d3f9b8e5668c1728958dc79` | 2 |
+| Form | `09d495e4cb170d85c91bcb75f9d4771f326aa167f2094436de74c6396ccdd0a6` | `e811b3336e9148fcaa675be1ae326fb5bcaaf48bbdd18c9bdf30391021f28ef5` | `145f6935ae6ed073d70fa45fa2681298ba357f36d409692c65b500844d26a32b` | 33 |
+
+The one-worker actuals reproduce the existing baselines within Playwright's
+strict screenshot comparison. Their byte hashes differ because of 2 and 33
+sub-threshold antialiasing pixels, but they are not the broad 12-worker raster
+output. Therefore the existing snapshots are the correct baseline family.
+
 ## Conclusion and fix boundary
 
 The evidence rejects the proposed `ubuntu-24.04` label plus three exact dpkg
@@ -91,17 +116,17 @@ version checks:
 1. `ubuntu-latest` already selected Ubuntu 24.04 in every attempt.
 2. The checked packages, managed browser, and Playwright version were already
    identical.
-3. The broad expected-versus-actual failure was stable across all four runs.
+3. The broad expected-versus-actual failure was stable across all four
+   12-worker runs.
 4. The only cross-attempt variation was one curved-edge pixel and did not
    correlate with the two runner images.
 
-The broad failures are stale baselines: both actuals repeat across four runs
-with the same mismatch, and neither is attributable to PR #88 product code. The
-cross-run determinism defect is narrower: 12 parallel Playwright workers leave
-process scheduling as an uncontrolled raster input, and the only changing
-output is one antialiased curved-edge pixel. The minimal general fix keeps the
-already locked Playwright/managed-browser contract, serializes CI screenshot
-production, and refreshes only these two artifact-attributed baselines.
+The existing baselines were not stale. PR #88's 12 parallel Playwright workers
+produced a different raster family, plus a one-pixel cross-attempt variant.
+PR #92's one-worker run returned to the existing baseline family. The minimal
+general fix keeps the already locked Playwright/managed-browser contract,
+serializes CI screenshot production, preserves both existing snapshots, and
+uses the three-run hash proof to detect future nondeterminism.
 
 An official Playwright Noble image was evaluated and rejected as the fix: a
 strict run changed 12 test groups, including one-pixel layout heights, so it
