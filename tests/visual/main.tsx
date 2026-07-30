@@ -452,9 +452,7 @@ const tablePaginationVisualCard = {
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {isolatedVisualCase === "media"
-      ? <main><OverlayCases resolveImage={() => mediaPreviewUrl} /></main>
-      : isolatedVisualCase === "choice" || isolatedVisualCase === "choice-narrow"
+    {isolatedVisualCase === "choice" || isolatedVisualCase === "choice-narrow"
       ? <main>
           <section
             id="case-choices-pc"
@@ -572,7 +570,9 @@ createRoot(document.getElementById("root")!).render(
               config: { update_multi: true, width_mode: width } }} />
         </section>
       ))}
-      <OverlayCases />
+      <OverlayCases resolveImage={isolatedVisualCase === "media"
+        ? () => mediaPreviewUrl
+        : undefined} />
       <PortalLifecycleCases />
       <ButtonBaselineCases />
       <section id="case-choices-pc" style={{ width: 400 }}>
