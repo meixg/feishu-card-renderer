@@ -19,10 +19,7 @@ export type VisualEnvironmentDependencies = {
   accessExecutable(path: string, mode: number): Promise<void>;
   canonicalizePath(path: string): Promise<string>;
   launchBrowser(options: {
-    args: readonly [
-      "--disable-skia-runtime-opts",
-      "--disable-partial-raster",
-    ];
+    args: typeof EXPECTED_CHROMIUM_ARGS;
     executablePath: string;
     headless: true;
   }): Promise<VisualBrowser>;
@@ -33,7 +30,7 @@ export type VisualEnvironmentReport = {
   chromiumRevision: string;
   chromiumMetadataVersion: string;
   chromiumRuntimeVersion: string;
-  chromiumArgs: readonly ["--disable-skia-runtime-opts"];
+  chromiumArgs: typeof EXPECTED_CHROMIUM_ARGS;
   chromiumExecutable: string;
 };
 
@@ -42,4 +39,15 @@ export function verifyVisualEnvironment(
 ): Promise<VisualEnvironmentReport>;
 
 export function createDefaultVisualEnvironmentDependencies():
-Promise<VisualEnvironmentDependencies>;
+  Promise<VisualEnvironmentDependencies>;
+
+export function readChromiumProvenance(options: {
+  browsersPath: string;
+  readTextFile?(
+    path: string,
+    encoding: "utf8",
+  ): Promise<string>;
+}): Promise<{
+  revision: string;
+  browserVersion: string;
+}>;

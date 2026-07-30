@@ -1,13 +1,15 @@
 import { constants } from "node:fs";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import {
   EXPECTED_CHROMIUM_REVISION,
   EXPECTED_CHROMIUM_ARGS,
   EXPECTED_CHROMIUM_VERSION,
   EXPECTED_PLAYWRIGHT_VERSION,
+  readChromiumProvenance,
   verifyVisualEnvironment,
   type VisualEnvironmentDependencies,
+  type VisualEnvironmentReport,
 } from "../../scripts/verify-visual-environment.mjs";
 
 function validDependencies(
@@ -29,6 +31,20 @@ function validDependencies(
 }
 
 describe("visual environment contract", () => {
+  it("declares the ordered Chromium arguments as an exact readonly tuple", () => {
+    expectTypeOf<VisualEnvironmentReport["chromiumArgs"][1]>()
+      .toEqualTypeOf<"--disable-partial-raster">();
+    expectTypeOf<VisualEnvironmentReport["chromiumArgs"]>()
+      .toEqualTypeOf<readonly [
+        "--disable-skia-runtime-opts",
+        "--disable-partial-raster",
+      ]>();
+    expect(EXPECTED_CHROMIUM_ARGS).toEqual([
+      "--disable-skia-runtime-opts",
+      "--disable-partial-raster",
+    ]);
+  });
+
   it("launches the managed executable and verifies its runtime version", async () => {
     const close = vi.fn(async () => undefined);
     const launchBrowser = vi.fn(async () => ({
@@ -115,5 +131,55 @@ describe("visual environment contract", () => {
       `expected managed Chromium revision ${EXPECTED_CHROMIUM_REVISION}, received forged`,
     );
     expect(launchBrowser).not.toHaveBeenCalled();
+  });
+
+  it("reports a missing private provenance file as a contract violation", async () => {
+    await expect(readChromiumProvenance({
+      browsersPath: "/private/playwright/browsers.json",
+      readTextFile: vi.fn(async () => {
+        throw Object.assign(new Error("ENOENT stack must not escape"), {
+          code: "ENOENT",
+        });
+      }),
+    })).rejects.toThrow(
+      "Visual environment contract violation: could not read Playwright browser provenance metadata",
+    );
+    await expect(readChromiumProvenance({
+      browsersPath: "/private/playwright/browsers.json",
+      readTextFile: vi.fn(async () => {
+        throw new Error("secret original failure");
+      }),
+    })).rejects.not.toThrow("secret original failure");
+  });
+
+  it("reports malformed private provenance JSON without leaking the parser error", async () => {
+    const promise = readChromiumProvenance({
+      browsersPath: "/private/playwright/browsers.json",
+      readTextFile: vi.fn(async () => "{not-json"),
+    });
+
+    await expect(promise).rejects.toThrow(
+      "Visual environment contract violation: Playwright browser provenance metadata is not valid JSON",
+    );
+    await expect(promise).rejects.not.toThrow("Unexpected token");
+  });
+
+  it.each([
+    ["missing browser list", {}],
+    ["non-array browser list", { browsers: {} }],
+    ["missing Chromium entry", { browsers: [{ name: "firefox" }] }],
+    ["missing revision", {
+      browsers: [{ name: "chromium", browserVersion: EXPECTED_CHROMIUM_VERSION }],
+    }],
+    ["missing browser version", {
+      browsers: [{ name: "chromium", revision: EXPECTED_CHROMIUM_REVISION }],
+    }],
+  ])("reports wrong provenance shape: %s", async (_label, metadata) => {
+    await expect(readChromiumProvenance({
+      browsersPath: "/private/playwright/browsers.json",
+      readTextFile: vi.fn(async () => JSON.stringify(metadata)),
+    })).rejects.toThrow(
+      "Visual environment contract violation: Playwright browser provenance metadata",
+    );
   });
 });

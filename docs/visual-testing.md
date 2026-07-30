@@ -11,13 +11,17 @@ Linux visual baselines have one rendering contract:
   canonical path, launched runtime version, or required launch contract does
   not match. Revision metadata records Playwright provenance; launching the
   executable and reading `browser.version()` separately proves runtime
-  identity.
+  identity. The revision and metadata version come from Playwright-core's
+  private `browsers.json` and are provenance-only; that private read is
+  isolated, schema-checked, and never treated as runtime authority.
 - Every visual run uses one Playwright worker and launches Chromium with
   `--disable-skia-runtime-opts` and `--disable-partial-raster`. The worker rule
   isolates screenshot production and resource use. It is not claimed as the
   pixel root cause: an exact-tree experiment reproduced the same 1,346/3,598
-  failures at both two workers and one worker. The two raster flags are the
-  experimentally proven determinism controls.
+  failures at both two workers and one worker. The two-flag combination formed
+  an effective deterministic environment contract on the tested trees,
+  GitHub runner images, and managed-browser samples. Chromium's internal flag
+  mechanisms were not verified by trace or source inspection.
 - `.github/workflows/visual-determinism.yml` runs the complete strict visual
   suite three consecutive times. It captures the Button theme and compact
   invalid Form locators after their normal snapshot assertions, then rejects
@@ -37,9 +41,10 @@ disabled GPU rasterization, and SwiftShader all left the Button byte-unstable.
 Run `30580233647` changed only `--disable-skia-runtime-opts` and produced
 identical Button SHA-256 `2552da7c…` and Form SHA-256 `09d495e4…` in all three
 processes on the PR #88 tree. On the merged PR tree, a later full proof exposed
-one remaining rounded-corner pixel. Controlled run `30582136811` isolated
-`--disable-partial-raster` as the additional stable control, and ablation run
-`30582651451` proved reduced-motion unnecessary: with or without it, all three
+one remaining rounded-corner pixel. In controlled run `30582136811`, adding
+`--disable-partial-raster` produced identical bytes in that sample, and
+ablation run `30582651451` showed reduced-motion was not required in the
+sampled two-flag configuration: with or without it, all three
 Button hashes were `f3e3ed05…` and all three Form hashes were `01112dcd…`.
 Final full run `30582949053` then passed 28/28 three times and reproduced those
 exact two hashes in every run; artifact `8775508919` retains all six PNGs and

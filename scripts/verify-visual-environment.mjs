@@ -8,13 +8,75 @@ import { chromium as playwrightChromium } from "@playwright/test";
 export const EXPECTED_PLAYWRIGHT_VERSION = "1.62.0";
 export const EXPECTED_CHROMIUM_REVISION = "1234";
 export const EXPECTED_CHROMIUM_VERSION = "151.0.7922.34";
-export const EXPECTED_CHROMIUM_ARGS = [
+export const EXPECTED_CHROMIUM_ARGS = Object.freeze([
   "--disable-skia-runtime-opts",
   "--disable-partial-raster",
-];
+]);
 
 function contractViolation(message) {
   return new Error(`Visual environment contract violation: ${message}`);
+}
+
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export async function readChromiumProvenance({
+  browsersPath,
+  readTextFile = readFile,
+}) {
+  let source;
+  try {
+    source = await readTextFile(browsersPath, "utf8");
+  } catch {
+    throw contractViolation(
+      "could not read Playwright browser provenance metadata",
+    );
+  }
+
+  let metadata;
+  try {
+    metadata = JSON.parse(source);
+  } catch {
+    throw contractViolation(
+      "Playwright browser provenance metadata is not valid JSON",
+    );
+  }
+
+  if (!isRecord(metadata) || !Array.isArray(metadata.browsers)) {
+    throw contractViolation(
+      "Playwright browser provenance metadata must contain a browsers array",
+    );
+  }
+  const chromium = metadata.browsers.find(
+    (browser) => isRecord(browser) && browser.name === "chromium",
+  );
+  if (!chromium) {
+    throw contractViolation(
+      "Playwright browser provenance metadata does not contain a chromium entry",
+    );
+  }
+  if (
+    typeof chromium.revision !== "string"
+    || chromium.revision.length === 0
+  ) {
+    throw contractViolation(
+      "Playwright browser provenance metadata chromium revision must be a non-empty string",
+    );
+  }
+  if (
+    typeof chromium.browserVersion !== "string"
+    || chromium.browserVersion.length === 0
+  ) {
+    throw contractViolation(
+      "Playwright browser provenance metadata chromium browserVersion must be a non-empty string",
+    );
+  }
+
+  return {
+    revision: chromium.revision,
+    browserVersion: chromium.browserVersion,
+  };
 }
 
 export async function verifyVisualEnvironment(dependencies) {
@@ -92,25 +154,32 @@ export async function verifyVisualEnvironment(dependencies) {
 }
 
 export async function createDefaultVisualEnvironmentDependencies() {
-  const require = createRequire(import.meta.url);
-  const playwrightPackage = require("@playwright/test/package.json");
-  const requireFromPlaywright = createRequire(
-    require.resolve("@playwright/test/package.json"),
-  );
-  const playwrightCoreRoot = dirname(
-    requireFromPlaywright.resolve("playwright-core/package.json"),
-  );
-  const browsers = JSON.parse(
-    await readFile(resolve(playwrightCoreRoot, "browsers.json"), "utf8"),
-  );
-  const chromium = browsers.browsers.find(
-    (browser) => browser.name === "chromium",
-  );
+  let playwrightPackage;
+  let browsersPath;
+  try {
+    const require = createRequire(import.meta.url);
+    const playwrightPackagePath = require.resolve(
+      "@playwright/test/package.json",
+    );
+    playwrightPackage = require(playwrightPackagePath);
+    const requireFromPlaywright = createRequire(playwrightPackagePath);
+    const playwrightCoreRoot = dirname(
+      requireFromPlaywright.resolve("playwright-core/package.json"),
+    );
+    browsersPath = resolve(playwrightCoreRoot, "browsers.json");
+  } catch {
+    throw contractViolation(
+      "could not resolve installed Playwright provenance metadata",
+    );
+  }
+  // browsers.json is private Playwright provenance metadata only. Runtime
+  // authority remains executablePath(), canonicalization, launch, and version().
+  const chromiumProvenance = await readChromiumProvenance({ browsersPath });
 
   return {
     playwrightVersion: playwrightPackage.version,
-    chromiumRevision: chromium?.revision ?? "missing",
-    chromiumMetadataVersion: chromium?.browserVersion ?? "missing",
+    chromiumRevision: chromiumProvenance.revision,
+    chromiumMetadataVersion: chromiumProvenance.browserVersion,
     executablePath: playwrightChromium.executablePath(),
     accessExecutable: access,
     canonicalizePath: realpath,
@@ -129,5 +198,12 @@ if (
   process.argv[1]
   && import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  await main();
+  try {
+    await main();
+  } catch (error) {
+    console.error(error instanceof Error
+      ? error.message
+      : "Visual environment contract violation: unknown failure");
+    process.exitCode = 1;
+  }
 }
