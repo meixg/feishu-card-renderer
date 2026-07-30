@@ -249,6 +249,10 @@ Button 与表单控件的上游输入及本地摘要分别固定在
 [form-control provenance](docs/specs/shadcn-base-nova-form-controls-baseline.md)，
 菜单与确认框见
 [overlay provenance](docs/specs/shadcn-base-nova-overlays-baseline.md)。
+折叠面板与交互容器的状态适配见
+[container interaction provenance](docs/specs/shadcn-base-nova-containers-baseline.md)；
+`collapsible_panel` 组合 scoped Collapsible、Button 与 Lucide chevron，
+`interactive_container` 只使用逐卡作用域的 focus ring token，不引入 Card 外壳。
 
 Issue #75 补齐了此前 compatibility matrix 标为缺口、现已由官方资料验证的
 Button `type/size/width` 协议支持。枚举与视觉类别

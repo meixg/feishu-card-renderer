@@ -41,10 +41,12 @@ test("theme, device, and width visual baselines", async ({ page }) => {
 
 test("container visual baseline", async ({ page }) => {
   await page.goto("/tests/visual/");
-  const renderer = page.locator("#case-containers");
-  await expect(renderer).toBeVisible();
-  await settleVisualLayout(page, "#case-containers");
-  await expect(renderer).toHaveScreenshot("card-renderer-containers.png");
+  for (const name of ["containers", "containers-dark", "containers-narrow"]) {
+    const renderer = page.locator(`#case-${name}`);
+    await expect(renderer).toBeVisible();
+    await settleVisualLayout(page, `#case-${name}`);
+    await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
+  }
 });
 
 test("Markdown code scrolls locally without widening a compact mobile card", async ({
