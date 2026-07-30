@@ -410,6 +410,7 @@ function MobileDrawer(props: ChoiceFieldProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const filtered = useFilteredOptions(props.options, query, props.locale);
   const optionByToken = useMemo(
     () => new Map(props.options.map((option) => [option.token, option])),
@@ -429,14 +430,16 @@ function MobileDrawer(props: ChoiceFieldProps) {
   };
   const list = (
     <>
-      <ComboboxPrimitive.Input
-        aria-expanded={open}
-        aria-label={`搜索${props.label}`}
-        autoComplete="off"
-        className="fcr-choice-search"
-        placeholder="搜索选项"
-        ref={inputRef}
-      />
+      {props.searchable && (
+        <ComboboxPrimitive.Input
+          aria-expanded={open}
+          aria-label={`搜索${props.label}`}
+          autoComplete="off"
+          className="fcr-choice-search"
+          placeholder="搜索选项"
+          ref={inputRef}
+        />
+      )}
       <ComboboxPrimitive.List className="fcr-choice-list">
         <ChoiceItems options={filtered.visible} />
       </ComboboxPrimitive.List>
@@ -500,16 +503,19 @@ function MobileDrawer(props: ChoiceFieldProps) {
               <DrawerPrimitive.Viewport className="fcr-drawer-viewport">
                 <DrawerPrimitive.Popup
                   className="fcr-drawer-popup"
-                  initialFocus={inputRef}
+                  initialFocus={props.searchable ? inputRef : closeRef}
                 >
                   <DrawerPrimitive.Content className="fcr-drawer-content">
                     <div className="fcr-drawer-handle" aria-hidden="true" />
                     <div className="fcr-drawer-header">
                       <DrawerPrimitive.Title>{props.label}</DrawerPrimitive.Title>
                       <DrawerPrimitive.Description className="fcr-sr-only">
-                        搜索并选择已有选项
+                        {props.searchable ? "搜索并选择已有选项" : "选择已有选项"}
                       </DrawerPrimitive.Description>
-                      <DrawerPrimitive.Close aria-label="关闭选择器">
+                      <DrawerPrimitive.Close
+                        ref={closeRef}
+                        aria-label="关闭选择器"
+                      >
                         ×
                       </DrawerPrimitive.Close>
                     </div>
