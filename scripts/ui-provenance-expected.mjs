@@ -20,6 +20,10 @@ export const PINNED_SHADCN_UPSTREAM_HASHES = Object.freeze({
     "80581ffa241ed57c9b976ebca5bc44c7e98d287c629717fda2dd3135c96ebbc1",
   "apps/v4/registry/bases/base/ui/radio-group.tsx":
     "0023e241c867f90fbd5ebe7e7c6aa9e5be3485557c3ccb396cba207a0ad7337a",
+  "apps/v4/registry/bases/base/ui/select.tsx":
+    "2dadd3212c5d3c83d083c81dbca4184d45640086381c7ec4899b8e3996a7716f",
+  "apps/v4/registry/bases/base/ui/combobox.tsx":
+    "a3c833eb2216ca31f2ae306396d2d9a724adaa0047009d202867fafe453b1d9c",
   "apps/v4/registry/bases/base/ui/textarea.tsx":
     "b6948bf2916d1cf5487c24f3755cd3f90981680c06f51481545634276317c691",
   "apps/v4/registry/styles/style-nova.css":
