@@ -1,5 +1,6 @@
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
+import { CircleIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,9 @@ function RadioGroupItem<Value>({
         aria-hidden="true"
         data-slot="radio-group-indicator"
         className="fcr-ui-radio-indicator"
-      />
+      >
+        <CircleIcon />
+      </RadioPrimitive.Indicator>
     </RadioPrimitive.Root>
   );
 }

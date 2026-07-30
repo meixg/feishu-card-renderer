@@ -1,0 +1,140 @@
+@layer components {
+  .fcr-root {
+    --fcr-interaction-muted-foreground: oklch(0.556 0 0);
+  }
+  .fcr-theme-dark {
+    --fcr-interaction-muted-foreground: oklch(0.708 0 0);
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) {
+    --fcr-ui-muted-foreground: var(--fcr-interaction-muted-foreground);
+    display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 8px;
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > :is(.fcr-ui-label, .fcr-ui-field-label),
+  .fcr-ui-field.fcr-form-control .fcr-checker > .fcr-ui-field-label {
+    font-size: 14px; font-weight: 500; line-height: 1;
+  }
+  .fcr-ui-field.fcr-form-control > .fcr-ui-field-description {
+    margin: 0; color: var(--fcr-ui-muted-foreground); font-size: 12px;
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-field-tips {
+    color: var(--fcr-ui-muted-foreground);
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-ui-field-error {
+    margin: 0; color: var(--fcr-ui-destructive); font-size: 12px;
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > :is(.fcr-ui-input, .fcr-ui-textarea) {
+    width: 100%; min-width: 0; border: 1px solid var(--fcr-ui-input);
+    border-radius: calc(var(--fcr-ui-radius) - 2px);
+    outline: none; background: transparent; color: var(--fcr-ui-foreground);
+    font: inherit; transition: color 120ms ease, box-shadow 120ms ease;
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-ui-input {
+    height: 32px; padding: 4px 10px;
+  }
+  .fcr-form-control > .fcr-ui-textarea {
+    display: flex; field-sizing: content; min-height: 64px;
+    padding: 8px 10px; resize: vertical;
+  }
+  .fcr-theme-dark .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-ui-input,
+  .fcr-theme-dark .fcr-form-control > .fcr-ui-textarea {
+    background: color-mix(in oklch, var(--fcr-ui-input) 30%, transparent);
+    color-scheme: dark;
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-ui-input::placeholder,
+  .fcr-form-control > .fcr-ui-textarea::placeholder {
+    color: var(--fcr-ui-muted-foreground);
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-ui-input:disabled,
+  .fcr-form-control > .fcr-ui-textarea:disabled {
+    pointer-events: none; cursor: not-allowed;
+    background: color-mix(in oklch, var(--fcr-ui-input) 50%, transparent);
+    opacity: 0.5;
+  }
+  .fcr-ui-field:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-ui-input:focus-visible,
+  .fcr-form-control .fcr-ui-textarea:focus-visible,
+  .fcr-form-control .fcr-ui-checkbox:focus-visible,
+  .fcr-form-control .fcr-ui-radio:focus-visible {
+    border-color: var(--fcr-ui-ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+  .fcr-ui-field[data-invalid]:where(
+    .fcr-form-control,
+    :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),
+    :has(> .fcr-ui-button[role="combobox"])
+  ) > .fcr-ui-input,
+  .fcr-form-control[data-invalid] .fcr-ui-textarea,
+  .fcr-form-control[data-invalid] .fcr-ui-checkbox,
+  .fcr-form-control[data-invalid] .fcr-ui-radio {
+    border-color: var(--fcr-ui-destructive);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--fcr-ui-destructive) 20%, transparent);
+  }
+  .fcr-form-control .fcr-ui-checkbox,
+  .fcr-form-control .fcr-ui-radio {
+    position: relative; display: inline-grid; width: 16px; height: 16px;
+    flex: 0 0 16px; place-content: center; border: 1px solid var(--fcr-ui-input);
+    outline: none; background: transparent; color: var(--fcr-ui-primary-foreground);
+  }
+  .fcr-form-control .fcr-ui-checkbox { border-radius: 4px; }
+  .fcr-form-control .fcr-ui-radio { border-radius: 50%; }
+  .fcr-theme-dark .fcr-form-control .fcr-ui-checkbox,
+  .fcr-theme-dark .fcr-form-control .fcr-ui-radio {
+    background: color-mix(in oklch, var(--fcr-ui-input) 30%, transparent);
+  }
+  .fcr-form-control .fcr-ui-checkbox[data-checked],
+  .fcr-form-control .fcr-ui-radio[data-checked] {
+    border-color: var(--fcr-ui-primary); background: var(--fcr-ui-primary);
+  }
+  .fcr-form-control .fcr-ui-checkbox[data-disabled],
+  .fcr-form-control .fcr-ui-radio[data-disabled] {
+    cursor: not-allowed; opacity: 0.5;
+  }
+  .fcr-form-control .fcr-ui-checkbox-indicator,
+  .fcr-form-control .fcr-ui-radio-indicator {
+    display: grid; place-content: center;
+  }
+  .fcr-form-control .fcr-ui-checkbox-indicator svg { width: 12px; height: 12px; }
+  .fcr-form-control .fcr-ui-radio-indicator svg {
+    width: 6px; height: 6px; fill: currentColor;
+  }
+}

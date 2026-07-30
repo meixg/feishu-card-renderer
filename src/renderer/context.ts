@@ -12,6 +12,7 @@ export type ResourceCacheEntry<T> = {
   status: "loading" | "ready" | "error";
   value?: T;
   promise?: Promise<void>;
+  controller?: AbortController;
   listeners: Set<() => void>;
 };
 export type ImageCacheEntry = ResourceCacheEntry<string>;

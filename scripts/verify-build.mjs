@@ -90,6 +90,12 @@ for (const [dependency, range] of Object.entries(expectedRuntimeDependencies)) {
     throw new Error(`${dependency} must remain external in the renderer entry.`);
   }
 }
+if (packageManifest.dependencies?.["lucide-react"] !== "^0.536.0") {
+  throw new Error("lucide-react must remain the reviewed named-icon dependency (^0.536.0).");
+}
+if (entry.includes('from "lucide-react"') || entry.includes("lucide-react/dist")) {
+  throw new Error("Lucide must be tree-shaken into the renderer, not left as a broad runtime import.");
+}
 if (packageManifest.dependencies?.tailwindcss ||
   packageManifest.dependencies?.["@tailwindcss/postcss"] ||
   !packageManifest.devDependencies?.tailwindcss ||

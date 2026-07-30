@@ -253,6 +253,86 @@ test("Alert Dialog traps focus, cancels safely, and confirms exactly once", asyn
   });
 });
 
+test("Button tokens, sizes, and portaled confirm inherit each card theme", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const baseline = page.locator("#case-button-baseline");
+  const themes = ["light", "dark", "host"] as const;
+  const primaryBackgrounds = new Map<string, string>();
+
+  for (const theme of themes) {
+    const owner = baseline.locator(`[data-button-theme="${theme}"]`);
+    const primary = owner.getByRole("button", {
+      name: theme === "light" ? "浅色" : theme === "dark" ? "深色" : "宿主",
+      exact: true,
+    });
+    const measurements = await owner.evaluate((element) => {
+      const buttons = [...element.querySelectorAll<HTMLButtonElement>(
+        "[data-slot=button]",
+      )];
+      const rootElement = element.querySelector<HTMLElement>(".fcr-root")!;
+      return {
+        heights: buttons.map((button) => button.getBoundingClientRect().height),
+        widths: buttons.map((button) => button.getBoundingClientRect().width),
+        primary: getComputedStyle(buttons[0]).backgroundColor,
+        danger: getComputedStyle(buttons[1]).color,
+        laser: getComputedStyle(buttons[2]).backgroundColor,
+        outlineBorder: getComputedStyle(buttons[3]).borderTopColor,
+        rootPrimary: getComputedStyle(rootElement)
+          .getPropertyValue("--fcr-interaction-primary").trim(),
+        focus: getComputedStyle(rootElement)
+          .getPropertyValue("--fcr-interaction-focus").trim(),
+      };
+    });
+    expect(measurements.heights).toEqual([32, 28, 36, 32]);
+    expect(measurements.widths[3]).toBeGreaterThan(measurements.widths[0]);
+    expect(measurements.primary).not.toBe("rgba(0, 0, 0, 0)");
+    expect(measurements.danger).not.toBe("");
+    expect(measurements.laser).not.toBe(measurements.primary);
+    expect(measurements.outlineBorder).not.toBe("rgba(0, 0, 0, 0)");
+    expect(measurements.focus).toBe(theme === "light"
+      ? "oklch(0.708 0 0)"
+      : theme === "dark"
+        ? "oklch(0.556 0 0)"
+        : "oklch(0.65 0.03 250)");
+    primaryBackgrounds.set(theme, measurements.primary);
+
+    await primary.focus();
+    await expect(primary).toBeFocused();
+    expect(await primary.evaluate((button) =>
+      getComputedStyle(button).boxShadow)).not.toBe("none");
+    await primary.press("Enter");
+    const dialog = owner.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    const inherited = await dialog.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const root = node.closest<HTMLElement>(".fcr-root")!;
+      return {
+        portalPrimary: style.getPropertyValue("--fcr-interaction-primary").trim(),
+        rootPrimary: getComputedStyle(root)
+          .getPropertyValue("--fcr-interaction-primary").trim(),
+        portalFocus: style.getPropertyValue("--fcr-interaction-focus").trim(),
+        rootFocus: getComputedStyle(root)
+          .getPropertyValue("--fcr-interaction-focus").trim(),
+        surface: style.backgroundColor,
+      };
+    });
+    expect(inherited.portalPrimary).toBe(inherited.rootPrimary);
+    expect(inherited.portalFocus).toBe(inherited.rootFocus);
+    expect(inherited.surface).not.toBe("rgba(0, 0, 0, 0)");
+    await dialog.getByRole("button", { name: "取消" }).click();
+  }
+
+  expect(primaryBackgrounds.get("light")).not.toBe(
+    primaryBackgrounds.get("dark"),
+  );
+  expect(primaryBackgrounds.get("host")).not.toBe(
+    primaryBackgrounds.get("light"),
+  );
+  await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");
+});
+
 test("an open card portal tears down without disturbing another card", async ({
   page,
 }) => {
@@ -465,10 +545,22 @@ test("image Dialog handles arrows, trapped Tab, Escape, and outside press", asyn
 });
 
 test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=choice");
   const host = page.locator("#case-choices-pc");
   const root = host.locator(".fcr-root");
   await expect(root).toBeVisible();
+  const choiceFieldStyles = await host.locator(".fcr-ui-field").evaluateAll(
+    (fields) => fields.map((field) => ({
+      classes: field.className,
+      gap: getComputedStyle(field).gap,
+      isNaturallyUnclipped: field.scrollHeight === field.clientHeight,
+    })),
+  );
+  expect(choiceFieldStyles).toEqual(Array.from({ length: 4 }, () => ({
+    classes: "fcr-ui-field fcr-choice-field",
+    gap: "4px",
+    isNaturallyUnclipped: true,
+  })));
   expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
     .toBe(true);
   expect(await host.locator(".fcr-choice-chip").count()).toBe(3);
@@ -770,6 +862,50 @@ test("form controls validate, focus, clear, reset, and submit once in a real bro
   });
 });
 
+test("form-control state colors use the card-scoped public interaction token", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const lightRoot = page.locator("#case-form-controls-pc .fcr-root").first();
+  const darkRoot = page.locator("#case-form-controls-dark .fcr-root").first();
+  const title = lightRoot.getByRole("textbox", { name: "标题" });
+  const description = lightRoot.getByText("用于显示在卡片顶部");
+
+  await expect(title).toHaveAttribute("required", "");
+  await expect(title).toHaveAttribute("placeholder", "请输入标题");
+  const defaults = await Promise.all([lightRoot, darkRoot].map((root) =>
+    root.evaluate((node) => getComputedStyle(node)
+      .getPropertyValue("--fcr-interaction-muted-foreground").trim())));
+  expect(defaults[0]).toBe("oklch(0.556 0 0)");
+  expect(defaults[1]).toBe("oklch(0.708 0 0)");
+
+  await lightRoot.evaluate((node) => {
+    const root = node as HTMLElement;
+    root.style.setProperty("--fcr-interaction-muted-foreground", "rgb(1 2 3)");
+    for (const name of [...root.style]) {
+      if (name.startsWith("--fcr-color-")) root.style.removeProperty(name);
+    }
+  });
+  expect(await description.evaluate((node) => getComputedStyle(node).color))
+    .toBe("rgb(1, 2, 3)");
+  expect(await title.evaluate((node) =>
+    getComputedStyle(node, "::placeholder").color)).toBe("rgb(1, 2, 3)");
+  expect(await darkRoot.getByText("用于显示在卡片顶部")
+    .evaluate((node) => getComputedStyle(node).color)).not.toBe("rgb(1, 2, 3)");
+
+  await title.evaluate((node) => { (node as HTMLInputElement).disabled = true; });
+  expect(await title.evaluate((node) => getComputedStyle(node).opacity))
+    .toBe("0.5");
+  await title.evaluate((node) => { (node as HTMLInputElement).disabled = false; });
+  await title.fill("");
+  await lightRoot.getByRole("button", { name: "提交" }).click();
+  await expect(title).toHaveAttribute("aria-invalid", "true");
+  const error = lightRoot.getByText("此项为必填项").first();
+  await expect(error).toBeVisible();
+  expect(await error.evaluate((node) => getComputedStyle(node).color))
+    .not.toBe("rgb(1, 2, 3)");
+});
+
 test("PC Calendar supports focus, arrows, Escape, and timezone-preserving selection", async ({
   page,
 }) => {
@@ -862,6 +998,36 @@ test("select_img preserves pointer, keyboard, and touch semantics in a real brow
   ) as Array<{ value?: unknown }>;
   expect(actions).toHaveLength(1);
   expect(actions[0]?.value).toBe("two");
+
+  const ready = page.locator("#case-select-image-ready");
+  const missing = page.locator("#case-select-image-missing");
+  const error = page.locator("#case-select-image-error");
+
+  await expect(ready.locator("img")).toHaveCount(2);
+  await expect(ready.locator(".fcr-image-placeholder")).toHaveCount(0);
+  await expect(missing.locator(
+    '.fcr-image-placeholder[data-state="error"]',
+  )).toHaveCount(2);
+  await expect(error.locator(
+    '.fcr-image-placeholder[data-state="error"]',
+  )).toHaveCount(2);
+
+  const readySecond = ready.getByRole("radio", { name: "Resource two" });
+  await readySecond.click();
+  await expect(readySecond).toBeChecked();
+
+  const missingSecond = missing.getByRole("radio", { name: "Resource two" });
+  await missingSecond.focus();
+  await missingSecond.press("Space");
+  await expect(missingSecond).toBeChecked();
+
+  for (const host of [ready, missing]) {
+    const actions = await host.locator("[data-select-image-actions]").evaluate(
+      (node) => JSON.parse(node.textContent || "[]"),
+    ) as Array<{ value?: unknown }>;
+    expect(actions).toHaveLength(1);
+    expect(actions[0]?.value).toBe("two");
+  }
 });
 
 test("form controls cover light/dark, PC/mobile, widths, reduced motion, and scoped overflow", async ({
@@ -889,18 +1055,19 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await form.getByRole("button", { name: "提交" }).click();
   await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
 
-  const standalone = pc.locator(".fcr-root").nth(1);
-  await standalone.getByRole("combobox", {
-    name: "预约日期：2026-07-28",
-  }).click();
-  const calendar = standalone.getByRole("dialog", { name: "选择预约日期" });
-  await expect(calendar).toBeVisible();
-  expect(await calendar.evaluate((node) =>
-    getComputedStyle(node).transitionDuration)).toBe("0s");
-  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
-
   await expect(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");
   await expect(page.locator("#case-form-controls-mobile"))
     .toHaveScreenshot("card-form-controls-mobile.png");
+
+  await page.goto("/tests/visual/?case=date");
+  const isolated = page.locator("#case-form-controls-pc .fcr-root").nth(1);
+  await isolated.getByRole("combobox", {
+    name: "预约日期：2026-07-28",
+  }).click();
+  const calendar = isolated.getByRole("dialog", { name: "选择预约日期" });
+  await expect(calendar).toBeVisible();
+  expect(await calendar.evaluate((node) =>
+    getComputedStyle(node).transitionDuration)).toBe("0s");
+  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
 });

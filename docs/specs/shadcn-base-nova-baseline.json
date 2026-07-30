@@ -1,0 +1,30 @@
+{
+  "reviewedAt": "2026-07-30",
+  "upstream": {
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "5203f537d152844a920caa66e865bc61c6ff4860",
+    "cli": "4.16.0",
+    "files": {
+      "apps/v4/registry/bases/base/ui/button.tsx": "97bfee456444f0495deee6a321933c24267477645b0bf4bfea67c3c62d425a12",
+      "apps/v4/registry/styles/style-nova.css": "c7fc024e5c432210b1af12a713386306703c9adeffa5b32ae380ed8cc083826e",
+      "apps/v4/registry/themes.ts": "60cb5ed25f7b39d9973e2280f476dd2119a4268317f45bd7ee3cac7883db8ea0"
+    }
+  },
+  "preset": {
+    "style": "base-nova",
+    "base": "base",
+    "baseColor": "neutral",
+    "iconLibrary": "lucide",
+    "rsc": false
+  },
+  "dependencies": {
+    "@base-ui/react": "1.6.0",
+    "lucide-react": "0.536.0"
+  },
+  "localFiles": {
+    "src/components/ui/button.tsx": "4458517aef65d5571bb689cf0996de32af093170c905851d29fed3ed3524b570",
+    "src/components/ui/button-variants.ts": "dc1339f34d3ba0f1c7e610b4e36975d676b545b11ae1bbff9469e1aa331284ba",
+    "src/components/interactive/button-semantics.ts": "fd14a8fc422acc8ab03d6cecc5c4c644a8702baf79af5d8e51a8ae45a4c641a5",
+    "src/styles/button-nova.css": "41e1430bc8ba02734143f74e158b76e0f454319a8f81b815fe0394ce34133e8f"
+  }
+}

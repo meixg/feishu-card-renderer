@@ -34,6 +34,8 @@ import { Input as UiInput } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Textarea } from "../ui/textarea";
+import { EllipsisIcon } from "lucide-react";
+import { BUTTON_VARIANT_BY_TYPE } from "./button-semantics";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -197,7 +199,8 @@ export function Input({ element, path }: { element: InputElement; path: string }
     placeholder: element.placeholder?.content,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       field.set(event.target.value, path) };
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-form-control"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel htmlFor={id}>
       {element.label?.content ?? element.name ?? "输入"}
     </FieldLabel>
@@ -310,7 +313,8 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
   const label = element.label?.content ?? element.placeholder?.content ??
     element.name ?? "选择";
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-choice-field"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel>{label}</FieldLabel>
     <ChoiceField
       controlRef={field.controlRef}
@@ -354,7 +358,8 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
   });
   const label = element.label?.content ?? element.name ?? "多选";
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-choice-field"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel>{label}</FieldLabel>
     <ChoiceField
       controlRef={field.controlRef}
@@ -496,7 +501,8 @@ export function Checker({ element, path }: { element: CheckerElement; path: stri
   const tips = useTips(element, ids.description);
   const id = ids.control;
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-form-control"
+    data-invalid={field.invalid || undefined}>
     <div className="fcr-checker">
       <Checkbox
         ref={(node) => field.controlRef(node)}
@@ -542,7 +548,8 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
     rawOptionValue(option) !== undefined && option.disabled !== true);
   const selectedToken = options.findIndex((option) =>
     sameOptionValue(rawOptionValue(option), field.value));
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-form-control"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel id={labelId}>{label}</FieldLabel>
     <fieldset className="fcr-select-image"
       aria-describedby={feedback.describedBy}
@@ -653,9 +660,19 @@ export function Button({ element, path }: { element: ButtonElement; path: string
     if (element.confirm) setConfirm(true);
     else run(true);
   };
+  const variant = BUTTON_VARIANT_BY_TYPE[element.type ?? "default"];
+  const size = {
+    small: "sm",
+    medium: "default",
+    large: "lg",
+  }[element.size ?? "medium"] as "sm" | "default" | "lg";
   return <><UiButton ref={trigger}
     type={element.form_action_type === "submit" ? "submit" : "button"}
-    className="fcr-button" disabled={element.disabled || (business && !onAction)}
+    variant={variant} size={size}
+    data-fcr-button-variant={variant === "destructiveGhost"
+      ? "destructive-ghost" : variant}
+    className={element.width === "fill" ? "fcr-button-width-fill" : undefined}
+    disabled={element.disabled || (business && !onAction)}
     aria-describedby={tips.describedBy}
     onKeyDown={(event) => event.stopPropagation()}
     onClick={(event) => { event.stopPropagation(); event.preventDefault(); activate(); }}>
@@ -683,13 +700,14 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
     >
       <DropdownMenuTrigger
         ref={trigger}
+        render={<UiButton variant="outline" size="icon" />}
         aria-label="更多操作"
         disabled={element.disabled}
         aria-describedby={tips.describedBy}
         onKeyDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
-        ⋯
+        <EllipsisIcon aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent aria-label="更多操作">
         {(element.options ?? []).map((option, index) =>

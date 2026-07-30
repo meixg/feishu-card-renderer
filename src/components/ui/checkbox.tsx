@@ -1,4 +1,5 @@
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
+import { CheckIcon } from "lucide-react";
 import { forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
@@ -19,7 +20,7 @@ const Checkbox = forwardRef<
         data-slot="checkbox-indicator"
         className="fcr-ui-checkbox-indicator"
       >
-        ✓
+        <CheckIcon />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );

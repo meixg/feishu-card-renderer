@@ -234,6 +234,27 @@ provider、context 和类型不属于公共 API。
 这次升级不兼容旧的内部 DOM、未文档化 `.fcr-*` class 或视觉快照，也不提供 legacy
 interaction mode。集成方应只依赖本 README 和公共类型中声明的接口；品牌定制使用
 文档化的 `--fcr-*` 语义变量，不要查询或覆盖 Base UI 的 `data-*` 内部状态。
+Button 默认采用 scoped shadcn `base-nova` neutral 主题；`type`、`size` 与
+`width` 会映射到内部 variant、标准尺寸和 fill 布局。宿主主题变量与 portal
+继承示例见 [集成指南](docs/integration.md)。
+
+Input、Textarea、Field、Label、Checkbox、RadioGroup、Checker、原生
+time/datetime 和 `select_img` 同样采用该固定快照。`select_img` 的图片和文字仍是
+协议内容布局，只有单选/多选状态分别交给 RadioGroup/Checkbox；不再使用旧的飞书式
+选中边框。required、invalid、disabled、placeholder、说明和错误反馈保持可见及
+ARIA 关联，表单 submit/reset、confirm、表单外即时动作、图片 resolver 三态与
+日期时间动作中的浏览器 IANA 时区不变。
+Button 与表单控件的上游输入及本地摘要分别固定在
+[Button provenance](docs/specs/shadcn-base-nova-baseline.md) 和
+[form-control provenance](docs/specs/shadcn-base-nova-form-controls-baseline.md)。
+
+Issue #75 补齐了此前 compatibility matrix 标为缺口、现已由官方资料验证的
+Button `type/size/width` 协议支持。枚举与视觉类别
+依据[飞书新版卡片按钮说明](https://open.feishu.cn/document/feishu-cards/feishu-card-cardkit/configure-card-variables?lang=zh-CN)，
+`size/width` 依据
+[CardKit JSON 2.0 Button 示例](https://open.feishu.cn/document/cardkit-v1/card-element/create)。
+具体 shadcn 功能映射和 laser limitation 见
+[兼容矩阵](docs/compatibility-matrix.md)。
 
 ## 只使用校验和类型
 

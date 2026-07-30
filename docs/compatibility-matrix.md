@@ -11,10 +11,28 @@ defaults/invalid 卡、完整字段清单、具体 normalization 默认值、非
 | 容器 | `column_set`, `column`, `form`, `interactive_container`, `collapsible_panel` | 允许/禁止嵌套、五层边界、稳定路径、表单提交、折叠 ARIA |
 | 基础展示 | `div`, `markdown`, `img`, `hr` | 默认布局、Markdown 消毒、危险 URL、图片资源三态 |
 | 复杂展示 | `img_combination`, `person`, `person_list`, `chart`, `table` | 资源缺失/成功/失败、VChart 纯数据、语义表格、根级限制 |
-| 交互 | `input`, `button`, `overflow`, `select_static`, `multi_select_static`, `select_person`, `multi_select_person`, `date_picker`, `picker_time`, `picker_datetime`, `select_img`, `checker` | Base UI/原生混合语义、键盘/触控、disabled、confirm、表单初始值与 reset |
+| 交互 | `input`, `button`, `overflow`, `select_static`, `multi_select_static`, `select_person`, `multi_select_person`, `date_picker`, `picker_time`, `picker_datetime`, `select_img`, `checker` | Base UI/原生混合语义、Button `type/size/width`、键盘/触控、disabled、confirm、表单初始值与 reset |
 
 `header` 是顶层结构而非 `body.elements` tag，由 renderer fixture、schema 测试和
 light/dark 视觉用例独立覆盖。
+
+Button 已验证支持官方 `type` 枚举、`small|medium|large`
+size 与 `default|fill` width。协议的 bordered、text、filled、laser 是飞书视觉
+类别；renderer 采用 shadcn 语义作功能映射，不承诺像素等价。bordered/filled
+在 shadcn 无对应正交轴时有意折叠；`danger_text` 使用无填充危险 variant；
+`laser` 保守降级为 outline，不模拟镭射效果。来源：
+[飞书新版卡片按钮变量枚举与说明](https://open.feishu.cn/document/feishu-cards/feishu-card-cardkit/configure-card-variables?lang=zh-CN)、
+[CardKit JSON 2.0 Button 示例](https://open.feishu.cn/document/cardkit-v1/card-element/create)。
+
+基础表单与图片选择采用同一固定 `base-nova` 快照：`input` 的 text/password 使用
+Input，`multiline_text` 使用 Textarea，`checker` 使用 Checkbox + Label，
+`select_img` 单选/多选分别使用 RadioGroup/Checkbox。图片、文字和选项排列仍由
+协议视图负责，选中状态不再绘制旧的卡片边框主题。`picker_time` 和
+`picker_datetime` 保持浏览器原生输入类型、协议值格式与 IANA 时区动作输出。
+组件测试覆盖 required/invalid/disabled/placeholder、submit/reset/confirm、
+表单外即时动作和键盘/指针；资源矩阵覆盖 `select_img` resolver 的
+missing/resolved/rejected/aborted；视觉矩阵覆盖 light/dark、PC/mobile 与
+compact/default/fill。
 
 ## Markdown 发布证据
 

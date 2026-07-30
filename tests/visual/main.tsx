@@ -96,6 +96,56 @@ const choiceVisualCard = {
   },
 };
 
+const selectImageResourceCard = {
+  schema: "2.0" as const,
+  body: {
+    elements: [{
+      tag: "select_img",
+      name: "resource-image",
+      label: { tag: "plain_text" as const, content: "Resource image" },
+      selected_values: ["one"],
+      options: [
+        {
+          text: { tag: "plain_text" as const, content: "Resource one" },
+          value: "one",
+          img_key: "resource-one",
+        },
+        {
+          text: { tag: "plain_text" as const, content: "Resource two" },
+          value: "two",
+          img_key: "resource-two",
+        },
+      ],
+    }],
+  },
+};
+const selectImageResourceUrl = new URL(
+  "/tests/visual/assets/select-image-resource.svg",
+  window.location.origin,
+).href;
+
+function SelectImageResourceCase({
+  id,
+  resolveImage,
+}: {
+  id: string;
+  resolveImage: React.ComponentProps<typeof CardRenderer>["resolveImage"];
+}): React.JSX.Element {
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id={id}>
+      <CardRenderer
+        card={selectImageResourceCard}
+        onAction={(action) => setActions((current) => [...current, action])}
+        resolveImage={resolveImage}
+      />
+      <output hidden data-select-image-actions="">
+        {JSON.stringify(actions)}
+      </output>
+    </section>
+  );
+}
+
 export function OverlayCases(): React.JSX.Element {
   const [actions, setActions] = useState<unknown[]>([]);
   return (
@@ -260,6 +310,72 @@ export function PortalLifecycleCases(): React.JSX.Element {
   );
 }
 
+const buttonBaselineCard = (label: string) => ({
+  schema: "2.0" as const,
+  body: {
+    elements: [
+      {
+        tag: "button" as const,
+        type: "primary" as const,
+        size: "medium" as const,
+        text: { tag: "plain_text" as const, content: label },
+        confirm: {
+          title: { tag: "plain_text" as const, content: `${label}确认` },
+          text: { tag: "plain_text" as const, content: "主题继承检查" },
+        },
+        behaviors: [{ type: "callback" as const }],
+      },
+      {
+        tag: "button" as const,
+        type: "danger" as const,
+        size: "small" as const,
+        text: { tag: "plain_text" as const, content: `${label}危险` },
+        behaviors: [{ type: "callback" as const }],
+      },
+      {
+        tag: "button" as const,
+        type: "laser" as const,
+        size: "large" as const,
+        text: { tag: "plain_text" as const, content: `${label}镭射降级` },
+        behaviors: [{ type: "callback" as const }],
+      },
+      {
+        tag: "button" as const,
+        type: "default" as const,
+        width: "fill" as const,
+        text: { tag: "plain_text" as const, content: `${label}描边` },
+        behaviors: [{ type: "callback" as const }],
+      },
+    ],
+  },
+});
+
+function ButtonBaselineCases(): React.JSX.Element {
+  return (
+    <section id="case-button-baseline">
+      <style>{`
+        .fcr-root.fcr-host-button-theme {
+          --fcr-interaction-primary: oklch(0.6 0.2 250);
+          --fcr-interaction-primary-foreground: oklch(0.98 0 0);
+          --fcr-interaction-background: oklch(0.96 0.02 250);
+          --fcr-interaction-focus: oklch(0.65 0.03 250);
+        }
+      `}</style>
+      <div data-button-theme="light">
+        <CardRenderer card={buttonBaselineCard("浅色")} onAction={() => {}} />
+      </div>
+      <div data-button-theme="dark">
+        <CardRenderer card={buttonBaselineCard("深色")} colorScheme="dark"
+          onAction={() => {}} />
+      </div>
+      <div data-button-theme="host">
+        <CardRenderer card={buttonBaselineCard("宿主")} onAction={() => {}}
+          className="fcr-host-button-theme" />
+      </div>
+    </section>
+  );
+}
+
 export function FormControlCases({
   colorScheme = "light",
   device = "pc",
@@ -282,7 +398,7 @@ export function FormControlCases({
         colorScheme={colorScheme}
         device={device}
         onAction={(action) => setActions((current) => [...current, action])}
-        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+        resolveImage={() => undefined}
       />
       <CardRenderer
         card={standaloneDateControlsCard}
@@ -295,16 +411,38 @@ export function FormControlCases({
         colorScheme={colorScheme}
         device={device}
         onAction={(action) => setActions((current) => [...current, action])}
-        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+        resolveImage={() => undefined}
       />
       <output hidden data-form-control-actions="">{JSON.stringify(actions)}</output>
     </section>
   );
 }
 
+const isolatedVisualCase = new URLSearchParams(window.location.search).get("case");
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <main style={{ display: "grid", gap: 24 }}>
+    {isolatedVisualCase === "choice"
+      ? <main>
+          <section id="case-choices-pc" style={{ width: 400 }}>
+            <CardRenderer
+              card={choiceVisualCard}
+              onAction={() => {}}
+              resolvePerson={(id) => ({
+                id,
+                name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+              })}
+            />
+          </section>
+        </main>
+      : isolatedVisualCase === "date"
+        ? <main>
+            <FormControlCases
+              id="case-form-controls-pc"
+              widthMode="compact"
+            />
+          </main>
+        : <main style={{ display: "grid", gap: 24 }}>
       {(["default", "compact", "fill"] as const).map((width) => (
         <section id={`case-${width}`} key={width}>
           <CardRenderer card={{ ...completeRendererCard,
@@ -367,6 +505,7 @@ createRoot(document.getElementById("root")!).render(
       ))}
       <OverlayCases />
       <PortalLifecycleCases />
+      <ButtonBaselineCases />
       <section id="case-choices-pc" style={{ width: 400 }}>
         <CardRenderer
           card={choiceVisualCard}
@@ -388,6 +527,18 @@ createRoot(document.getElementById("root")!).render(
           })}
         />
       </section>
+      <SelectImageResourceCase
+        id="case-select-image-ready"
+        resolveImage={() => selectImageResourceUrl}
+      />
+      <SelectImageResourceCase
+        id="case-select-image-missing"
+        resolveImage={() => undefined}
+      />
+      <SelectImageResourceCase
+        id="case-select-image-error"
+        resolveImage={() => Promise.reject(new Error("resolver rejected"))}
+      />
       <FormControlCases
         id="case-form-controls-pc"
         widthMode="compact"
@@ -404,6 +555,6 @@ createRoot(document.getElementById("root")!).render(
           widthMode="fill"
         />
       </div>
-    </main>
+    </main>}
   </React.StrictMode>,
 );

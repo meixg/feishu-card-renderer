@@ -12,6 +12,7 @@ export const formControlsValidationCard = {
           element_id: "title_field",
           name: "title",
           label: plain("标题"),
+          placeholder: plain("请输入标题"),
           hover_tips: plain("用于显示在卡片顶部"),
           default_value: "初始标题",
           required: true,
