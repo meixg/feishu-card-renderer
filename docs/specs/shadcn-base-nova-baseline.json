@@ -23,7 +23,8 @@
   },
   "localFiles": {
     "src/components/ui/button.tsx": "4458517aef65d5571bb689cf0996de32af093170c905851d29fed3ed3524b570",
-    "src/components/ui/button-variants.ts": "279787241c29003c5a74b73ff7168bdbeb35b4f26ea2933d6bc8f760589bbb6a",
-    "src/styles.css": "c687c547e23a77c742a6be503b103f3579c860f9460beead5a6337bd32b19ce2"
+    "src/components/ui/button-variants.ts": "dc1339f34d3ba0f1c7e610b4e36975d676b545b11ae1bbff9469e1aa331284ba",
+    "src/components/interactive/button-semantics.ts": "fd14a8fc422acc8ab03d6cecc5c4c644a8702baf79af5d8e51a8ae45a4c641a5",
+    "src/styles/button-nova.css": "41e1430bc8ba02734143f74e158b76e0f454319a8f81b815fe0394ce34133e8f"
   }
 }

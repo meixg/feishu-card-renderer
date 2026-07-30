@@ -19,26 +19,44 @@ function choose(label: string, option: string) {
 }
 
 describe("interactive components and CardAction", () => {
-  it("renders every protocol Button style and size as semantic buttons", () => {
+  it("maps every official protocol Button type into an observable semantic group", () => {
     render(<CardRenderer onAction={() => {}} card={{
       schema: "2.0",
       body: { elements: [
         { tag: "button", type: "default", size: "small",
-          text: { tag: "plain_text", content: "次要" } },
+          text: { tag: "plain_text", content: "default" } },
         { tag: "button", type: "primary", size: "medium",
-          text: { tag: "plain_text", content: "主要" } },
-        { tag: "button", type: "danger_filled", size: "large",
-          text: { tag: "plain_text", content: "危险" } },
-        { tag: "button", type: "primary_text",
-          text: { tag: "plain_text", content: "文字" } },
+          text: { tag: "plain_text", content: "primary" } },
         { tag: "button", type: "primary_filled", width: "fill",
-          text: { tag: "plain_text", content: "填满" } },
+          text: { tag: "plain_text", content: "primary_filled" } },
+        { tag: "button", type: "danger",
+          text: { tag: "plain_text", content: "danger" } },
+        { tag: "button", type: "danger_filled", size: "large",
+          text: { tag: "plain_text", content: "danger_filled" } },
+        { tag: "button", type: "text",
+          text: { tag: "plain_text", content: "text" } },
+        { tag: "button", type: "primary_text",
+          text: { tag: "plain_text", content: "primary_text" } },
+        { tag: "button", type: "danger_text",
+          text: { tag: "plain_text", content: "danger_text" } },
+        { tag: "button", type: "laser",
+          text: { tag: "plain_text", content: "laser" } },
       ] },
     }} />);
 
-    for (const name of ["次要", "主要", "危险", "文字", "填满"]) {
+    for (const [name, group] of [
+      ["default", "outline"],
+      ["primary", "default"],
+      ["primary_filled", "default"],
+      ["danger", "destructive"],
+      ["danger_filled", "destructive"],
+      ["text", "ghost"],
+      ["primary_text", "link"],
+      ["danger_text", "destructive-ghost"],
+      ["laser", "outline"],
+    ]) {
       expect(screen.getByRole("button", { name }))
-        .toHaveAttribute("data-slot", "button");
+        .toHaveAttribute("data-fcr-button-variant", group);
     }
   });
 

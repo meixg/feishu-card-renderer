@@ -35,6 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Textarea } from "../ui/textarea";
 import { EllipsisIcon } from "lucide-react";
+import { BUTTON_VARIANT_BY_TYPE } from "./button-semantics";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -654,19 +655,7 @@ export function Button({ element, path }: { element: ButtonElement; path: string
     if (element.confirm) setConfirm(true);
     else run(true);
   };
-  const variant = {
-    default: "outline",
-    primary: "default",
-    secondary: "secondary",
-    danger: "destructive",
-    text: "ghost",
-    primary_text: "link",
-    danger_text: "destructive",
-    primary_filled: "default",
-    danger_filled: "destructive",
-    laser: "secondary",
-  }[element.type ?? "default"] as
-    "default" | "outline" | "secondary" | "ghost" | "destructive" | "link";
+  const variant = BUTTON_VARIANT_BY_TYPE[element.type ?? "default"];
   const size = {
     small: "sm",
     medium: "default",
@@ -675,6 +664,8 @@ export function Button({ element, path }: { element: ButtonElement; path: string
   return <><UiButton ref={trigger}
     type={element.form_action_type === "submit" ? "submit" : "button"}
     variant={variant} size={size}
+    data-fcr-button-variant={variant === "destructiveGhost"
+      ? "destructive-ghost" : variant}
     className={element.width === "fill" ? "fcr-button-width-fill" : undefined}
     disabled={element.disabled || (business && !onAction)}
     aria-describedby={tips.describedBy}

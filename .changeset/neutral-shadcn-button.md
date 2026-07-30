@@ -2,4 +2,4 @@
 "feishu-card-renderer": patch
 ---
 
-固定 shadcn/ui Base UI `base-nova` 视觉基线，将协议 Button 迁移到 neutral 主题、标准 variant/size 与具名 Lucide 图标，同时保持既有动作和宿主主题契约。
+补齐经飞书官方资料验证的 Button `type/size/width`，收紧类型枚举，以可测试的 shadcn 语义组映射按钮类型，并用独立公开 interaction token 保持既有卡片内容视觉不变。

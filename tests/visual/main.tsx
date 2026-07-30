@@ -284,9 +284,9 @@ const buttonBaselineCard = (label: string) => ({
       },
       {
         tag: "button" as const,
-        type: "secondary" as const,
+        type: "laser" as const,
         size: "large" as const,
-        text: { tag: "plain_text" as const, content: `${label}次要` },
+        text: { tag: "plain_text" as const, content: `${label}镭射降级` },
         behaviors: [{ type: "callback" as const }],
       },
       {
@@ -305,9 +305,10 @@ function ButtonBaselineCases(): React.JSX.Element {
     <section id="case-button-baseline">
       <style>{`
         .fcr-root.fcr-host-button-theme {
-          --fcr-color-primary: oklch(0.6 0.2 250);
-          --fcr-color-primary-contrast: oklch(0.98 0 0);
-          --fcr-color-surface: oklch(0.96 0.02 250);
+          --fcr-interaction-primary: oklch(0.6 0.2 250);
+          --fcr-interaction-primary-foreground: oklch(0.98 0 0);
+          --fcr-interaction-background: oklch(0.96 0.02 250);
+          --fcr-interaction-focus: oklch(0.65 0.03 250);
         }
       `}</style>
       <div data-button-theme="light">

@@ -238,6 +238,14 @@ Button 默认采用 scoped shadcn `base-nova` neutral 主题；`type`、`size` �
 `width` 会映射到内部 variant、标准尺寸和 fill 布局。宿主主题变量与 portal
 继承示例见 [集成指南](docs/integration.md)。
 
+Issue #75 补齐了此前 compatibility matrix 标为缺口、现已由官方资料验证的
+Button `type/size/width` 协议支持。枚举与视觉类别
+依据[飞书新版卡片按钮说明](https://open.feishu.cn/document/feishu-cards/feishu-card-cardkit/configure-card-variables?lang=zh-CN)，
+`size/width` 依据
+[CardKit JSON 2.0 Button 示例](https://open.feishu.cn/document/cardkit-v1/card-element/create)。
+具体 shadcn 功能映射和 laser limitation 见
+[兼容矩阵](docs/compatibility-matrix.md)。
+
 ## 只使用校验和类型
 
 如果不需要 React 渲染，可以从独立入口使用 schema API：

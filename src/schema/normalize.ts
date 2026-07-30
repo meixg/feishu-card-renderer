@@ -155,7 +155,7 @@ function cloneAndNormalizeComponent(
       ? output.max_length : 1000;
   }
   if (tag === "button") {
-    output.type = ["default", "primary", "secondary", "danger", "text",
+    output.type = ["default", "primary", "danger", "text",
       "primary_text", "danger_text", "primary_filled", "danger_filled", "laser"]
       .includes(String(output.type)) ? output.type : "default";
     output.size = ["small", "medium", "large"].includes(String(output.size))

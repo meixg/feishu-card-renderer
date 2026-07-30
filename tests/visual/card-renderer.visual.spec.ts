@@ -277,18 +277,25 @@ test("Button tokens, sizes, and portaled confirm inherit each card theme", async
         widths: buttons.map((button) => button.getBoundingClientRect().width),
         primary: getComputedStyle(buttons[0]).backgroundColor,
         danger: getComputedStyle(buttons[1]).color,
-        secondary: getComputedStyle(buttons[2]).backgroundColor,
+        laser: getComputedStyle(buttons[2]).backgroundColor,
         outlineBorder: getComputedStyle(buttons[3]).borderTopColor,
         rootPrimary: getComputedStyle(rootElement)
-          .getPropertyValue("--fcr-color-primary").trim(),
+          .getPropertyValue("--fcr-interaction-primary").trim(),
+        focus: getComputedStyle(rootElement)
+          .getPropertyValue("--fcr-interaction-focus").trim(),
       };
     });
     expect(measurements.heights).toEqual([32, 28, 36, 32]);
     expect(measurements.widths[3]).toBeGreaterThan(measurements.widths[0]);
     expect(measurements.primary).not.toBe("rgba(0, 0, 0, 0)");
     expect(measurements.danger).not.toBe("");
-    expect(measurements.secondary).not.toBe(measurements.primary);
+    expect(measurements.laser).not.toBe(measurements.primary);
     expect(measurements.outlineBorder).not.toBe("rgba(0, 0, 0, 0)");
+    expect(measurements.focus).toBe(theme === "light"
+      ? "oklch(0.708 0 0)"
+      : theme === "dark"
+        ? "oklch(0.556 0 0)"
+        : "oklch(0.65 0.03 250)");
     primaryBackgrounds.set(theme, measurements.primary);
 
     await primary.focus();
@@ -302,13 +309,17 @@ test("Button tokens, sizes, and portaled confirm inherit each card theme", async
       const style = getComputedStyle(node);
       const root = node.closest<HTMLElement>(".fcr-root")!;
       return {
-        portalPrimary: style.getPropertyValue("--fcr-color-primary").trim(),
+        portalPrimary: style.getPropertyValue("--fcr-interaction-primary").trim(),
         rootPrimary: getComputedStyle(root)
-          .getPropertyValue("--fcr-color-primary").trim(),
+          .getPropertyValue("--fcr-interaction-primary").trim(),
+        portalFocus: style.getPropertyValue("--fcr-interaction-focus").trim(),
+        rootFocus: getComputedStyle(root)
+          .getPropertyValue("--fcr-interaction-focus").trim(),
         surface: style.backgroundColor,
       };
     });
     expect(inherited.portalPrimary).toBe(inherited.rootPrimary);
+    expect(inherited.portalFocus).toBe(inherited.rootFocus);
     expect(inherited.surface).not.toBe("rgba(0, 0, 0, 0)");
     await dialog.getByRole("button", { name: "取消" }).click();
   }

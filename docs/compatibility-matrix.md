@@ -16,6 +16,14 @@ defaults/invalid 卡、完整字段清单、具体 normalization 默认值、非
 `header` 是顶层结构而非 `body.elements` tag，由 renderer fixture、schema 测试和
 light/dark 视觉用例独立覆盖。
 
+Button 已验证支持官方 `type` 枚举、`small|medium|large`
+size 与 `default|fill` width。协议的 bordered、text、filled、laser 是飞书视觉
+类别；renderer 采用 shadcn 语义作功能映射，不承诺像素等价。bordered/filled
+在 shadcn 无对应正交轴时有意折叠；`danger_text` 使用无填充危险 variant；
+`laser` 保守降级为 outline，不模拟镭射效果。来源：
+[飞书新版卡片按钮变量枚举与说明](https://open.feishu.cn/document/feishu-cards/feishu-card-cardkit/configure-card-variables?lang=zh-CN)、
+[CardKit JSON 2.0 Button 示例](https://open.feishu.cn/document/cardkit-v1/card-element/create)。
+
 ## Markdown 发布证据
 
 `markdownReleaseFixtures` 独立提供 minimal、complete、defaults、invalid 和

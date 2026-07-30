@@ -129,12 +129,23 @@ token，多张卡片不会共享 host。卸载一张打开 overlay 的卡片会�
   --fcr-color-border: oklch(0.82 0.03 250);
   --fcr-color-danger: oklch(0.58 0.22 25);
   --fcr-radius-card: 0.625rem;
+  --fcr-interaction-primary: oklch(0.6 0.2 250);
+  --fcr-interaction-primary-foreground: oklch(0.98 0 0);
+  --fcr-interaction-focus: oklch(0.65 0.03 250);
+  --fcr-interaction-danger: oklch(0.58 0.22 25);
 }
 ```
 
 把 `my-card-theme` 作为 `CardRenderer.className` 传入后，卡片 root 与该卡自己的
 portal 内容会同步继承这些值。未在本文档列出的内部 `--fcr-ui-*` 映射、原始
 shadcn token 和 Base UI `data-*` 都不是公共接口。
+
+`--fcr-color-*` 保持既有卡片内容、Markdown、Chart 与容器主题；Button 和后续
+interaction view 使用独立、稳定的 `--fcr-interaction-background`,
+`-foreground`, `-primary`, `-primary-foreground`, `-secondary`,
+`-secondary-foreground`, `-muted`, `-border`, `-input`, `-focus`,
+`-danger`, `-radius`。默认值为 base-nova neutral，其中 focus ring 在 light 为
+`oklch(0.708 0 0)`、dark 为 `oklch(0.556 0 0)`，不会隐式跟随 primary。
 
 confirm 使用文档级单活动 modal 协调。正常用户输入只能到达当前 modal；若宿主
 程序化请求另一张卡的 confirm，renderer 会先取消旧 confirm（不产生 action），

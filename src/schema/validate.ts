@@ -145,7 +145,7 @@ function validateTagSpecificFields(
   };
   if (tag === "button") {
     for (const [field, allowed] of Object.entries({
-      type: ["default", "primary", "secondary", "danger", "text",
+      type: ["default", "primary", "danger", "text",
         "primary_text", "danger_text", "primary_filled", "danger_filled", "laser"],
       size: ["small", "medium", "large"],
       width: ["default", "fill"],

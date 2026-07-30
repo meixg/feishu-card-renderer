@@ -8,6 +8,7 @@ export const buttonVariants = cva("fcr-ui-button", {
       secondary: "fcr-ui-button-secondary",
       ghost: "fcr-ui-button-ghost",
       destructive: "fcr-ui-button-destructive",
+      destructiveGhost: "fcr-ui-button-destructive-ghost",
       link: "fcr-ui-button-link",
     },
     size: {

@@ -82,7 +82,7 @@ describe("JSON 2.0 schema core", () => {
       schema: "2.0",
       body: { elements: [
         { tag: "button", text: { tag: "plain_text", content: "默认" } },
-        { tag: "button", type: "unknown", size: "huge", width: "auto" },
+        { tag: "button", type: "brand", size: "huge", width: "auto" },
       ] },
     };
 
@@ -95,6 +95,24 @@ describe("JSON 2.0 schema core", () => {
       "$.body.elements[1].size",
       "$.body.elements[1].width",
     ]);
+  });
+
+  it("accepts only the officially documented Button type enum", () => {
+    const types = [
+      "default", "primary", "danger", "text", "primary_text", "danger_text",
+      "primary_filled", "danger_filled", "laser",
+    ];
+    const elements = types.map((type) => ({ tag: "button", type }));
+
+    expect(validateCard({
+      schema: "2.0",
+      body: { elements },
+    }).diagnostics).toEqual([]);
+    expect(normalizeCard({
+      schema: "2.0",
+      body: { elements },
+    }).card?.body.elements.map((element) =>
+      "type" in element ? element.type : undefined)).toEqual(types);
   });
 
   it("reports recoverable root, header, config, enum, and unknown-tag errors", () => {
