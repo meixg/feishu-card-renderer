@@ -62,14 +62,10 @@ jobs:
         run: |
           evidence="$RUNNER_TEMP/visual-raster-evidence"
           cp playwright.config.ts "$RUNNER_TEMP/playwright.config.original.ts"
-          for mode in baseline deterministic-mode disable-gpu disable-gpu-rasterization swiftshader; do
+          for mode in disable-skia-runtime-opts; do
             cp "$RUNNER_TEMP/playwright.config.original.ts" playwright.config.ts
             case "$mode" in
-              baseline) flag="" ;;
-              deterministic-mode) flag="--deterministic-mode" ;;
-              disable-gpu) flag="--disable-gpu" ;;
-              disable-gpu-rasterization) flag="--disable-gpu-rasterization" ;;
-              swiftshader) flag="--use-gl=swiftshader" ;;
+              disable-skia-runtime-opts) flag="--disable-skia-runtime-opts" ;;
             esac
             if [ -n "$flag" ]; then
               FLAG="$flag" node <<'NODE'
