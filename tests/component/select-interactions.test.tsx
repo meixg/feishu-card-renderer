@@ -189,7 +189,9 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
       }] },
     }} />);
 
-    fireEvent.click(screen.getByRole("combobox", { name: "搜索Tags" }));
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "搜索Tags" }), {
+      key: "ArrowDown",
+    });
     activateOption("Two");
     activateOption("Three");
     activateOption("Four");
@@ -465,7 +467,9 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
     activateOption("Small B");
     fireEvent.click(screen.getByRole("combobox", { name: "SSR large" }));
     activateOption("Large 7");
-    fireEvent.click(screen.getByRole("combobox", { name: "搜索SSR multi" }));
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "搜索SSR multi" }), {
+      key: "ArrowDown",
+    });
     activateOption("Multi A");
     fireEvent.click(screen.getByRole("button", { name: "完成" }));
     expect(screen.getByRole("combobox", { name: "搜索SSR multi" }))

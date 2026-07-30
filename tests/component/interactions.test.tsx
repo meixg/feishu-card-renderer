@@ -573,7 +573,7 @@ describe("interactive components and CardAction", () => {
     render(<CardRenderer card={completeInteractiveCard} onAction={onAction} />);
     choose("owner", "甲");
     const members = screen.getByRole("combobox", { name: "搜索members" });
-    fireEvent.click(members);
+    fireEvent.keyDown(members, { key: "ArrowDown" });
     fireEvent.click(screen.getByRole("option", { name: "甲" }));
     fireEvent.click(screen.getByRole("option", { name: "乙" }));
     fireEvent.click(screen.getByRole("button", { name: "完成" }));
