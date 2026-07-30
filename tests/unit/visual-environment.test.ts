@@ -133,6 +133,23 @@ describe("visual environment contract", () => {
     expect(launchBrowser).not.toHaveBeenCalled();
   });
 
+  it("rejects a non-empty mismatched Chromium metadata version before launch", async () => {
+    const launchBrowser = vi.fn();
+
+    const error = await verifyVisualEnvironment(validDependencies({
+      chromiumMetadataVersion: "150.0.0.0",
+      launchBrowser,
+    })).catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe(
+      `Visual environment contract violation: expected Chromium metadata ${EXPECTED_CHROMIUM_VERSION}, received 150.0.0.0`,
+    );
+    expect((error as Error).message).not.toMatch(/\n|\bat\s|stack|cause/i);
+    expect((error as Error).cause).toBeUndefined();
+    expect(launchBrowser).not.toHaveBeenCalled();
+  });
+
   it("reports a missing private provenance file as a contract violation", async () => {
     await expect(readChromiumProvenance({
       browsersPath: "/private/playwright/browsers.json",
