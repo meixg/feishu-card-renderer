@@ -30,12 +30,13 @@
     outline: none; background: transparent; color: var(--fcr-ui-foreground);
     font: inherit; transition: color 120ms ease, box-shadow 120ms ease;
   }
-  .fcr-form-control > .fcr-ui-input { height: 32px; padding: 4px 8px; }
+  .fcr-form-control > .fcr-ui-input {
+    height: 32px; padding: 4px 10px;
+  }
   .fcr-form-control > .fcr-ui-textarea {
     display: flex; field-sizing: content; min-height: 64px;
     padding: 8px 10px; resize: vertical;
   }
-  .fcr-form-control > .fcr-ui-input { padding-inline: 10px; }
   .fcr-theme-dark .fcr-form-control > .fcr-ui-input,
   .fcr-theme-dark .fcr-form-control > .fcr-ui-textarea {
     background: color-mix(in oklch, var(--fcr-ui-input) 30%, transparent);
@@ -93,5 +94,63 @@
   .fcr-form-control .fcr-ui-checkbox-indicator svg { width: 12px; height: 12px; }
   .fcr-form-control .fcr-ui-radio-indicator svg {
     width: 6px; height: 6px; fill: currentColor;
+  }
+
+  .fcr-ui-field.fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) {
+    --fcr-ui-muted-foreground: var(--fcr-interaction-muted-foreground);
+    display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 8px;
+  }
+  .fcr-ui-field.fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > :is(.fcr-ui-label, .fcr-ui-field-label) {
+    font-size: 14px; font-weight: 500; line-height: 1;
+  }
+  .fcr-ui-field.fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > .fcr-field-tips {
+    color: var(--fcr-ui-muted-foreground);
+  }
+  .fcr-ui-field.fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > .fcr-ui-field-error {
+    margin: 0; color: var(--fcr-ui-destructive); font-size: 12px;
+  }
+  .fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > .fcr-ui-input {
+    width: 100%; min-width: 0; height: 32px;
+    border: 1px solid var(--fcr-ui-input);
+    border-radius: calc(var(--fcr-ui-radius) - 2px);
+    padding: 4px 10px; outline: none; background: transparent;
+    color: var(--fcr-ui-foreground); font: inherit;
+    transition: color 120ms ease, box-shadow 120ms ease;
+  }
+  .fcr-theme-dark .fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > .fcr-ui-input {
+    background: color-mix(in oklch, var(--fcr-ui-input) 30%, transparent);
+    color-scheme: dark;
+  }
+  .fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > .fcr-ui-input:disabled {
+    pointer-events: none; cursor: not-allowed;
+    background: color-mix(in oklch, var(--fcr-ui-input) 50%, transparent);
+    opacity: 0.5;
+  }
+  .fcr-ui-field:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > .fcr-ui-input:focus-visible {
+    border-color: var(--fcr-ui-ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+  .fcr-ui-field[data-invalid]:where(:has(> .fcr-ui-input:is(
+    [type="time"], [type="datetime-local"]
+  ))) > .fcr-ui-input {
+    border-color: var(--fcr-ui-destructive);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--fcr-ui-destructive) 20%, transparent);
   }
 }

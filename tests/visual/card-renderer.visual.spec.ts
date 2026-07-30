@@ -986,12 +986,7 @@ test("select_img preserves pointer, keyboard, and touch semantics in a real brow
   ) as Array<{ value?: unknown }>;
   expect(actions).toHaveLength(1);
   expect(actions[0]?.value).toBe("two");
-});
 
-test("select_img exposes ready, missing, and error adapter states without losing selection", async ({
-  page,
-}) => {
-  await page.goto("/tests/visual/");
   const ready = page.locator("#case-select-image-ready");
   const missing = page.locator("#case-select-image-missing");
   const error = page.locator("#case-select-image-error");

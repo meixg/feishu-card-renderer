@@ -182,6 +182,10 @@ placeholder 的次要前景色可在目标 `.fcr-root` 上覆盖
 文字、resolver loading/error 占位和卡片宽度布局仍由 renderer 管理，shadcn
 wrapper 只负责选择状态。原生 time/datetime 仍输出浏览器 IANA 时区，宿主无需也
 不能通过样式 token 改变协议值。
+可审计的来源与本地文件摘要分别见
+[Button provenance](specs/shadcn-base-nova-baseline.md) 和
+[form-control provenance](specs/shadcn-base-nova-form-controls-baseline.md)；
+`pnpm ui:verify` 会同时验证两份 manifest。
 
 ## Public preview 限制
 

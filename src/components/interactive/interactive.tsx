@@ -430,9 +430,7 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   const value = String(field.value ?? "");
   const selected = parseDateValue(value);
-  return <><Field className={tag === "date_picker" && device === "pc"
-    ? undefined : "fcr-form-control"}
-    data-invalid={field.invalid || undefined}>
+  return <><Field data-invalid={field.invalid || undefined}>
     <FieldLabel htmlFor={id}>{label}</FieldLabel>
     {tag === "date_picker" && device === "pc"
       ? <Popover open={open} onOpenChange={setOpen}>

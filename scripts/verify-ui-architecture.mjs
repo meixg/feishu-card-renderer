@@ -103,11 +103,6 @@ function sha256(value) {
 }
 
 export async function verifyUiProvenance() {
-  const provenancePath = resolve(
-    root,
-    "docs/specs/shadcn-base-nova-baseline.json",
-  );
-  const provenance = JSON.parse(await readFile(provenancePath, "utf8"));
   const violations = [];
   const expected = {
     reviewedAt: "2026-07-30",
@@ -121,31 +116,42 @@ export async function verifyUiProvenance() {
     baseUi: "1.6.0",
     lucide: "0.536.0",
   };
-  const actual = {
-    reviewedAt: provenance.reviewedAt,
-    commit: provenance.upstream?.commit,
-    cli: provenance.upstream?.cli,
-    style: provenance.preset?.style,
-    base: provenance.preset?.base,
-    baseColor: provenance.preset?.baseColor,
-    iconLibrary: provenance.preset?.iconLibrary,
-    rsc: provenance.preset?.rsc,
-    baseUi: provenance.dependencies?.["@base-ui/react"],
-    lucide: provenance.dependencies?.["lucide-react"],
-  };
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    violations.push("base-nova reviewed versions or preset drifted");
-  }
-  const upstreamHashes = Object.values(provenance.upstream?.files ?? {});
-  if (
-    upstreamHashes.length !== 9
-    || upstreamHashes.some((hash) => !/^[0-9a-f]{64}$/u.test(String(hash)))
-  ) {
-    violations.push("reviewed upstream blob hashes are incomplete");
-  }
-  for (const [file, expected] of Object.entries(provenance.localFiles ?? {})) {
-    const actual = sha256(await readFile(resolve(root, file)));
-    if (actual !== expected) violations.push(`${file}: local adaptation hash drifted`);
+  const manifests = [
+    ["button", "docs/specs/shadcn-base-nova-baseline.json", 3],
+    ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", 8],
+  ];
+  for (const [owner, path, upstreamCount] of manifests) {
+    const provenance = JSON.parse(await readFile(resolve(root, path), "utf8"));
+    const actual = {
+      reviewedAt: provenance.reviewedAt,
+      commit: provenance.upstream?.commit,
+      cli: provenance.upstream?.cli,
+      style: provenance.preset?.style,
+      base: provenance.preset?.base,
+      baseColor: provenance.preset?.baseColor,
+      iconLibrary: provenance.preset?.iconLibrary,
+      rsc: provenance.preset?.rsc,
+      baseUi: provenance.dependencies?.["@base-ui/react"],
+      lucide: provenance.dependencies?.["lucide-react"],
+    };
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      violations.push(`${owner} base-nova reviewed versions or preset drifted`);
+    }
+    const upstreamHashes = Object.values(provenance.upstream?.files ?? {});
+    if (
+      upstreamHashes.length !== upstreamCount
+      || upstreamHashes.some((hash) => !/^[0-9a-f]{64}$/u.test(String(hash)))
+    ) {
+      violations.push(`${owner} reviewed upstream blob hashes are incomplete`);
+    }
+    for (const [file, expectedHash] of Object.entries(
+      provenance.localFiles ?? {},
+    )) {
+      const actualHash = sha256(await readFile(resolve(root, file)));
+      if (actualHash !== expectedHash) {
+        violations.push(`${file}: local adaptation hash drifted`);
+      }
+    }
   }
   return violations.sort();
 }
@@ -158,5 +164,5 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename
   if (violations.length > 0) {
     throw new Error(`UI architecture verification failed:\n${violations.join("\n")}`);
   }
-  console.log("UI architecture and base-nova provenance verified.");
+  console.log("UI architecture and both base-nova provenance manifests verified.");
 }

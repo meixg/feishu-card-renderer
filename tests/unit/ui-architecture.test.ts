@@ -19,7 +19,7 @@ it("pins the reviewed base-nova inputs and local adaptations without vendoring s
 
 it("pins the Issue #76 base-nova form-control adaptations", async () => {
   const provenance = JSON.parse(await readFile(
-    resolve(root, "docs/specs/shadcn-base-nova-baseline.json"),
+    resolve(root, "docs/specs/shadcn-base-nova-form-controls-baseline.json"),
     "utf8",
   )) as {
     upstream: { files: Record<string, string> };
