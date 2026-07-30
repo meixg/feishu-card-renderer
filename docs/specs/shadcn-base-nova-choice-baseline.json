@@ -1,0 +1,30 @@
+{
+  "reviewedAt": "2026-07-30",
+  "upstream": {
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "5203f537d152844a920caa66e865bc61c6ff4860",
+    "cli": "4.16.0",
+    "files": {
+      "apps/v4/registry/bases/base/ui/select.tsx": "2dadd3212c5d3c83d083c81dbca4184d45640086381c7ec4899b8e3996a7716f",
+      "apps/v4/registry/bases/base/ui/combobox.tsx": "a3c833eb2216ca31f2ae306396d2d9a724adaa0047009d202867fafe453b1d9c",
+      "apps/v4/registry/styles/style-nova.css": "c7fc024e5c432210b1af12a713386306703c9adeffa5b32ae380ed8cc083826e",
+      "apps/v4/registry/themes.ts": "60cb5ed25f7b39d9973e2280f476dd2119a4268317f45bd7ee3cac7883db8ea0"
+    }
+  },
+  "preset": {
+    "style": "base-nova",
+    "base": "base",
+    "baseColor": "neutral",
+    "iconLibrary": "lucide",
+    "rsc": false
+  },
+  "dependencies": {
+    "@base-ui/react": "1.6.0",
+    "lucide-react": "0.536.0"
+  },
+  "localFiles": {
+    "src/components/ui/choice-field.tsx": "14ff2f730b491680a857c2158cca6a0fef4ae826bb7f7ffa03f4bc76c68b3114",
+    "src/components/interactive/interactive.tsx": "e8c2c0dc2e9755cc15bd5ee12cd70b920cbe856c0ad938fbcd6094f958dce219",
+    "src/styles/choice-nova.css": "48a51a6e1e9a333455c2b2435532b34a4f0d8cd26804b23a085c49c48c17c72f"
+  }
+}

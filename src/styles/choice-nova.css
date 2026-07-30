@@ -1,0 +1,96 @@
+@layer components {
+  /* PC Select/Combobox visual adaptation of the pinned shadcn base-nova source. */
+  .fcr-choice-trigger.fcr-choice-pc-trigger,
+  .fcr-choice-control.fcr-choice-pc-control {
+    box-sizing: border-box; height: 32px; min-height: 32px;
+    border: 1px solid var(--fcr-ui-input);
+    border-radius: calc(var(--fcr-ui-radius) - 2px);
+    background: var(--fcr-ui-background); color: var(--fcr-ui-foreground);
+    transition: color 120ms ease, box-shadow 120ms ease;
+  }
+  .fcr-choice-trigger.fcr-choice-pc-trigger { padding: 4px 10px; }
+  .fcr-choice-control.fcr-choice-pc-control { padding: 3px 6px 3px 10px; }
+  .fcr-choice-trigger.fcr-choice-pc-trigger:focus-visible,
+  .fcr-choice-control.fcr-choice-pc-control:focus-within {
+    border-color: var(--fcr-ui-ring); outline: none;
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+  .fcr-choice-field[data-invalid] :is(
+    .fcr-choice-pc-trigger,
+    .fcr-choice-pc-control
+  ) {
+    border-color: var(--fcr-ui-destructive);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--fcr-ui-destructive) 20%, transparent);
+  }
+  .fcr-choice-pc-trigger svg,
+  .fcr-choice-pc-open svg,
+  .fcr-choice-pc-option svg,
+  .fcr-choice-pc-control .fcr-choice-chip svg {
+    width: 16px; height: 16px; flex: 0 0 16px; pointer-events: none;
+  }
+  .fcr-choice-pc-open {
+    display: inline-flex; width: 24px; height: 24px; min-width: 24px;
+    min-height: 24px; align-items: center; justify-content: center;
+    border: 0; border-radius: calc(var(--fcr-ui-radius) - 4px);
+    background: transparent; color: var(--fcr-ui-muted-foreground);
+  }
+  .fcr-choice-pc-open:hover { background: var(--fcr-ui-muted); }
+  .fcr-choice-positioner.fcr-choice-pc-positioner {
+    width: min(var(--anchor-width), var(--available-width));
+    min-width: min(220px, var(--available-width));
+    max-width: var(--available-width);
+  }
+  .fcr-choice-popup.fcr-choice-pc-popup {
+    gap: 4px; padding: 4px; border: 1px solid var(--fcr-ui-border);
+    border-radius: var(--fcr-ui-radius); background: var(--fcr-ui-background);
+    color: var(--fcr-ui-foreground);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%),
+      0 4px 6px -4px rgb(0 0 0 / 10%);
+  }
+  .fcr-choice-pc-search-group {
+    display: flex; min-width: 0; height: 32px; align-items: center; gap: 6px;
+    border: 1px solid var(--fcr-ui-input);
+    border-radius: calc(var(--fcr-ui-radius) - 2px); padding: 0 8px;
+  }
+  .fcr-choice-pc-search-group:focus-within {
+    border-color: var(--fcr-ui-ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+  .fcr-choice-pc-search-group > svg {
+    width: 16px; height: 16px; flex: 0 0 16px;
+    color: var(--fcr-ui-muted-foreground);
+  }
+  .fcr-choice-search.fcr-choice-pc-search {
+    height: 30px; min-height: 30px; border: 0; padding: 0;
+    background: transparent; outline: none; box-shadow: none;
+  }
+  .fcr-choice-search.fcr-choice-pc-search:focus-visible {
+    outline: none; box-shadow: none;
+  }
+  .fcr-choice-option.fcr-choice-pc-option {
+    min-height: 32px; border-radius: calc(var(--fcr-ui-radius) - 4px);
+    padding: 6px 8px;
+  }
+  .fcr-choice-option.fcr-choice-pc-option[data-highlighted] {
+    background: var(--fcr-ui-muted); color: var(--fcr-ui-foreground);
+  }
+  .fcr-choice-option.fcr-choice-pc-option[data-selected] { font-weight: inherit; }
+  .fcr-choice-pc-option .fcr-choice-indicator {
+    color: var(--fcr-ui-foreground);
+  }
+  .fcr-choice-pc-control .fcr-choice-chip {
+    border-radius: calc(var(--fcr-ui-radius) - 4px);
+    background: var(--fcr-ui-muted); color: var(--fcr-ui-foreground);
+  }
+  .fcr-choice-pc-control .fcr-choice-chip button {
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .fcr-choice-pc-popup .fcr-choice-status,
+  .fcr-choice-pc-control .fcr-choice-chip-count {
+    color: var(--fcr-ui-muted-foreground);
+  }
+  .fcr-theme-dark :is(.fcr-choice-pc-trigger, .fcr-choice-pc-control) {
+    background: color-mix(in oklch, var(--fcr-ui-input) 30%, transparent);
+  }
+}

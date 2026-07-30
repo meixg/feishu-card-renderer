@@ -35,7 +35,7 @@ function openChoice(name: string) {
   );
 }
 
-describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
+describe("Issue #77 PC Select and Combobox with mobile regression coverage", () => {
   it("uses Select below 8 options, Combobox at 8+, and Combobox for every multi-select", () => {
     render(<CardRenderer onAction={() => {}} card={{
       schema: "2.0",
@@ -366,6 +366,68 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
     const dialog = screen.getByRole("alertdialog", { name: "Confirm choice" });
     fireEvent.click(within(dialog).getByRole("button", { name: "确认" }));
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ value: true }));
+  });
+
+  it("localizes PC search, empty, person resource, and chip controls without actions", async () => {
+    const onAction = vi.fn();
+    render(
+      <CardRenderer
+        locale="en_US"
+        onAction={onAction}
+        resolvePerson={() => Promise.reject(new Error("unavailable"))}
+        card={{
+          schema: "2.0",
+          body: { elements: [{
+            tag: "form",
+            name: "localized",
+            elements: [
+              {
+                tag: "select_person",
+                name: "person",
+                label: text("People"),
+                options: [{ value: "opaque-person-id" }],
+              },
+              {
+                tag: "multi_select_static",
+                name: "tags",
+                label: text("Tags"),
+                selected_values: ["one"],
+                options: [
+                  option("One", "one"),
+                  option("Disabled", "disabled", true),
+                ],
+              },
+              { tag: "button", form_action_type: "submit", text: text("Submit") },
+            ],
+          }] },
+        }}
+      />,
+    );
+
+    const status = await screen.findByRole("status", {
+      name: "People person resolution status",
+    });
+    await waitFor(() => expect(status).toHaveTextContent(
+      "1 person option failed to load",
+    ));
+    openChoice("People");
+    fireEvent.change(screen.getByRole("combobox", { name: "Search People" }), {
+      target: { value: "no match" },
+    });
+    expect(screen.getByText("No matches")).toBeInTheDocument();
+    expect(onAction).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Search People" }), {
+      key: "Escape",
+    });
+    openChoice("Tags, open options");
+    expect(screen.getByRole("option", { name: "Disabled" }))
+      .toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(screen.getByRole("option", { name: "Disabled" }));
+    expect(onAction).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove One" }));
+    expect(onAction).not.toHaveBeenCalled();
   });
 
   it("server-renders and hydrates closed Select, Combobox, and Drawer trees without mismatch", async () => {
