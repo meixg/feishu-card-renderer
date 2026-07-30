@@ -246,7 +246,9 @@ ARIA 关联，表单 submit/reset、confirm、表单外即时动作、图片 res
 日期时间动作中的浏览器 IANA 时区不变。
 Button 与表单控件的上游输入及本地摘要分别固定在
 [Button provenance](docs/specs/shadcn-base-nova-baseline.md) 和
-[form-control provenance](docs/specs/shadcn-base-nova-form-controls-baseline.md)。
+[form-control provenance](docs/specs/shadcn-base-nova-form-controls-baseline.md)，
+菜单与确认框见
+[overlay provenance](docs/specs/shadcn-base-nova-overlays-baseline.md)。
 
 Issue #75 补齐了此前 compatibility matrix 标为缺口、现已由官方资料验证的
 Button `type/size/width` 协议支持。枚举与视觉类别

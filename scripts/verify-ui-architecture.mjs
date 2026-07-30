@@ -20,6 +20,7 @@ export async function verifyUiArchitecture() {
   const requiredLucideImports = new Map([
     ["src/components/ui/checkbox.tsx", new Set(["CheckIcon"])],
     ["src/components/ui/radio-group.tsx", new Set(["CircleIcon"])],
+    ["src/components/interactive/interactive.tsx", new Set(["EllipsisIcon"])],
   ]);
   for (const file of await sourceFiles(resolve(root, "src"))) {
     const source = await readFile(file, "utf8");
@@ -119,6 +120,7 @@ export async function verifyUiProvenance() {
   const manifests = [
     ["button", "docs/specs/shadcn-base-nova-baseline.json", 3],
     ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", 8],
+    ["overlays", "docs/specs/shadcn-base-nova-overlays-baseline.json", 4],
   ];
   for (const [owner, path, upstreamCount] of manifests) {
     const provenance = JSON.parse(await readFile(resolve(root, path), "utf8"));
@@ -164,5 +166,5 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename
   if (violations.length > 0) {
     throw new Error(`UI architecture verification failed:\n${violations.join("\n")}`);
   }
-  console.log("UI architecture and both base-nova provenance manifests verified.");
+  console.log("UI architecture and all base-nova provenance manifests verified.");
 }

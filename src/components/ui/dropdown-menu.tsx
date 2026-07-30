@@ -33,7 +33,7 @@ function DropdownMenuContent({
     >
       <UiPortalEventBoundary>
         <MenuPrimitive.Positioner
-          className="fcr-dropdown-positioner"
+          className="fcr-dropdown-positioner fcr-ui-dropdown-positioner"
           align={align}
           alignOffset={alignOffset}
           side={side}
@@ -41,7 +41,7 @@ function DropdownMenuContent({
         >
           <MenuPrimitive.Popup
             data-slot="dropdown-menu-content"
-            className={cn("fcr-overflow-menu", className)}
+            className={cn("fcr-ui-dropdown-menu-content", className)}
             {...props}
           />
         </MenuPrimitive.Positioner>
@@ -57,7 +57,7 @@ function DropdownMenuItem({
   return (
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
-      className={cn("fcr-overflow-menu-item", className)}
+      className={cn("fcr-ui-dropdown-menu-item", className)}
       {...props}
     />
   );

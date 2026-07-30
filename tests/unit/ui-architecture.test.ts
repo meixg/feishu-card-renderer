@@ -40,3 +40,23 @@ it("pins the Issue #76 base-nova form-control adaptations", async () => {
     "src/styles/form-controls-nova.css",
   ]));
 });
+
+it("pins the Issue #79 Dropdown Menu and Alert Dialog adaptations", async () => {
+  const provenance = JSON.parse(await readFile(
+    resolve(root, "docs/specs/shadcn-base-nova-overlays-baseline.json"),
+    "utf8",
+  )) as {
+    upstream: { files: Record<string, string> };
+    localFiles: Record<string, string>;
+  };
+  expect(Object.keys(provenance.upstream.files)).toEqual(expect.arrayContaining([
+    "apps/v4/registry/bases/base/ui/dropdown-menu.tsx",
+    "apps/v4/registry/bases/base/ui/alert-dialog.tsx",
+  ]));
+  expect(Object.keys(provenance.localFiles)).toEqual(expect.arrayContaining([
+    "src/components/ui/dropdown-menu.tsx",
+    "src/components/ui/alert-dialog.tsx",
+    "src/components/primitives/ConfirmDialog.tsx",
+    "src/styles/overlays-nova.css",
+  ]));
+});

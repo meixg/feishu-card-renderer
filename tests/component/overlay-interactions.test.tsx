@@ -14,6 +14,43 @@ import { CardRenderer } from "../../src";
 afterEach(cleanup);
 
 describe("Base UI overlays", () => {
+  it("localizes menu and confirm system copy without wrapper defaults", async () => {
+    render(<CardRenderer locale="en_us" onAction={vi.fn()} card={{
+      schema: "2.0",
+      body: {
+        elements: [
+          {
+            tag: "button",
+            text: { tag: "plain_text", content: "Open" },
+            confirm: {},
+            behaviors: [{ type: "callback", value: "confirm" }],
+          },
+          {
+            tag: "overflow",
+            options: [{
+              text: { tag: "plain_text", content: "Option" },
+              value: "option",
+            }],
+          },
+        ],
+      },
+    }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Confirm action" });
+    expect(within(dialog).getByText("Do you want to continue?"))
+      .toBeInTheDocument();
+    await waitFor(() => expect(
+      within(dialog).getByRole("button", { name: "Cancel" }),
+    ).toHaveFocus());
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    expect(screen.getByRole("menu", { name: "More actions" }))
+      .toBeInTheDocument();
+  });
+
   it("confirms exactly once from the card portal without activating its parent container", () => {
     const onAction = vi.fn();
     const { container } = render(<CardRenderer onAction={onAction} card={{

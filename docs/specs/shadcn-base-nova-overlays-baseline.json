@@ -1,0 +1,31 @@
+{
+  "reviewedAt": "2026-07-30",
+  "upstream": {
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "5203f537d152844a920caa66e865bc61c6ff4860",
+    "cli": "4.16.0",
+    "files": {
+      "apps/v4/registry/bases/base/ui/dropdown-menu.tsx": "dce5089f19f0bcdbb8bd137ccc8167eb51197f9c4f626e3b3c1ec9d31cb0d686",
+      "apps/v4/registry/bases/base/ui/alert-dialog.tsx": "48e4538e028be8b5aa1fe040de0f7ea7a6491e4f31bade2a9622a74500d2b1b3",
+      "apps/v4/registry/styles/style-nova.css": "c7fc024e5c432210b1af12a713386306703c9adeffa5b32ae380ed8cc083826e",
+      "apps/v4/registry/themes.ts": "60cb5ed25f7b39d9973e2280f476dd2119a4268317f45bd7ee3cac7883db8ea0"
+    }
+  },
+  "preset": {
+    "style": "base-nova",
+    "base": "base",
+    "baseColor": "neutral",
+    "iconLibrary": "lucide",
+    "rsc": false
+  },
+  "dependencies": {
+    "@base-ui/react": "1.6.0",
+    "lucide-react": "0.536.0"
+  },
+  "localFiles": {
+    "src/components/ui/dropdown-menu.tsx": "2bbf46cb8d989ed4dd6458a6a1a88c92b446c4efe39380468776211d2e137cbe",
+    "src/components/ui/alert-dialog.tsx": "db82c517f1dede4ce0c8e39c5950db057a14bd15cd8e99c3d0bfeccdabbf9085",
+    "src/components/primitives/ConfirmDialog.tsx": "03de3a07fabbf2a1a978d5a43d1200a3256655476803a41bee747bd0046bef7a",
+    "src/styles/overlays-nova.css": "05862ee719eb9ecf5994dcb2d53e0220c7f7c052b63d32e1a3df29bb83287e6a"
+  }
+}
