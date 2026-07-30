@@ -36,13 +36,11 @@ jobs:
           mkdir -p "$evidence"
           cp playwright.config.ts "$RUNNER_TEMP/playwright.config.base.ts"
           git rev-parse HEAD > "$evidence/checkout-sha.txt"
-          for mode in baseline disable-threaded-compositing disable-partial-raster disable-zero-copy; do
+          for mode in partial-with-reduced partial-no-reduced; do
             cp "$RUNNER_TEMP/playwright.config.base.ts" playwright.config.ts
             case "$mode" in
-              baseline) flag="" ;;
-              disable-threaded-compositing) flag="--disable-threaded-compositing" ;;
-              disable-partial-raster) flag="--disable-partial-raster" ;;
-              disable-zero-copy) flag="--disable-zero-copy" ;;
+              partial-with-reduced) flag="--disable-partial-raster" ;;
+              partial-no-reduced) flag="--disable-partial-raster" ;;
             esac
             if [ -n "$flag" ]; then
               FLAG="$flag" node <<'NODE'
@@ -52,6 +50,15 @@ jobs:
             'args: ["--disable-skia-runtime-opts"]',
             `args: ["--disable-skia-runtime-opts", ${JSON.stringify(process.env.FLAG)}]`,
           );
+          writeFileSync(path, source);
+          NODE
+            fi
+            if [ "$mode" = "partial-no-reduced" ]; then
+              node <<'NODE'
+          const { readFileSync, writeFileSync } = require("node:fs");
+          const path = "playwright.config.ts";
+          const source = readFileSync(path, "utf8")
+            .replace('    reducedMotion: "reduce",\n', "");
           writeFileSync(path, source);
           NODE
             fi
