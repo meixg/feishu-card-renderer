@@ -14,6 +14,43 @@ import { CardRenderer } from "../../src";
 afterEach(cleanup);
 
 describe("Base UI overlays", () => {
+  it("localizes menu and confirm system copy without wrapper defaults", async () => {
+    render(<CardRenderer locale="en_us" onAction={vi.fn()} card={{
+      schema: "2.0",
+      body: {
+        elements: [
+          {
+            tag: "button",
+            text: { tag: "plain_text", content: "Open" },
+            confirm: {},
+            behaviors: [{ type: "callback", value: "confirm" }],
+          },
+          {
+            tag: "overflow",
+            options: [{
+              text: { tag: "plain_text", content: "Option" },
+              value: "option",
+            }],
+          },
+        ],
+      },
+    }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Confirm action" });
+    expect(within(dialog).getByText("Do you want to continue?"))
+      .toBeInTheDocument();
+    await waitFor(() => expect(
+      within(dialog).getByRole("button", { name: "Cancel" }),
+    ).toHaveFocus());
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    expect(screen.getByRole("menu", { name: "More actions" }))
+      .toBeInTheDocument();
+  });
+
   it("confirms exactly once from the card portal without activating its parent container", () => {
     const onAction = vi.fn();
     const { container } = render(<CardRenderer onAction={onAction} card={{
@@ -187,6 +224,36 @@ describe("Base UI overlays", () => {
 
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
     await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("treats overflow selected as protocol-inapplicable unknown data", async () => {
+    const onAction = vi.fn();
+    render(<CardRenderer onAction={onAction} card={{
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "overflow",
+          options: [{
+            text: { tag: "plain_text", content: "Action item" },
+            value: "action",
+            selected: true,
+          }],
+        }],
+      },
+    }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+    const item = await screen.findByRole("menuitem", { name: "Action item" });
+    expect(item).not.toHaveAttribute("aria-checked");
+    expect(item).not.toHaveAttribute("aria-selected");
+    expect(screen.queryByRole("menuitemradio")).toBeNull();
+    expect(screen.queryByRole("menuitemcheckbox")).toBeNull();
+    fireEvent.click(item);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+      type: "callback",
+      value: "action",
+    }));
   });
 
   it("hands overflow selection to confirm with cancel and exactly-once action semantics", async () => {
