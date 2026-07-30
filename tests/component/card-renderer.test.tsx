@@ -1,4 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../src/adapters/vchart-loader", () => ({
@@ -203,6 +205,111 @@ describe("CardRenderer", () => {
     expect(screen.getByRole("img", { name: "Safe image" })).toHaveAttribute(
       "src", "https://cdn.example.com/a.png",
     );
+  });
+
+  it.each([
+    ["without a resolver", undefined, "unavailable"],
+    ["when the resolver returns undefined", (): undefined => undefined, "error"],
+    ["when the resolver rejects",
+      (): Promise<string | undefined> => Promise.reject(new Error("private")),
+      "error"],
+  ] as const)(
+    "preserves the renderer image placeholder in the trigger and Dialog %s",
+    async (_case, resolveImage, expectedState) => {
+      const rendered = render(<CardRenderer resolveImage={resolveImage} card={{
+        schema: "2.0",
+        body: { elements: [{
+          tag: "img",
+          img_key: "private-resource",
+          preview: true,
+          alt: { tag: "plain_text", content: "Unavailable diagram" },
+        }] },
+      }} />);
+      await act(async () => {});
+
+      const trigger = within(rendered.container).getByRole(
+        "button", { name: "打开图片预览" },
+      );
+      expect(within(trigger).getByRole("img", { name: "Unavailable diagram" }))
+        .toHaveAttribute("data-state", expectedState);
+      expect(rendered.container).not.toHaveTextContent("private-resource");
+
+      fireEvent.click(trigger);
+      const dialog = within(rendered.container).getByRole(
+        "dialog", { name: "Unavailable diagram" },
+      );
+      expect(within(dialog).getByRole("img", { name: "Unavailable diagram" }))
+        .toHaveAttribute("data-state", expectedState);
+      expect(dialog).not.toHaveTextContent("private-resource");
+    },
+  );
+
+  it("keeps the loading image placeholder in both preview surfaces", () => {
+    const rendered = render(<CardRenderer
+      resolveImage={() => new Promise(() => {})}
+      card={{
+        schema: "2.0",
+        body: { elements: [{
+          tag: "img",
+          img_key: "pending-resource",
+          preview: true,
+          alt: { tag: "plain_text", content: "Loading diagram" },
+        }] },
+      }}
+    />);
+    const trigger = within(rendered.container).getByRole(
+      "button", { name: "打开图片预览" },
+    );
+    expect(within(trigger).getByRole("img", { name: "Loading diagram" }))
+      .toHaveAttribute("data-state", "loading");
+
+    fireEvent.click(trigger);
+    const dialog = within(rendered.container).getByRole(
+      "dialog", { name: "Loading diagram" },
+    );
+    expect(within(dialog).getByRole("img", { name: "Loading diagram" }))
+      .toHaveAttribute("data-state", "loading");
+  });
+
+  it("server-renders and hydrates a closed image preview without mismatch", async () => {
+    const card = {
+      schema: "2.0",
+      body: { elements: [{
+        tag: "img",
+        img_key: "ssr-image",
+        preview: true,
+        alt: { tag: "plain_text", content: "SSR preview" },
+      }] },
+    };
+    const firstMarkup = renderToString(<CardRenderer card={card} />);
+    expect(renderToString(<CardRenderer card={card} />)).toBe(firstMarkup);
+    expect(firstMarkup).not.toContain("data-slot=\"dialog-content\"");
+    expect(firstMarkup).toContain("data-fcr-portal-host");
+
+    const container = document.createElement("div");
+    container.innerHTML = firstMarkup;
+    document.body.append(container);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const root = hydrateRoot(container, <CardRenderer card={card} />);
+    await act(async () => {});
+    expect(consoleError).not.toHaveBeenCalled();
+
+    const trigger = within(container).getByRole(
+      "button", { name: "打开图片预览" },
+    );
+    trigger.focus();
+    fireEvent.click(trigger);
+    const dialog = within(container).getByRole(
+      "dialog", { name: "SSR preview" },
+    );
+    expect(dialog).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "关闭预览" }));
+    expect(within(container).queryByRole("dialog")).toBeNull();
+    expect(trigger).toHaveFocus();
+
+    await act(async () => root.unmount());
+    consoleError.mockRestore();
+    container.remove();
   });
 
   it("resolves people synchronously/asynchronously once per id without exposing ids", async () => {

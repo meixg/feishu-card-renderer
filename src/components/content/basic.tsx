@@ -6,6 +6,7 @@ import type {
 } from "../../schema/components";
 import { useImageResource } from "../../renderer/resources";
 import { safeBox, safePx } from "../../styles/safe";
+import { PreviewDialog } from "../primitives/PreviewDialog";
 import { SafeText } from "../primitives/SafeText";
 import { MarkdownContent } from "./MarkdownContent";
 import { useRendererContext } from "../../renderer/context";
@@ -106,20 +107,22 @@ export function Image({ element }: { element: ImageElement }): React.JSX.Element
   const current = useImageResource(key);
   const alt = element.alt?.content ?? "";
   const title = element.title?.content;
-  if (current?.status === "ready" && current.value) {
-    return <figure className="fcr-image" style={{
+  const image = current?.status === "ready" && current.value
+    ? <figure className="fcr-image" style={{
       margin: safeBox(element.margin, true),
       borderRadius: safePx(element.corner_radius),
     }}>
       <img src={current.value} alt={alt} title={title} />
       {title && <figcaption>{title}</figcaption>}
-    </figure>;
-  }
-  return (
-    <div className="fcr-image-placeholder" role="img"
+    </figure>
+    : <div className="fcr-image-placeholder" role="img"
       aria-label={alt || "图片不可用"}
       data-state={current?.status ?? "unavailable"}>
       {alt || "图片不可用"}
-    </div>
-  );
+    </div>;
+  if (element.preview !== true) return image;
+  return <PreviewDialog label="打开图片预览" items={[{
+    label: alt || title || "图片预览",
+    content: image,
+  }]}>{image}</PreviewDialog>;
 }

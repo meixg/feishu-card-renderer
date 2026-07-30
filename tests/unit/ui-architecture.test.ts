@@ -271,6 +271,36 @@ it("rejects a valid-format mutation of a pinned upstream hash", async () => {
   }
 });
 
+it("rejects a valid-format mutation of the pinned media Dialog hash", async () => {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-media-provenance-"));
+  try {
+    await cp(
+      resolve(root, "docs"),
+      resolve(temporaryRoot, "docs"),
+      { recursive: true },
+    );
+    const manifestPath = resolve(
+      temporaryRoot,
+      "docs/specs/shadcn-base-nova-media-dialog-baseline.json",
+    );
+    const provenance = JSON.parse(await readFile(manifestPath, "utf8")) as {
+      upstream: { files: Record<string, string> };
+    };
+    const dialogPath = "apps/v4/registry/bases/base/ui/dialog.tsx";
+    provenance.upstream.files[dialogPath] = "b".repeat(64);
+    await writeFile(manifestPath, `${JSON.stringify(provenance, null, 2)}\n`);
+
+    await expect(verifyUiProvenance({
+      manifestRoot: temporaryRoot,
+      localRoot: root,
+    })).resolves.toContain(
+      `media dialog: ${dialogPath} upstream blob hash drifted`,
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 it("rejects a valid-format Calendar hash mutation against the trusted registry", async () => {
   const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-calendar-provenance-"));
   try {
@@ -366,6 +396,24 @@ it("pins the Issue #79 Dropdown Menu and Alert Dialog adaptations", async () => 
   ]));
 });
 
+it("pins the Issue #81 base-nova media Dialog adaptation", async () => {
+  const provenance = JSON.parse(await readFile(
+    resolve(root, "docs/specs/shadcn-base-nova-media-dialog-baseline.json"),
+    "utf8",
+  )) as {
+    upstream: { files: Record<string, string> };
+    localFiles: Record<string, string>;
+  };
+  expect(Object.keys(provenance.upstream.files)).toContain(
+    "apps/v4/registry/bases/base/ui/dialog.tsx",
+  );
+  expect(Object.keys(provenance.localFiles)).toEqual(expect.arrayContaining([
+    "src/components/ui/dialog.tsx",
+    "src/components/primitives/PreviewDialog.tsx",
+    "src/styles/media-dialog-nova.css",
+  ]));
+});
+
 it("pins the Issue #82 Collapsible adaptation in the trusted registry", async () => {
   const provenance = JSON.parse(await readFile(
     resolve(root, "docs/specs/shadcn-base-nova-containers-baseline.json"),
@@ -383,7 +431,6 @@ it("pins the Issue #82 Collapsible adaptation in the trusted registry", async ()
     "src/styles/containers-nova.css",
   ]));
 });
-
 it("rejects a self-approved Issue #82 Collapsible upstream mutation", async () => {
   const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-ui-containers-"));
   try {
