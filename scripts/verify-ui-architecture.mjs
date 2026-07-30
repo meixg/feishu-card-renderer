@@ -24,8 +24,11 @@ export async function verifyUiArchitecture() {
   const violations = [];
   const requiredLucideImports = new Map([
     ["src/components/ui/checkbox.tsx", new Set(["CheckIcon"])],
+    ["src/components/ui/dialog.tsx", new Set(["XIcon"])],
     ["src/components/ui/radio-group.tsx", new Set(["CircleIcon"])],
     ["src/components/interactive/interactive.tsx", new Set(["EllipsisIcon"])],
+    ["src/components/primitives/PreviewDialog.tsx",
+      new Set(["ChevronLeftIcon", "ChevronRightIcon"])],
   ]);
   for (const file of await sourceFiles(resolve(root, "src"))) {
     const source = await readFile(file, "utf8");
@@ -114,7 +117,6 @@ export async function verifyUiProvenance({
 } = {}) {
   const violations = [];
   const expected = {
-    reviewedAt: "2026-07-30",
     commit: PINNED_SHADCN_COMMIT,
     cli: "4.16.0",
     style: "base-nova",
@@ -130,7 +132,7 @@ export async function verifyUiProvenance({
       "apps/v4/registry/bases/base/ui/button.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
     ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", [
       "apps/v4/registry/bases/base/ui/input.tsx",
       "apps/v4/registry/bases/base/ui/textarea.tsx",
@@ -140,15 +142,20 @@ export async function verifyUiProvenance({
       "apps/v4/registry/bases/base/ui/radio-group.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
     ["overlays", "docs/specs/shadcn-base-nova-overlays-baseline.json", [
       "apps/v4/registry/bases/base/ui/dropdown-menu.tsx",
       "apps/v4/registry/bases/base/ui/alert-dialog.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
+    ["media dialog", "docs/specs/shadcn-base-nova-media-dialog-baseline.json", [
+      "apps/v4/registry/bases/base/ui/dialog.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ], "2026-07-31"],
   ];
-  for (const [owner, path, expectedPaths] of manifests) {
+  for (const [owner, path, expectedPaths, reviewedAt] of manifests) {
     const provenance = JSON.parse(
       await readFile(resolve(manifestRoot, path), "utf8"),
     );
@@ -164,7 +171,7 @@ export async function verifyUiProvenance({
       baseUi: provenance.dependencies?.["@base-ui/react"],
       lucide: provenance.dependencies?.["lucide-react"],
     };
-    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    if (JSON.stringify(actual) !== JSON.stringify({ reviewedAt, ...expected })) {
       violations.push(`${owner} base-nova reviewed versions or preset drifted`);
     }
     const upstreamFiles = provenance.upstream?.files ?? {};

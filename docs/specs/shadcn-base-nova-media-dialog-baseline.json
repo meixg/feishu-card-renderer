@@ -1,0 +1,29 @@
+{
+  "reviewedAt": "2026-07-31",
+  "upstream": {
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "5203f537d152844a920caa66e865bc61c6ff4860",
+    "cli": "4.16.0",
+    "files": {
+      "apps/v4/registry/bases/base/ui/dialog.tsx": "85f9a33d1a8c495b0faecd066dae1581b8feb5d27f912ecf65f814386f6da3a9",
+      "apps/v4/registry/styles/style-nova.css": "c7fc024e5c432210b1af12a713386306703c9adeffa5b32ae380ed8cc083826e",
+      "apps/v4/registry/themes.ts": "60cb5ed25f7b39d9973e2280f476dd2119a4268317f45bd7ee3cac7883db8ea0"
+    }
+  },
+  "preset": {
+    "style": "base-nova",
+    "base": "base",
+    "baseColor": "neutral",
+    "iconLibrary": "lucide",
+    "rsc": false
+  },
+  "dependencies": {
+    "@base-ui/react": "1.6.0",
+    "lucide-react": "0.536.0"
+  },
+  "localFiles": {
+    "src/components/ui/dialog.tsx": "7f5f6a7afdcf2e429d2495c56005b311f34528ca8993ebc3c100cf71f580244f",
+    "src/components/primitives/PreviewDialog.tsx": "8a5da715b188bb7d90bf49b39565431b0baf8c6634213dc845e547f93cd59590",
+    "src/styles/media-dialog-nova.css": "b06dda444733a0232dd6efc23ebdc56558b3f2795f12230d7fb89cfeabc9712a"
+  }
+}

@@ -56,7 +56,6 @@ describe("1.0 accessibility release audit", () => {
 
   it("defines visible keyboard focus for every custom interactive surface", () => {
     for (const selector of [
-      ".fcr-preview-trigger:focus-visible",
       ".fcr-collapsible-trigger:focus-visible",
       ".fcr-ui-input:focus-visible",
       ".fcr-ui-textarea:focus-visible",

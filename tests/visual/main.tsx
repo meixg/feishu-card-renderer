@@ -123,6 +123,10 @@ const selectImageResourceUrl = new URL(
   "/tests/visual/assets/select-image-resource.svg",
   window.location.origin,
 ).href;
+const mediaPreviewUrl = new URL(
+  "/tests/visual/assets/media-preview.svg",
+  window.location.origin,
+).href;
 
 function SelectImageResourceCase({
   id,
@@ -151,7 +155,7 @@ export function OverlayCases(): React.JSX.Element {
   return (
     <section id="case-overlays">
       <CardRenderer
-        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+        resolveImage={() => mediaPreviewUrl}
         onAction={(action) => setActions((current) => [...current, action])}
         card={{
           schema: "2.0",

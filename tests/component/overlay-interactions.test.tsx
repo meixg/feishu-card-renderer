@@ -161,6 +161,140 @@ describe("Base UI overlays", () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
+  it("previews a single image through the card portal without replacing resource content", async () => {
+    const { container } = render(<CardRenderer
+      resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+      card={{
+        schema: "2.0",
+        body: {
+          elements: [{
+            tag: "img",
+            img_key: "hero",
+            preview: true,
+            alt: { tag: "plain_text", content: "封面替代文本" },
+          }],
+        },
+      }}
+    />);
+    await act(async () => {});
+
+    const trigger = screen.getByRole("button", { name: "打开图片预览" });
+    expect(within(trigger).getByRole("img", { name: "封面替代文本" }))
+      .toHaveAttribute("src", "https://cdn.example.com/hero.png");
+
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "封面替代文本" });
+    expect(within(dialog).getByRole("img", { name: "封面替代文本" }))
+      .toHaveAttribute("src", "https://cdn.example.com/hero.png");
+    expect(dialog.closest("[data-fcr-portal-host]")).toBe(
+      container.querySelector("[data-fcr-portal-host]"),
+    );
+  });
+
+  it("keeps failed image adapter state in the trigger and preview", async () => {
+    render(<CardRenderer
+      resolveImage={() => Promise.reject(new Error("private adapter detail"))}
+      card={{
+        schema: "2.0",
+        body: { elements: [{
+          tag: "img",
+          img_key: "broken",
+          preview: true,
+          alt: { tag: "plain_text", content: "资源失败替代文本" },
+        }] },
+      }}
+    />);
+    const trigger = screen.getByRole("button", { name: "打开图片预览" });
+    await waitFor(() => expect(within(trigger).getByRole("img", {
+      name: "资源失败替代文本",
+    })).toHaveAttribute("data-state", "error"));
+
+    fireEvent.click(trigger);
+    expect(within(screen.getByRole("dialog", {
+      name: "资源失败替代文本",
+    })).getByRole("img", { name: "资源失败替代文本" }))
+      .toHaveAttribute("data-state", "error");
+    expect(screen.queryByText("private adapter detail")).toBeNull();
+  });
+
+  it("keeps each media Dialog in its originating light or dark card theme", async () => {
+    render(<>
+      <CardRenderer colorScheme="light" resolveImage={(key) => key} card={{
+        schema: "2.0",
+        body: { elements: [{
+          tag: "img", img_key: "light", preview: true,
+          alt: { tag: "plain_text", content: "浅色媒体" },
+        }] },
+      }} />
+      <CardRenderer colorScheme="dark" resolveImage={(key) => key} card={{
+        schema: "2.0",
+        body: { elements: [{
+          tag: "img", img_key: "dark", preview: true,
+          alt: { tag: "plain_text", content: "深色媒体" },
+        }] },
+      }} />
+    </>);
+    await act(async () => {});
+
+    fireEvent.click(screen.getAllByRole("button", {
+      name: "打开图片预览",
+    })[0]!);
+    expect(screen.getByRole("dialog", { name: "浅色媒体" })
+      .closest(".fcr-root")).toHaveClass("fcr-theme-light");
+    fireEvent.click(screen.getByRole("button", { name: "关闭预览" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getAllByRole("button", {
+      name: "打开图片预览",
+    })[1]!);
+    expect(screen.getByRole("dialog", { name: "深色媒体" })
+      .closest(".fcr-root")).toHaveClass("fcr-theme-dark");
+  });
+
+  it("uses non-wrapping media navigation with disabled boundaries and named icon controls", async () => {
+    render(<CardRenderer
+      resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+      card={{
+        schema: "2.0",
+        body: {
+          elements: [{
+            tag: "img_combination",
+            img_list: [
+              { img_key: "one", alt: { tag: "plain_text", content: "一" } },
+              { img_key: "two", alt: { tag: "plain_text", content: "二" } },
+              { img_key: "three", alt: { tag: "plain_text", content: "三" } },
+            ],
+          }],
+        },
+      }}
+    />);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: "打开图片组预览" }));
+
+    const dialog = screen.getByRole("dialog", { name: "一" });
+    const previous = within(dialog).getByRole("button", { name: "上一张" });
+    const next = within(dialog).getByRole("button", { name: "下一张" });
+    const close = within(dialog).getByRole("button", { name: "关闭预览" });
+    expect(previous).toBeDisabled();
+    expect(next).toBeEnabled();
+    expect(previous.querySelector("svg")).not.toBeNull();
+    expect(next.querySelector("svg")).not.toBeNull();
+    expect(close.querySelector("svg")).not.toBeNull();
+    await waitFor(() => expect(dialog).toContainElement(
+      document.activeElement as HTMLElement | null,
+    ));
+
+    fireEvent.click(next);
+    expect(within(screen.getByRole("dialog", { name: "二" }))
+      .getByText("2 / 3")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "查看第 3 张" }));
+    const lastDialog = screen.getByRole("dialog", { name: "三" });
+    expect(within(lastDialog).getByRole("button", { name: "下一张" }))
+      .toBeDisabled();
+    expect(within(lastDialog).getByRole("button", { name: "上一张" }))
+      .toBeEnabled();
+  });
+
   it("portals overflow with disabled-aware roving focus and outside dismissal", async () => {
     const onAction = vi.fn();
     const { container } = render(<CardRenderer onAction={onAction} card={{
