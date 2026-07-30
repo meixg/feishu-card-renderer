@@ -1,5 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
 import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";
+
+async function captureHashEvidence(locator: Locator, name: string) {
+  const directory = process.env.FCR_VISUAL_HASH_EVIDENCE_DIR;
+  if (!directory) return;
+  await mkdir(directory, { recursive: true });
+  await locator.screenshot({
+    animations: "disabled",
+    path: resolve(directory, name),
+  });
+}
 
 async function settleVisualLayout(
   page: import("@playwright/test").Page,
@@ -335,6 +347,7 @@ test("Button tokens, sizes, and portaled confirm inherit each card theme", async
     primaryBackgrounds.get("light"),
   );
   await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");
+  await captureHashEvidence(baseline, "button-base-nova-themes.png");
 });
 
 test("an open card portal tears down without disturbing another card", async ({
@@ -1155,6 +1168,7 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await form.getByRole("textbox", { name: "标题" }).fill("");
   await form.getByRole("button", { name: "提交" }).click();
   await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
+  await captureHashEvidence(form, "card-form-controls-error-compact.png");
 
   await expect(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");
