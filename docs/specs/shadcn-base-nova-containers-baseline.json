@@ -1,0 +1,30 @@
+{
+  "reviewedAt": "2026-07-30",
+  "upstream": {
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "5203f537d152844a920caa66e865bc61c6ff4860",
+    "cli": "4.16.0",
+    "files": {
+      "apps/v4/registry/bases/base/ui/collapsible.tsx": "ead4349ff7b01d696ef89294a81d18ee1d3f732321398896462c834ab9b9e065",
+      "apps/v4/registry/bases/base/ui/button.tsx": "97bfee456444f0495deee6a321933c24267477645b0bf4bfea67c3c62d425a12",
+      "apps/v4/registry/styles/style-nova.css": "c7fc024e5c432210b1af12a713386306703c9adeffa5b32ae380ed8cc083826e",
+      "apps/v4/registry/themes.ts": "60cb5ed25f7b39d9973e2280f476dd2119a4268317f45bd7ee3cac7883db8ea0"
+    }
+  },
+  "preset": {
+    "style": "base-nova",
+    "base": "base",
+    "baseColor": "neutral",
+    "iconLibrary": "lucide",
+    "rsc": false
+  },
+  "dependencies": {
+    "@base-ui/react": "1.6.0",
+    "lucide-react": "0.536.0"
+  },
+  "localFiles": {
+    "src/components/ui/collapsible.tsx": "70bdce26e380876ab9906b588a55bf103137755548c1c26d2b920c1c45b3e73f",
+    "src/components/containers/containers.tsx": "5fd20585fbccfe8bf76c5b355178ba74565a25590dd7e40d62d0b73a561b209e",
+    "src/styles/containers-nova.css": "99f0dbb4dfb227a325cc73e7caa5a292ba6eaf082b68bac67c969c9e3b237bdf"
+  }
+}

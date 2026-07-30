@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { ChevronDownIcon } from "lucide-react";
 
 import type {
   CollapsiblePanelElement,
@@ -23,6 +24,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../ui/collapsible";
+import { Button } from "../ui/button";
 
 function childPath(path: string, collection: "columns" | "elements", index: number) {
   return `${path}.${collection}[${index}]`;
@@ -144,7 +146,8 @@ export function InteractiveContainer({ element, path }: {
       aria-disabled={actionable && !onAction ? true : undefined}
       style={{ borderRadius: safeRadius(element.corner_radius) }}
       onKeyDown={(event) => {
-        if (!onAction || (event.key !== "Enter" && event.key !== " ")) return;
+        if (event.target !== event.currentTarget || !onAction ||
+          (event.key !== "Enter" && event.key !== " ")) return;
         event.preventDefault();
         activate(event);
       }}
@@ -185,12 +188,21 @@ export function CollapsiblePanel({ element, path }: {
     right: "fcr-icon-right",
   }[element.header?.icon_position ?? "left"];
   const header = (
-    <CollapsibleTrigger type="button" className={[
-      "fcr-collapsible-trigger",
-      iconPositionClass,
-    ].join(" ")}
+    <CollapsibleTrigger
+      render={<Button
+        type="button"
+        variant="ghost"
+        className={[
+          "fcr-collapsible-trigger",
+          iconPositionClass,
+        ].join(" ")}
+      />}
       aria-controls={contentId}>
-      <span aria-hidden="true" className="fcr-collapse-icon">⌄</span>
+      <ChevronDownIcon
+        aria-hidden="true"
+        data-icon="inline-start"
+        className="fcr-collapse-icon"
+      />
       <span>{title}</span>
     </CollapsibleTrigger>
   );

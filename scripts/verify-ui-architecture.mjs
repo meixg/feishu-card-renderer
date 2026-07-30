@@ -147,6 +147,12 @@ export async function verifyUiProvenance({
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
     ]],
+    ["containers", "docs/specs/shadcn-base-nova-containers-baseline.json", [
+      "apps/v4/registry/bases/base/ui/collapsible.tsx",
+      "apps/v4/registry/bases/base/ui/button.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ]],
   ];
   for (const [owner, path, expectedPaths] of manifests) {
     const provenance = JSON.parse(

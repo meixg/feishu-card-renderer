@@ -468,6 +468,17 @@ createRoot(document.getElementById("root")!).render(
       ))}
       <section id="case-containers"><CardRenderer
         card={completeContainerCard} /></section>
+      <section id="case-containers-dark"><CardRenderer
+        colorScheme="dark" card={completeContainerCard} /></section>
+      <section id="case-containers-narrow" style={{ width: 320 }}>
+        <CardRenderer device="mobile" card={{
+          ...completeContainerCard,
+          config: {
+            ...completeContainerCard.config,
+            width_mode: "compact",
+          },
+        }} />
+      </section>
       {([
         ["compact", 400],
         ["default", 600],
