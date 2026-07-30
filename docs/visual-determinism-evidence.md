@@ -220,6 +220,17 @@ The same run launched and queried managed Chromium `151.0.7922.34` with both
 required flags. The later cleanup commit changes only the temporary dispatch
 adapter back to the normal baseline-refresh workflow.
 
+After `main` advanced with its calendar work, latest-head proof run
+`30583604134`, job `91009658453`, tested commit
+`742fee1f3a06c459bfba6af318559dba2fd18b69`. It again passed 28/28 three
+times. Artifact `8775753037` (`latest-head-visual-determinism-30583604134`,
+archive SHA-256
+`61f49f9ad14bc6a271e2f4388dd77c0795e96342bba8cf3ea00d4e8a75504972`)
+retains Button `f3e3ed05c8142419a18dd674d3b888a11decee3bdcca14fb30afdfd26da59983`
+three times and the updated-main Form
+`b4239d16493e8c99cc0b35c58a003636f1be6be77a10d2f778e5db934f1e85a4`
+three times. The cleanup after this run restores only the dispatch adapter.
+
 ## Conclusion and fix boundary
 
 The evidence rejects the proposed `ubuntu-24.04` label plus three exact dpkg

@@ -44,6 +44,9 @@ Button hashes were `f3e3ed05…` and all three Form hashes were `01112dcd…`.
 Final full run `30582949053` then passed 28/28 three times and reproduced those
 exact two hashes in every run; artifact `8775508919` retains all six PNGs and
 the hash report.
+After merging the latest `main` calendar change, run `30583604134` again
+passed 28/28 three times: Button remained `f3e3ed05…` ×3 and the updated Form
+was `b4239d16…` ×3 (artifact `8775753037`).
 See
 [`visual-determinism-evidence.md`](./visual-determinism-evidence.md).
 

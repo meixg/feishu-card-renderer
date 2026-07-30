@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   refresh:
-    name: Temporary latest-head determinism proof
+    name: Refresh visual baselines (artifact only)
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -32,16 +32,13 @@ jobs:
       - name: Verify visual environment contract
         run: pnpm visual:environment
 
-      - name: Run strict visual suite three times
-        run: pnpm visual:determinism
-        env:
-          FCR_VISUAL_DETERMINISM_DIR: ${{ runner.temp }}/visual-determinism
+      - name: Regenerate visual snapshots
+        run: pnpm visual:update
 
-      - name: Upload hash evidence
-        if: always()
+      - name: Upload visual snapshots
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: latest-head-visual-determinism-${{ github.run_id }}
-          path: ${{ runner.temp }}/visual-determinism
+          name: visual-snapshots-${{ github.run_attempt }}
+          path: tests/visual/card-renderer.visual.spec.ts-snapshots
           if-no-files-found: error
           retention-days: 7
