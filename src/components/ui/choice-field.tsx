@@ -311,6 +311,7 @@ function useFilteredOptions(
 function PopupCombobox(props: ChoiceFieldProps) {
   const portalHost = useUiPortalHost();
   const anchorRef = useRef<HTMLDivElement>(null);
+  const multiInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useFilteredOptions(props.options, query, props.locale);
@@ -369,6 +370,9 @@ function PopupCombobox(props: ChoiceFieldProps) {
     onInputValueChange: (next: string) => setQuery(next),
     onOpenChange: (next: boolean) => {
       setOpen(next);
+      if (next && props.multiple) {
+        queueMicrotask(() => multiInputRef.current?.focus());
+      }
       if (!next) setQuery("");
     },
     open,
@@ -426,8 +430,6 @@ function PopupCombobox(props: ChoiceFieldProps) {
       >
         <ComboboxChips
           ref={anchorRef}
-          aria-invalid={props.invalid || undefined}
-          aria-required={props.required}
           className="fcr-choice-pc-chips"
           data-choice-kind="combobox"
           data-multiple=""
@@ -451,7 +453,10 @@ function PopupCombobox(props: ChoiceFieldProps) {
                 </span>
               )}
               <ComboboxChipsInput
-                ref={props.controlRef as (node: HTMLInputElement | null) => void}
+                ref={(node) => {
+                  multiInputRef.current = node;
+                  props.controlRef?.(node);
+                }}
                 aria-describedby={props.describedBy}
                 aria-invalid={props.invalid || undefined}
                 aria-label={choiceCopy(props.locale).search(props.label)}
