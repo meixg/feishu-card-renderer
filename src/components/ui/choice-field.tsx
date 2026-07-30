@@ -559,7 +559,10 @@ function MobileDrawer(props: ChoiceFieldProps) {
           ref={inputRef}
         />
       )}
-      <ComboboxPrimitive.List className="fcr-choice-list">
+      <ComboboxPrimitive.List
+        aria-label={choiceCopy(props.locale).options(props.label)}
+        className="fcr-choice-list"
+      >
         <ChoiceItems options={filtered.visible} />
       </ComboboxPrimitive.List>
       <ChoiceStatus locale={props.locale} total={filtered.total} />

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import ts from "typescript";
 
 import {
+  PINNED_LOCAL_UI_PROVENANCE,
   PINNED_SHADCN_COMMIT,
   PINNED_SHADCN_UPSTREAM_HASHES,
 } from "./ui-provenance-expected.mjs";
@@ -205,11 +206,30 @@ export async function verifyUiProvenance({
         violations.push(`${owner}: ${file} upstream blob hash drifted`);
       }
     }
-    for (const [file, expectedHash] of Object.entries(
-      provenance.localFiles ?? {},
-    )) {
-      const actualHash = sha256(await readFile(resolve(localRoot, file)));
-      if (actualHash !== expectedHash) {
+    const reviewedLocalFiles = PINNED_LOCAL_UI_PROVENANCE[path];
+    const manifestLocalFiles = provenance.localFiles ?? {};
+    if (!reviewedLocalFiles) {
+      violations.push(`${owner}: missing trusted local provenance registry`);
+      continue;
+    }
+    if (
+      JSON.stringify(Object.keys(manifestLocalFiles).sort())
+      !== JSON.stringify(Object.keys(reviewedLocalFiles).sort())
+    ) {
+      violations.push(`${owner}: reviewed local path set drifted`);
+    }
+    for (const [file, reviewedHash] of Object.entries(reviewedLocalFiles)) {
+      if (manifestLocalFiles[file] !== reviewedHash) {
+        violations.push(`${owner}: ${file} manifest local hash drifted`);
+      }
+      let actualHash;
+      try {
+        actualHash = sha256(await readFile(resolve(localRoot, file)));
+      } catch {
+        violations.push(`${owner}: ${file} reviewed local file is missing`);
+        continue;
+      }
+      if (actualHash !== reviewedHash) {
         violations.push(`${file}: local adaptation hash drifted`);
       }
     }

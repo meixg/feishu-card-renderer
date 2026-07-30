@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { axe } from "vitest-axe";
 import { afterEach, expect, it, vi } from "vitest";
@@ -109,6 +110,82 @@ it("keeps the mobile Drawer, search, listbox, chips, and close controls accessib
   expect((await axe(container, axeOptions)).violations).toEqual([]);
 });
 
+it("covers public mobile Drawer ARIA states for single, multi, person, empty, and disabled", async () => {
+  const never = new Promise<never>(() => {});
+  const resolvePerson = vi.fn((id: string) =>
+    id === "person-loading"
+      ? never
+      : Promise.resolve({ id, name: "Ready person" }));
+  const { container } = render(
+    <CardRenderer
+      card={{
+        schema: "2.0",
+        body: { elements: [{
+          tag: "form",
+          name: "mobile-aria",
+          elements: [
+            { tag: "select_static", name: "required-single", required: true,
+              label: text("Required single"), options: options.slice(0, 2) },
+            { tag: "select_static", name: "empty",
+              label: text("Empty single"), options: [] },
+            { tag: "select_static", name: "disabled", disabled: true,
+              label: text("Disabled single"), options: options.slice(0, 1) },
+            { tag: "multi_select_static", name: "selected-multi", required: true,
+              label: text("Selected multi"), options: options.slice(0, 3),
+              selected_values: [{ index: 0 }] },
+            { tag: "select_person", name: "people", label: text("People"),
+              options: [{ value: "person-ready" }, { value: "person-loading" }] },
+            { tag: "button", form_action_type: "submit", text: text("Validate") },
+          ],
+        }] },
+      }}
+      device="mobile"
+      onAction={() => {}}
+      resolvePerson={resolvePerson}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Validate" }));
+  const required = screen.getByRole("button", {
+    name: "Required single，打开选项",
+  });
+  expect(required).toHaveAttribute("aria-required", "true");
+  expect(required).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByRole("button", { name: "Disabled single，打开选项" }))
+    .toBeDisabled();
+  expect(screen.getByRole("button", { name: "移除 Option 0" }))
+    .toBeInTheDocument();
+
+  for (const [triggerName, dialogName] of [
+    ["Required single，打开选项", "Required single"],
+    ["Empty single，打开选项", "Empty single"],
+    ["Selected multi，打开选项", "Selected multi"],
+    ["People，打开选项", "People"],
+  ]) {
+    const trigger = screen.getByRole("button", { name: triggerName });
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    const dialog = screen.getByRole("dialog", { name: dialogName });
+    if (dialogName === "Empty single") {
+      expect(within(dialog).getByText(/没有匹配项/u)).toBeInTheDocument();
+    }
+    if (dialogName === "Selected multi") {
+      expect(within(dialog).getByRole("option", { name: "Option 0" }))
+        .toHaveAttribute("aria-selected", "true");
+    }
+    if (dialogName === "People") {
+      expect(await within(dialog).findByRole("option", { name: "Ready person" }))
+        .toBeInTheDocument();
+      expect(within(dialog).getByRole("option", { name: "人员信息加载中" }))
+        .toBeInTheDocument();
+    }
+    expect((await axe(container, axeOptions)).violations).toEqual([]);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  }
+  expect(container).not.toHaveTextContent(/person-ready|person-loading/);
+});
+
 it("announces person loading and error states without exposing person IDs", async () => {
   const never = new Promise<never>(() => {});
   const resolvePerson = vi.fn((id: string) =>
@@ -126,6 +203,7 @@ it("announces person loading and error states without exposing person IDs", asyn
           options: [{ value: "ou_loading" }, { value: "ou_error" }],
         }] },
       }}
+      device="mobile"
       onAction={() => {}}
       resolvePerson={resolvePerson}
     />,

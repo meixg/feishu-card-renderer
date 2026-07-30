@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import {
   cp,
   mkdtemp,
+  mkdir,
   readFile,
   rm,
   writeFile,
@@ -53,6 +55,88 @@ it("rejects a valid-format mutation of a pinned upstream hash", async () => {
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+type LocalManifest = { localFiles: Record<string, string> };
+
+async function withMutableProvenance(
+  mutate: (context: {
+    manifest: LocalManifest;
+    manifestPath: string;
+    sourceRoot: string;
+  }) => Promise<void> | void,
+) {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-ui-local-provenance-"));
+  await cp(resolve(root, "docs"), resolve(temporaryRoot, "docs"), {
+    recursive: true,
+  });
+  await cp(resolve(root, "src"), resolve(temporaryRoot, "src"), {
+    recursive: true,
+  });
+  const manifestPath = resolve(
+    temporaryRoot,
+    "docs/specs/shadcn-base-nova-mobile-drawer-baseline.json",
+  );
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as LocalManifest;
+  try {
+    await mutate({ manifest, manifestPath, sourceRoot: temporaryRoot });
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    return await verifyUiProvenance({
+      manifestRoot: temporaryRoot,
+      localRoot: temporaryRoot,
+    });
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+}
+
+it("rejects deleting one or every local provenance key", async () => {
+  const deleted = await withMutableProvenance(({ manifest }) => {
+    delete manifest.localFiles["src/components/ui/drawer.tsx"];
+  });
+  expect(deleted).toContain("mobile choice Drawer: reviewed local path set drifted");
+
+  const emptied = await withMutableProvenance(({ manifest }) => {
+    manifest.localFiles = {};
+  });
+  expect(emptied).toContain("mobile choice Drawer: reviewed local path set drifted");
+});
+
+it("rejects substituting an unrelated real file and its actual hash", async () => {
+  const violations = await withMutableProvenance(async ({ manifest, sourceRoot }) => {
+    const readme = await readFile(resolve(root, "README.md"));
+    manifest.localFiles = {
+      "README.md": createHash("sha256").update(readme).digest("hex"),
+    };
+    await writeFile(resolve(sourceRoot, "README.md"), readme);
+  });
+  expect(violations).toContain("mobile choice Drawer: reviewed local path set drifted");
+});
+
+it("rejects a valid-format but unreviewed local hash", async () => {
+  const violations = await withMutableProvenance(({ manifest }) => {
+    manifest.localFiles["src/components/ui/drawer.tsx"] = "a".repeat(64);
+  });
+  expect(violations).toContain(
+    "mobile choice Drawer: src/components/ui/drawer.tsx manifest local hash drifted",
+  );
+});
+
+it("rejects changing both a local source and its manifest hash", async () => {
+  const violations = await withMutableProvenance(async ({
+    manifest,
+    sourceRoot,
+  }) => {
+    const path = "src/components/ui/drawer.tsx";
+    const mutated = `${await readFile(resolve(sourceRoot, path), "utf8")}\n`;
+    await mkdir(resolve(sourceRoot, "src/components/ui"), { recursive: true });
+    await writeFile(resolve(sourceRoot, path), mutated);
+    manifest.localFiles[path] = createHash("sha256").update(mutated).digest("hex");
+  });
+  expect(violations).toEqual(expect.arrayContaining([
+    "mobile choice Drawer: src/components/ui/drawer.tsx manifest local hash drifted",
+    "src/components/ui/drawer.tsx: local adaptation hash drifted",
+  ]));
 });
 
 it("pins the Issue #76 base-nova form-control adaptations", async () => {

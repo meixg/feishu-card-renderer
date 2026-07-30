@@ -699,6 +699,89 @@ test("mobile choices use a keyboard-safe Drawer without horizontal overflow", as
   await expect(drawer).toHaveScreenshot("card-choices-mobile-drawer.png");
 });
 
+test("mobile Drawer disables its motion under reduced-motion preference", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile");
+  await host.getByRole("button", {
+    name: "Multiple choices，打开选项",
+  }).click();
+  const drawer = host.getByRole("dialog", { name: "Multiple choices" });
+  await expect(drawer).toBeVisible();
+  const durations = await drawer.evaluate((node) =>
+    getComputedStyle(node).transitionDuration.split(",").map((value) => {
+      const trimmed = value.trim();
+      return trimmed.endsWith("ms")
+        ? Number.parseFloat(trimmed)
+        : Number.parseFloat(trimmed) * 1000;
+    }));
+  expect(durations.length).toBeGreaterThan(0);
+  expect(durations.every((milliseconds) => milliseconds <= 0.01)).toBe(true);
+});
+
+test("mobile text choices update exactly once for pointer, keyboard, and emulated touch", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const input of ["pointer", "keyboard", "touch"] as const) {
+    await page.goto("/tests/visual/");
+    const host = page.locator("#case-choices-mobile");
+    const trigger = host.getByRole("button", {
+      name: "Searchable Combobox，打开选项",
+    });
+    await trigger.focus();
+    const optionName = "Search option 12";
+    if (input === "keyboard") {
+      await trigger.press("Enter");
+      const search = host.getByRole("combobox", {
+        name: "搜索Searchable Combobox",
+      });
+      await expect(search).toBeFocused();
+      await search.fill("option 12");
+      await search.press("ArrowDown");
+      await search.press("Enter");
+    } else {
+      await trigger.click();
+      const option = host.getByRole("option", { name: optionName });
+      if (input === "pointer") {
+        await option.click();
+      } else {
+        const bounds = await option.boundingBox();
+        expect(bounds).not.toBeNull();
+        const session = await page.context().newCDPSession(page);
+        await session.send("Emulation.setTouchEmulationEnabled", {
+          enabled: true,
+          maxTouchPoints: 1,
+        });
+        const point = {
+          x: bounds!.x + bounds!.width / 2,
+          y: bounds!.y + bounds!.height / 2,
+        };
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [point],
+        });
+        await session.send("Input.dispatchTouchEvent", {
+          type: "touchEnd",
+          touchPoints: [],
+        });
+        await session.detach();
+      }
+    }
+    await expect(host.getByRole("dialog", { name: "Searchable Combobox" }))
+      .toBeHidden();
+    await host.getByRole("button", { name: "Submit choices" }).click();
+    const actions = await host.locator("[data-choice-actions]").evaluate(
+      (node) => JSON.parse(node.textContent || "[]") as unknown[],
+    );
+    expect(actions, input).toHaveLength(1);
+    expect(JSON.stringify(actions[0])).toContain('"large":{"index":11}');
+  }
+});
+
 test("400px dark mobile Drawer covers long searchable and resolved person options", async ({
   page,
 }) => {
@@ -732,6 +815,31 @@ test("400px dark mobile Drawer covers long searchable and resolved person option
   await expect(person.getByRole("option", { name: "Grace Hopper" }))
     .toBeVisible();
   expect((await person.boundingBox())!.width).toBeLessThanOrEqual(400);
+});
+
+test("390px mobile person Drawer shows ready, loading, and error placeholders safely", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile-person-resources");
+  await host.getByRole("button", {
+    name: "Person resources，打开选项",
+  }).click();
+  const drawer = host.getByRole("dialog", { name: "Person resources" });
+  await expect(drawer.getByRole("option", { name: "Resolved person" }))
+    .toBeVisible();
+  await expect(drawer.getByRole("option", { name: "人员信息加载中" }))
+    .toBeVisible();
+  await expect(drawer.getByRole("option", { name: "人员信息不可用" }))
+    .toBeVisible();
+  await expect(drawer).not.toContainText(
+    /opaque-ready|opaque-loading|opaque-error|private resolver failure/,
+  );
+  expect((await drawer.boundingBox())!.width).toBeLessThanOrEqual(390);
+  await expect(drawer).toHaveScreenshot(
+    "card-choices-mobile-person-resources-390.png",
+  );
 });
 
 test("mobile Drawer follows a simulated soft-keyboard visual viewport", async ({
@@ -909,6 +1017,10 @@ test("mobile Drawer closes by Esc, close button, and downward swipe with focus r
 
   await trigger.click();
   await expect(drawer).toBeVisible();
+  const sixth = drawer.getByRole("option", { name: "Long six choice" });
+  await sixth.click();
+  await expect(sixth).toHaveAttribute("aria-selected", "true");
+  await expect(host.locator("[data-choice-actions]")).toHaveText("[]");
   const handle = host.locator(".fcr-ui-drawer-swipe-handle");
   const bounds = await handle.boundingBox();
   expect(bounds).not.toBeNull();
@@ -936,6 +1048,10 @@ test("mobile Drawer closes by Esc, close button, and downward swipe with focus r
   await session.detach();
   await expect(drawer).toBeHidden();
   await expect(trigger).toBeFocused();
+  await expect(host.locator("[data-choice-actions]")).toHaveText("[]");
+  await trigger.click();
+  await expect(drawer.getByRole("option", { name: "Long six choice" }))
+    .toHaveAttribute("aria-selected", "true");
 });
 
 test("form controls validate, focus, clear, reset, and submit once in a real browser", async ({
