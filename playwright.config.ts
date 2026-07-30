@@ -12,6 +12,7 @@ export default defineConfig({
     launchOptions: {
       args: ["--disable-skia-runtime-opts"],
     },
+    reducedMotion: "reduce",
     trace: "retain-on-failure",
   },
   projects: [

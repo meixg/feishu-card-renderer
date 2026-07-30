@@ -34,12 +34,14 @@ jobs:
 
       - name: Run strict visual suite three times
         run: pnpm visual:determinism
+        env:
+          FCR_VISUAL_DETERMINISM_DIR: ${{ runner.temp }}/visual-determinism
 
       - name: Upload hash evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: visual-determinism-${{ github.run_attempt }}
-          path: test-results/visual-determinism
+          path: ${{ runner.temp }}/visual-determinism
           if-no-files-found: error
           retention-days: 7

@@ -1,10 +1,13 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
-const evidenceRoot = resolve(root, "test-results/visual-determinism");
+const evidenceRoot = process.env.FCR_VISUAL_DETERMINISM_DIR
+  ? resolve(process.env.FCR_VISUAL_DETERMINISM_DIR)
+  : await mkdtemp(resolve(tmpdir(), "fcr-visual-determinism-"));
 const targets = [
   "button-base-nova-themes.png",
   "card-form-controls-error-compact.png",
@@ -50,3 +53,4 @@ for (const target of targets) {
 const report = `${JSON.stringify(records, null, 2)}\n`;
 await writeFile(resolve(evidenceRoot, "hashes.json"), report);
 console.log(report);
+console.log(`Visual determinism evidence: ${evidenceRoot}`);

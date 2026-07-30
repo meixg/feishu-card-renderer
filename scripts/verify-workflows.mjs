@@ -183,6 +183,10 @@ requireContract(
   "visual rendering must disable Skia runtime CPU optimizations",
 );
 requireContract(
+  /reducedMotion: "reduce"/.test(playwrightConfig),
+  "visual rendering must use the reduced-motion media contract",
+);
+requireContract(
   /name: Install managed Chromium\n\s*run: pnpm exec playwright install --with-deps chromium/.test(ci)
     && /name: Verify visual environment contract\n\s*run: pnpm visual:environment/.test(ci),
   "full-quality must install and verify the lockfile-managed browser before screenshots",
