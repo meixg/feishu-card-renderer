@@ -424,6 +424,23 @@ export function FormControlCases({
 }
 
 const isolatedVisualCase = new URLSearchParams(window.location.search).get("case");
+const tablePaginationVisualCard = {
+  schema: "2.0" as const,
+  body: {
+    elements: [{
+      tag: "table",
+      page_size: 2,
+      columns: [
+        { name: "name", display_name: "Long project caption column", width: "240px" },
+        { name: "detail", display_name: "Detail", width: "360px" },
+      ],
+      rows: Array.from({ length: 5 }, (_, index) => ({
+        name: `Project ${index + 1}`,
+        detail: `Long cell ${index + 1} — ${"unbroken-content-".repeat(8)}`,
+      })),
+    }],
+  },
+};
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -443,6 +460,29 @@ createRoot(document.getElementById("root")!).render(
             />
           </section>
         </main>
+      : isolatedVisualCase === "table-pagination"
+        ? <main style={{ display: "grid", gap: 24 }}>
+            {([
+              ["compact", 400],
+              ["default", 600],
+              ["fill", 760],
+              ["narrow", 280],
+            ] as const).map(([name, width]) => (
+              <section id={`case-table-pagination-${name}`} key={name}
+                style={{ width }}>
+                <CardRenderer
+                  colorScheme={name === "default" ? "dark" : "light"}
+                  card={{
+                    ...tablePaginationVisualCard,
+                    config: {
+                      update_multi: true,
+                      width_mode: name === "narrow" ? "compact" : name,
+                    },
+                  }}
+                />
+              </section>
+            ))}
+          </main>
       : isolatedVisualCase === "date"
         ? <main>
             <FormControlCases

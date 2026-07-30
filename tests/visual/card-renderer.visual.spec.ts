@@ -1186,3 +1186,48 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
     getComputedStyle(node).transitionDuration)).toBe("0s");
   await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
 });
+
+test("table pagination keeps standard controls, keyboard behavior, and narrow overflow scoped", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/tests/visual/?case=table-pagination");
+
+  for (const name of ["compact", "default", "fill", "narrow"]) {
+    const host = page.locator(`#case-table-pagination-${name}`);
+    const root = host.locator(".fcr-root");
+    const tableContainer = root.locator('[data-slot="table-container"]');
+    const pagination = root.getByRole("navigation");
+    const next = pagination.getByRole("button", { name: "下一页" });
+    const previous = pagination.getByRole("button", { name: "上一页" });
+
+    expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true);
+    expect(await pagination.evaluate((node) =>
+      node.scrollWidth <= node.clientWidth)).toBe(true);
+    if (name === "compact" || name === "narrow") {
+      expect(await tableContainer.evaluate((node) =>
+        node.scrollWidth > node.clientWidth)).toBe(true);
+    }
+    expect(await next.evaluate((node) =>
+      node.getBoundingClientRect().width)).toBe(32);
+
+    await next.focus();
+    await next.press("Enter");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 2 页，共 3 页");
+    await next.press("Space");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 3 页，共 3 页");
+    await expect(next).toBeDisabled();
+    await next.press("Enter");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 3 页，共 3 页");
+    await previous.focus();
+    expect(await previous.evaluate((node) =>
+      getComputedStyle(node).boxShadow)).not.toBe("none");
+  }
+
+  await expect(page.locator("main"))
+    .toHaveScreenshot("table-pagination-base-nova-widths.png");
+});
