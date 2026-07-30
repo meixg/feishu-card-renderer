@@ -179,7 +179,7 @@ requireContract(
   "all visual rendering must use exactly one Playwright worker",
 );
 requireContract(
-  /launchOptions:\s*\{\s*args: \[\s*"--disable-skia-runtime-opts",\s*"--disable-partial-raster",\s*\],\s*\}/m.test(playwrightConfig),
+  /launchOptions:\s*\{\s*args: \[\s*"--disable-skia-runtime-opts",\s*"--disable-partial-raster"\s*\],\s*\}/m.test(playwrightConfig),
   "visual rendering must lock Skia optimization and partial-raster behavior",
 );
 requireContract(

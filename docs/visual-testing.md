@@ -41,6 +41,9 @@ one remaining rounded-corner pixel. Controlled run `30582136811` isolated
 `--disable-partial-raster` as the additional stable control, and ablation run
 `30582651451` proved reduced-motion unnecessary: with or without it, all three
 Button hashes were `f3e3ed05…` and all three Form hashes were `01112dcd…`.
+Final full run `30582949053` then passed 28/28 three times and reproduced those
+exact two hashes in every run; artifact `8775508919` retains all six PNGs and
+the hash report.
 See
 [`visual-determinism-evidence.md`](./visual-determinism-evidence.md).
 

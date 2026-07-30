@@ -204,6 +204,22 @@ plus `--disable-skia-runtime-opts` and `--disable-partial-raster`. These flags
 control CPU-specific Skia paths and partial tile rasterization; they do not
 change screenshot assertions or tolerated differences.
 
+Final full-suite proof run `30582949053`, job `91007471288`, tested commit
+`82d8e39b993b30d8009716fd825b4f1c6a6bdc98`. All three consecutive runs
+passed 28/28 with one worker. Artifact `8775508919`
+(`final-head-visual-determinism-30582949053`, archive SHA-256
+`688b3521f3c61205318733b1416c977a1a425ff179f6a34567b76253c27209a3`)
+retains all six PNGs and `hashes.json`:
+
+| PNG | Bytes | Runs 1/2/3 SHA-256 |
+| --- | ---: | --- |
+| Button | 29,908 | `f3e3ed05c8142419a18dd674d3b888a11decee3bdcca14fb30afdfd26da59983` ×3 |
+| Form | 28,159 | `01112dcd19801af8693de66c4292f5d88ed6a4e7c93aaedcd9bf8c1251e2e9b1` ×3 |
+
+The same run launched and queried managed Chromium `151.0.7922.34` with both
+required flags. The later cleanup commit changes only the temporary dispatch
+adapter back to the normal baseline-refresh workflow.
+
 ## Conclusion and fix boundary
 
 The evidence rejects the proposed `ubuntu-24.04` label plus three exact dpkg
