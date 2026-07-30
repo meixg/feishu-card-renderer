@@ -4,8 +4,8 @@ import { resolve } from "node:path";
 import ts from "typescript";
 
 import {
-  PINNED_LOCAL_UI_PROVENANCE,
   PINNED_SHADCN_COMMIT,
+  PINNED_SHADCN_LOCAL_HASHES,
   PINNED_SHADCN_UPSTREAM_HASHES,
 } from "./ui-provenance-expected.mjs";
 
@@ -26,11 +26,14 @@ export async function verifyUiArchitecture() {
   const requiredLucideImports = new Map([
     ["src/components/ui/checkbox.tsx", new Set(["CheckIcon"])],
     ["src/components/ui/radio-group.tsx", new Set(["CircleIcon"])],
-    ["src/components/interactive/interactive.tsx", new Set(["EllipsisIcon"])],
+    ["src/components/ui/calendar.tsx", new Set([
+      "ChevronDownIcon", "ChevronLeftIcon", "ChevronRightIcon",
+    ])],
     ["src/components/ui/choice-field.tsx", new Set([
-      "ChevronDownIcon",
-      "SearchIcon",
-      "XIcon",
+      "ChevronDownIcon", "SearchIcon", "XIcon",
+    ])],
+    ["src/components/interactive/interactive.tsx", new Set([
+      "CalendarIcon", "EllipsisIcon",
     ])],
   ]);
   for (const file of await sourceFiles(resolve(root, "src"))) {
@@ -136,7 +139,7 @@ export async function verifyUiProvenance({
       "apps/v4/registry/bases/base/ui/button.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
     ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", [
       "apps/v4/registry/bases/base/ui/input.tsx",
       "apps/v4/registry/bases/base/ui/textarea.tsx",
@@ -146,33 +149,37 @@ export async function verifyUiProvenance({
       "apps/v4/registry/bases/base/ui/radio-group.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
     ["PC choice fields", "docs/specs/shadcn-base-nova-choice-baseline.json", [
       "apps/v4/registry/bases/base/ui/select.tsx",
       "apps/v4/registry/bases/base/ui/combobox.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
     ["mobile choice Drawer", "docs/specs/shadcn-base-nova-mobile-drawer-baseline.json", [
       "apps/v4/registry/bases/base/ui/drawer.tsx",
       "apps/v4/registry/bases/base/ui/button.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
     ["overlays", "docs/specs/shadcn-base-nova-overlays-baseline.json", [
       "apps/v4/registry/bases/base/ui/dropdown-menu.tsx",
       "apps/v4/registry/bases/base/ui/alert-dialog.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
     ["containers", "docs/specs/shadcn-base-nova-containers-baseline.json", [
       "apps/v4/registry/bases/base/ui/collapsible.tsx",
       "apps/v4/registry/bases/base/ui/button.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ]],
+    ], "2026-07-30"],
+    ["calendar", "docs/specs/shadcn-base-nova-calendar-baseline.json", [
+      "apps/v4/registry/bases/base/ui/popover.tsx",
+      "apps/v4/registry/bases/base/ui/calendar.tsx",
+    ], "2026-07-31"],
   ];
-  for (const [owner, path, expectedPaths] of manifests) {
+  for (const [owner, path, expectedPaths, reviewedAt] of manifests) {
     const provenance = JSON.parse(
       await readFile(resolve(manifestRoot, path), "utf8"),
     );
@@ -188,7 +195,7 @@ export async function verifyUiProvenance({
       baseUi: provenance.dependencies?.["@base-ui/react"],
       lucide: provenance.dependencies?.["lucide-react"],
     };
-    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    if (JSON.stringify(actual) !== JSON.stringify({ ...expected, reviewedAt })) {
       violations.push(`${owner} base-nova reviewed versions or preset drifted`);
     }
     const upstreamFiles = provenance.upstream?.files ?? {};
@@ -206,31 +213,25 @@ export async function verifyUiProvenance({
         violations.push(`${owner}: ${file} upstream blob hash drifted`);
       }
     }
-    const reviewedLocalFiles = PINNED_LOCAL_UI_PROVENANCE[path];
-    const manifestLocalFiles = provenance.localFiles ?? {};
-    if (!reviewedLocalFiles) {
-      violations.push(`${owner}: missing trusted local provenance registry`);
-      continue;
-    }
+    const localFiles = provenance.localFiles ?? {};
+    const reviewedLocalFiles = PINNED_SHADCN_LOCAL_HASHES[owner] ?? {};
     if (
-      JSON.stringify(Object.keys(manifestLocalFiles).sort())
+      JSON.stringify(Object.keys(localFiles).sort())
       !== JSON.stringify(Object.keys(reviewedLocalFiles).sort())
     ) {
-      violations.push(`${owner}: reviewed local path set drifted`);
+      violations.push(`${owner} reviewed local adaptation paths drifted`);
     }
     for (const [file, reviewedHash] of Object.entries(reviewedLocalFiles)) {
-      if (manifestLocalFiles[file] !== reviewedHash) {
-        violations.push(`${owner}: ${file} manifest local hash drifted`);
+      if (localFiles[file] !== reviewedHash) {
+        violations.push(`${owner}: ${file} reviewed local hash drifted`);
       }
-      let actualHash;
       try {
-        actualHash = sha256(await readFile(resolve(localRoot, file)));
+        const actualHash = sha256(await readFile(resolve(localRoot, file)));
+        if (actualHash !== reviewedHash) {
+          violations.push(`${file}: local adaptation hash drifted`);
+        }
       } catch {
-        violations.push(`${owner}: ${file} reviewed local file is missing`);
-        continue;
-      }
-      if (actualHash !== reviewedHash) {
-        violations.push(`${file}: local adaptation hash drifted`);
+        violations.push(`${file}: reviewed local adaptation is missing`);
       }
     }
   }

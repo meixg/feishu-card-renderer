@@ -44,7 +44,7 @@ describe("container rendering", () => {
     expect(controls).toMatch(/^fcr-panel-/);
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(trigger).toHaveClass("fcr-ui-button", "fcr-ui-button-ghost");
-    expect(trigger.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(trigger).toHaveAccessibleName("默认折叠");
     expect(document.getElementById(controls!)).toHaveAttribute("hidden");
 
     fireEvent.click(trigger);

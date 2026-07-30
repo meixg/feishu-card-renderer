@@ -5,7 +5,7 @@ import { UiPortalEventBoundary } from "@/renderer/portal";
 import { useUiPortalHost } from "@/renderer/portal-context";
 
 function Popover(props: PopoverPrimitive.Root.Props) {
-  return <PopoverPrimitive.Root {...props} />;
+  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
 function PopoverTrigger(props: PopoverPrimitive.Trigger.Props) {
@@ -33,6 +33,7 @@ function PopoverContent({
           alignOffset={alignOffset}
           className="fcr-ui-popover-positioner"
           collisionPadding={8}
+          positionMethod="fixed"
           side={side}
           sideOffset={sideOffset}
         >
