@@ -546,6 +546,18 @@ createRoot(document.getElementById("root")!).render(
           })}
         />
       </section>
+      <section id="case-choices-mobile-dark" style={{ width: 400 }}>
+        <CardRenderer
+          card={choiceVisualCard}
+          colorScheme="dark"
+          device="mobile"
+          onAction={() => {}}
+          resolvePerson={(id) => ({
+            id,
+            name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+          })}
+        />
+      </section>
       <SelectImageResourceCase
         id="case-select-image-ready"
         resolveImage={() => selectImageResourceUrl}

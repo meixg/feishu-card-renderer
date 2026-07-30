@@ -1,13 +1,23 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
-import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer";
 import {
+  ChevronDownIcon,
   SearchIcon,
+  XIcon,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
-import { UiPortalEventBoundary } from "@/renderer/portal";
 import { useUiPortalHost } from "@/renderer/portal-context";
 import { Button } from "./button";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "./drawer";
 import {
   Combobox,
   ComboboxChip,
@@ -567,12 +577,13 @@ function MobileDrawer(props: ChoiceFieldProps) {
     open,
   } as const;
   return (
-    <DrawerPrimitive.Root
+    <Drawer
       onOpenChange={(next) => {
         setOpen(next);
         if (!next) setQuery("");
       }}
       open={open}
+      showSwipeHandle
       swipeDirection="down"
     >
       <div
@@ -591,7 +602,7 @@ function MobileDrawer(props: ChoiceFieldProps) {
           locale={props.locale}
           value={props.value}
         />
-        <DrawerPrimitive.Trigger
+        <DrawerTrigger
           ref={props.controlRef}
           aria-describedby={props.describedBy}
           aria-invalid={props.invalid || undefined}
@@ -602,76 +613,67 @@ function MobileDrawer(props: ChoiceFieldProps) {
           onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => event.stopPropagation()}
         >
-          ⌄
-        </DrawerPrimitive.Trigger>
+          <ChevronDownIcon aria-hidden="true" />
+        </DrawerTrigger>
       </div>
       {portalHost && (
-        <DrawerPrimitive.Portal container={portalHost}>
-          <UiPortalEventBoundary>
-            <DrawerPrimitive.VirtualKeyboardProvider>
-              <DrawerPrimitive.Backdrop className="fcr-drawer-backdrop" />
-              <DrawerPrimitive.Viewport className="fcr-drawer-viewport">
-                <DrawerPrimitive.Popup
-                  className="fcr-drawer-popup"
-                  initialFocus={props.searchable ? inputRef : closeRef}
-                >
-                  <DrawerPrimitive.Content className="fcr-drawer-content">
-                    <div className="fcr-drawer-handle" aria-hidden="true" />
-                    <div className="fcr-drawer-header">
-                      <DrawerPrimitive.Title>{props.label}</DrawerPrimitive.Title>
-                      <DrawerPrimitive.Description className="fcr-sr-only">
-                        {props.searchable
-                          ? choiceCopy(props.locale).searchDescription
-                          : choiceCopy(props.locale).selectDescription}
-                      </DrawerPrimitive.Description>
-                      <DrawerPrimitive.Close
-                        ref={closeRef}
-                        aria-label={choiceCopy(props.locale).close}
-                      >
-                        ×
-                      </DrawerPrimitive.Close>
-                    </div>
-                    {props.multiple ? (
-                      <ComboboxPrimitive.Root
-                        {...shared}
-                        multiple
-                        onValueChange={(tokens) => props.onValueChange(tokens)}
-                        value={Array.isArray(props.value) ? [...props.value] : []}
-                      >
-                        {list}
-                      </ComboboxPrimitive.Root>
-                    ) : (
-                      <ComboboxPrimitive.Root
-                        {...shared}
-                        onValueChange={(token) => {
-                          if (typeof token !== "string") return;
-                          props.onValueChange(token);
-                          setOpen(false);
-                        }}
-                        value={typeof props.value === "string"
-                          ? props.value || null
-                          : null}
-                      >
-                        {list}
-                      </ComboboxPrimitive.Root>
-                    )}
-                    {props.multiple && (
-                      <button
-                        className="fcr-choice-done"
-                        onClick={() => setOpen(false)}
-                        type="button"
-                      >
-                        {choiceCopy(props.locale).done}
-                      </button>
-                    )}
-                  </DrawerPrimitive.Content>
-                </DrawerPrimitive.Popup>
-              </DrawerPrimitive.Viewport>
-            </DrawerPrimitive.VirtualKeyboardProvider>
-          </UiPortalEventBoundary>
-        </DrawerPrimitive.Portal>
+        <DrawerContent
+          className="fcr-choice-drawer"
+          container={portalHost}
+          initialFocus={props.searchable ? inputRef : closeRef}
+          keyboardAware
+        >
+          <DrawerHeader className="fcr-choice-drawer-header">
+            <DrawerTitle>{props.label}</DrawerTitle>
+            <DrawerDescription className="fcr-sr-only">
+              {props.searchable
+                ? choiceCopy(props.locale).searchDescription
+                : choiceCopy(props.locale).selectDescription}
+            </DrawerDescription>
+            <DrawerClose
+              render={<Button size="icon" variant="ghost" />}
+              ref={closeRef}
+              aria-label={choiceCopy(props.locale).close}
+            >
+              <XIcon aria-hidden="true" />
+            </DrawerClose>
+          </DrawerHeader>
+          <div className="fcr-choice-drawer-body">
+            {props.multiple ? (
+              <ComboboxPrimitive.Root
+                {...shared}
+                multiple
+                onValueChange={(tokens) => props.onValueChange(tokens)}
+                value={Array.isArray(props.value) ? [...props.value] : []}
+              >
+                {list}
+              </ComboboxPrimitive.Root>
+            ) : (
+              <ComboboxPrimitive.Root
+                {...shared}
+                onValueChange={(token) => {
+                  if (typeof token !== "string") return;
+                  props.onValueChange(token);
+                  setOpen(false);
+                }}
+                value={typeof props.value === "string"
+                  ? props.value || null
+                  : null}
+              >
+                {list}
+              </ComboboxPrimitive.Root>
+            )}
+          </div>
+          {props.multiple && (
+            <DrawerFooter>
+              <Button onClick={() => setOpen(false)} type="button">
+                {choiceCopy(props.locale).done}
+              </Button>
+            </DrawerFooter>
+          )}
+        </DrawerContent>
       )}
-    </DrawerPrimitive.Root>
+    </Drawer>
   );
 }
 

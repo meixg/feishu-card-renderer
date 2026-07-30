@@ -72,10 +72,16 @@
   those wrappers.
 - `src/styles/choice-nova.css` is the card-scoped adaptation of the pinned
   base-nova Select/Combobox rules and is the only PC choice visual source. The
-  legacy choice rules remain solely for the not-yet-migrated mobile Drawer;
-  PC-specific additions are limited to portal collision, width and overflow
-  integration. The Done action uses the pinned Button wrapper.
-- Mobile choice fields use the official Base UI-backed shadcn Drawer. The existing single-select close behavior, multi-select Done behavior, virtual-keyboard accommodation and per-card portal ownership remain intact.
+  choice-specific additions are limited to portal collision, width, wrapping
+  and overflow integration. The Done action uses the pinned Button wrapper.
+- Mobile choice fields use the pinned official Base UI-backed shadcn Drawer
+  wrapper in `src/components/ui/drawer.tsx`; its Nova adaptation is recorded in
+  [mobile Drawer provenance](shadcn-base-nova-mobile-drawer-baseline.json).
+  Base UI supplies the headless Drawer and virtual-keyboard behavior, while the
+  visible wrapper and defaults come from shadcn. Renderer-scoped changes are
+  limited to the per-card portal/event boundary, keyboard inset, safe-area and
+  scroll containment. Single-select close, multi-select Done and committed
+  selection semantics remain renderer-owned.
 - Generic interaction icons use named Lucide imports with shadcn default dimensions and accessible decorative treatment. Protocol-specified business icons continue through the renderer icon adapter.
 - Protocol visual semantics are mapped to the closest shadcn variant. Dangerous actions use a destructive treatment; primary actions use the default primary treatment; secondary actions use an appropriate secondary or outline treatment. Required, invalid, disabled and selected states remain visually and semantically observable.
 - Protocol custom colors do not restyle standard interaction controls. They continue to apply only where protocol content layout explicitly supports them or degrade according to the existing validation policy.

@@ -249,6 +249,10 @@ Button 与表单控件的上游输入及本地摘要分别固定在
 [form-control provenance](docs/specs/shadcn-base-nova-form-controls-baseline.md)，
 菜单与确认框见
 [overlay provenance](docs/specs/shadcn-base-nova-overlays-baseline.md)。
+移动端文本选择 Drawer 见
+[mobile Drawer provenance](docs/specs/shadcn-base-nova-mobile-drawer-baseline.json)；
+Base UI 提供无样式 primitive 与虚拟键盘行为，固定 shadcn wrapper/Nova 快照提供
+结构和默认视觉，renderer 只适配逐卡 portal、viewport 与滚动。
 折叠面板与交互容器的状态适配见
 [container interaction provenance](docs/specs/shadcn-base-nova-containers-baseline.md)；
 `collapsible_panel` 组合 scoped Collapsible、Button 与 Lucide chevron，

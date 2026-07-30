@@ -699,6 +699,41 @@ test("mobile choices use a keyboard-safe Drawer without horizontal overflow", as
   await expect(drawer).toHaveScreenshot("card-choices-mobile-drawer.png");
 });
 
+test("400px dark mobile Drawer covers long searchable and resolved person options", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 400, height: 844 });
+  await page.goto("/tests/visual/");
+  const host = page.locator("#case-choices-mobile-dark");
+  const root = host.locator(".fcr-root");
+  await host.getByRole("button", {
+    name: "Searchable Combobox，打开选项",
+  }).click();
+  const searchable = host.getByRole("dialog", {
+    name: "Searchable Combobox",
+  });
+  await searchable.getByRole("combobox", {
+    name: "搜索Searchable Combobox",
+  }).fill("intentionally");
+  await expect(searchable.getByRole("option", {
+    name: "Search option with an intentionally long label that must wrap",
+  })).toBeVisible();
+  expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+    .toBe(true);
+  await expect(searchable).toHaveScreenshot(
+    "card-choices-mobile-dark-long-400.png",
+  );
+  await searchable.getByRole("button", { name: "关闭选择器" }).click();
+
+  await host.getByRole("button", { name: "Person，打开选项" }).click();
+  const person = host.getByRole("dialog", { name: "Person" });
+  await expect(person.getByRole("option", { name: "Ada Lovelace" }))
+    .toBeVisible();
+  await expect(person.getByRole("option", { name: "Grace Hopper" }))
+    .toBeVisible();
+  expect((await person.boundingBox())!.width).toBeLessThanOrEqual(400);
+});
+
 test("mobile Drawer follows a simulated soft-keyboard visual viewport", async ({
   page,
 }) => {
@@ -759,7 +794,7 @@ test("mobile Drawer follows a simulated soft-keyboard visual viewport", async ({
       width: 390,
     });
   });
-  await expect.poll(() => host.locator(".fcr-drawer-viewport").evaluate(
+  await expect.poll(() => host.locator(".fcr-ui-drawer-viewport").evaluate(
     (node) => getComputedStyle(node).getPropertyValue("--drawer-keyboard-inset"),
   )).toBe("424px");
 
@@ -863,13 +898,18 @@ test("mobile Drawer closes by Esc, close button, and downward swipe with focus r
   await expect(trigger).toBeFocused();
 
   await trigger.click();
+  await page.mouse.click(4, 4);
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
   await host.getByRole("button", { name: "关闭选择器" }).click();
   await expect(drawer).toBeHidden();
   await expect(trigger).toBeFocused();
 
   await trigger.click();
   await expect(drawer).toBeVisible();
-  const handle = host.locator(".fcr-drawer-handle");
+  const handle = host.locator(".fcr-ui-drawer-swipe-handle");
   const bounds = await handle.boundingBox();
   expect(bounds).not.toBeNull();
   const x = bounds!.x + bounds!.width / 2;

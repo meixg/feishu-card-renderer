@@ -26,6 +26,11 @@ export async function verifyUiArchitecture() {
     ["src/components/ui/checkbox.tsx", new Set(["CheckIcon"])],
     ["src/components/ui/radio-group.tsx", new Set(["CircleIcon"])],
     ["src/components/interactive/interactive.tsx", new Set(["EllipsisIcon"])],
+    ["src/components/ui/choice-field.tsx", new Set([
+      "ChevronDownIcon",
+      "SearchIcon",
+      "XIcon",
+    ])],
   ]);
   for (const file of await sourceFiles(resolve(root, "src"))) {
     const source = await readFile(file, "utf8");
@@ -144,6 +149,12 @@ export async function verifyUiProvenance({
     ["PC choice fields", "docs/specs/shadcn-base-nova-choice-baseline.json", [
       "apps/v4/registry/bases/base/ui/select.tsx",
       "apps/v4/registry/bases/base/ui/combobox.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ]],
+    ["mobile choice Drawer", "docs/specs/shadcn-base-nova-mobile-drawer-baseline.json", [
+      "apps/v4/registry/bases/base/ui/drawer.tsx",
+      "apps/v4/registry/bases/base/ui/button.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
     ]],
