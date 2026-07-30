@@ -423,7 +423,9 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
     fireEvent.keyDown(screen.getByRole("combobox", { name: "Search People" }), {
       key: "Escape",
     });
-    openChoice("Tags, open options");
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Tags" }), {
+      key: "ArrowDown",
+    });
     expect(screen.getByRole("option", { name: "Disabled" }))
       .toHaveAttribute("aria-disabled", "true");
     fireEvent.click(screen.getByRole("option", { name: "Disabled" }));
