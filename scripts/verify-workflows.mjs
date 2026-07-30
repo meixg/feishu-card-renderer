@@ -247,8 +247,8 @@ requireContract(
 );
 
 requireContract(
-  /^on:\n {2}workflow_dispatch:\n\npermissions:\n {2}contents: read\n/m.test(visualDeterminism),
-  "visual determinism proof must be dispatch-only with read-only contents",
+  /^on:\n {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, ready_for_review\]\n {2}workflow_dispatch:\n\npermissions:\n {2}contents: read\n/m.test(visualDeterminism),
+  "visual determinism proof must run for main PRs and dispatch with read-only contents",
 );
 requireContract(
   /run: pnpm exec playwright install --with-deps chromium/.test(visualDeterminism)
