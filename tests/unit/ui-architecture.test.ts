@@ -112,6 +112,18 @@ it("pins every manifest local key set to the reviewed local registry", async () 
   }
 });
 
+it("keeps table pagination integration CSS layout-only", async () => {
+  const source = await readFile(
+    resolve(root, "src/styles/table-pagination-nova.css"),
+    "utf8",
+  );
+  expect(source).not.toMatch(/fcr-ui-pagination-link\s+svg/u);
+  expect(source).not.toMatch(/fcr-table-page-status/u);
+  expect(source).not.toMatch(
+    /\b(?:min-)?(?:width|height)\s*:\s*\d+(?:px|rem)\b/u,
+  );
+});
+
 it("rejects table pagination key deletion, valid hash drift, and manifest plus file mutation", async () => {
   const file = "src/components/ui/pagination.tsx";
   await expect(mutateLocalManifest(

@@ -174,7 +174,7 @@ export function Table({ element }: { element: TableElement }): React.JSX.Element
           />
         </PaginationItem>
         <PaginationItem>
-          <PaginationButton isActive className="fcr-table-page-status"
+          <PaginationButton isActive size="default"
             aria-label={isChinese
               ? `第 ${page + 1} 页，共 ${pages} 页`
               : `Page ${page + 1} of ${pages}`}

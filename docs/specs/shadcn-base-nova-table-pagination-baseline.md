@@ -18,6 +18,8 @@ registry 校验。删除 key、替换路径、修改合法格式 hash，或同�
 
 `src/styles/table-pagination-nova.css` 是唯一分页视觉 owner。它只处理表格横向
 滚动、分页布局与窄卡 overflow；颜色、边框、圆角、阴影、focus 与标准控件尺寸
-全部来自固定 Button/Nova adaptation。上一页和下一页使用具名 Lucide
+全部来自固定 Button/Nova adaptation。上一页和下一页使用标准 `size="icon"`，
+当前 page/count 使用标准 `size="default"`；scoped layout CSS 不覆盖 Button 或
+Lucide 尺寸。上一页和下一页使用具名 Lucide
 `ChevronLeft`/`ChevronRight`，图标为装饰性，accessible name 由 renderer locale
 提供。

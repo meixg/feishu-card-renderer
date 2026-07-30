@@ -32,14 +32,4 @@
     list-style: none;
   }
 
-  .fcr-root .fcr-ui-pagination-link svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .fcr-root .fcr-table-page-status {
-    width: auto;
-    min-width: 64px;
-    white-space: nowrap;
-  }
 }
