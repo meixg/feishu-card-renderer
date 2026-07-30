@@ -234,6 +234,9 @@ provider、context 和类型不属于公共 API。
 这次升级不兼容旧的内部 DOM、未文档化 `.fcr-*` class 或视觉快照，也不提供 legacy
 interaction mode。集成方应只依赖本 README 和公共类型中声明的接口；品牌定制使用
 文档化的 `--fcr-*` 语义变量，不要查询或覆盖 Base UI 的 `data-*` 内部状态。
+Button 默认采用 scoped shadcn `base-nova` neutral 主题；`type`、`size` 与
+`width` 会映射到内部 variant、标准尺寸和 fill 布局。宿主主题变量与 portal
+继承示例见 [集成指南](docs/integration.md)。
 
 ## 只使用校验和类型
 

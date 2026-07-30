@@ -143,6 +143,24 @@ function validateTagSpecificFields(
       message,
     ));
   };
+  if (tag === "button") {
+    for (const [field, allowed] of Object.entries({
+      type: ["default", "primary", "secondary", "danger", "text",
+        "primary_text", "danger_text", "primary_filled", "danger_filled", "laser"],
+      size: ["small", "medium", "large"],
+      width: ["default", "fill"],
+    })) {
+      const candidate = value[field];
+      if (candidate !== undefined &&
+        (typeof candidate !== "string" || !allowed.includes(candidate))) {
+        state.diagnostics.push(diagnostic(
+          "invalid_enum",
+          childPath(path, field),
+          `${field} must be one of: ${allowed.join(", ")}.`,
+        ));
+      }
+    }
+  }
   if ((tag === "person" || tag === "person_list") &&
     value.size !== undefined &&
     !["small", "medium", "large"].includes(String(value.size))) {

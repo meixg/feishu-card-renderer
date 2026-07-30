@@ -77,6 +77,26 @@ describe("JSON 2.0 schema core", () => {
     });
   });
 
+  it("normalizes protocol Button visual defaults and diagnoses invalid enums", () => {
+    const input = {
+      schema: "2.0",
+      body: { elements: [
+        { tag: "button", text: { tag: "plain_text", content: "默认" } },
+        { tag: "button", type: "unknown", size: "huge", width: "auto" },
+      ] },
+    };
+
+    expect(normalizeCard(input).card?.body.elements).toMatchObject([
+      { type: "default", size: "medium", width: "default" },
+      { type: "default", size: "medium", width: "default" },
+    ]);
+    expect(validateCard(input).diagnostics.map(({ path }) => path)).toEqual([
+      "$.body.elements[1].type",
+      "$.body.elements[1].size",
+      "$.body.elements[1].width",
+    ]);
+  });
+
   it("reports recoverable root, header, config, enum, and unknown-tag errors", () => {
     const input = {
       schema: "2.0",

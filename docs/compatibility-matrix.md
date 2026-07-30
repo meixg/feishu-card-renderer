@@ -11,7 +11,7 @@ defaults/invalid 卡、完整字段清单、具体 normalization 默认值、非
 | 容器 | `column_set`, `column`, `form`, `interactive_container`, `collapsible_panel` | 允许/禁止嵌套、五层边界、稳定路径、表单提交、折叠 ARIA |
 | 基础展示 | `div`, `markdown`, `img`, `hr` | 默认布局、Markdown 消毒、危险 URL、图片资源三态 |
 | 复杂展示 | `img_combination`, `person`, `person_list`, `chart`, `table` | 资源缺失/成功/失败、VChart 纯数据、语义表格、根级限制 |
-| 交互 | `input`, `button`, `overflow`, `select_static`, `multi_select_static`, `select_person`, `multi_select_person`, `date_picker`, `picker_time`, `picker_datetime`, `select_img`, `checker` | Base UI/原生混合语义、键盘/触控、disabled、confirm、表单初始值与 reset |
+| 交互 | `input`, `button`, `overflow`, `select_static`, `multi_select_static`, `select_person`, `multi_select_person`, `date_picker`, `picker_time`, `picker_datetime`, `select_img`, `checker` | Base UI/原生混合语义、Button `type/size/width`、键盘/触控、disabled、confirm、表单初始值与 reset |
 
 `header` 是顶层结构而非 `body.elements` tag，由 renderer fixture、schema 测试和
 light/dark 视觉用例独立覆盖。

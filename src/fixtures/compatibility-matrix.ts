@@ -156,6 +156,7 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
   },
   button: {
     element_id: "complete_button", name: "button", text: plain("Button"),
+    type: "primary", size: "large", width: "fill",
     value: { complete: true },
     disabled: false, hover_tips: plain("Hover"),
     disabled_tips: plain("Disabled"),
@@ -240,7 +241,7 @@ export const completeFieldEvidenceByTag = {
   table: evidenced(["tag", "element_id", "page_size", "row_height", "columns", "rows"]),
   hr: evidenced(["tag", "element_id", "margin"]),
   input: evidenced(["tag", "element_id", "name", "label", "placeholder", "default_value", "input_type", "max_length", "rows", "disabled", "required", "hover_tips", "disabled_tips", "behaviors"], ["behaviors"]),
-  button: evidenced(["tag", "element_id", "name", "text", "value", "disabled", "hover_tips", "disabled_tips", "confirm", "behaviors"], ["name", "value", "confirm", "behaviors"]),
+  button: evidenced(["tag", "element_id", "name", "text", "type", "size", "width", "value", "disabled", "hover_tips", "disabled_tips", "confirm", "behaviors"], ["name", "value", "confirm", "behaviors"]),
   overflow: evidenced(["tag", "element_id", "name", "options", "disabled", "hover_tips", "disabled_tips"], ["name", "options"]),
   select_static: evidenced(["tag", "element_id", "name", "label", "placeholder", "options", "initial_option", "initial_index", "disabled", "required", "behaviors"], ["behaviors"]),
   multi_select_static: evidenced(["tag", "element_id", "name", "label", "options", "selected_values", "disabled", "required"]),
@@ -280,7 +281,10 @@ const defaultValuesByTag: Record<CardComponentTag, Record<string, unknown> | nul
     default_value: "", input_type: "text", max_length: 1000,
     disabled: false, required: false,
   },
-  button: { disabled: false, required: false },
+  button: {
+    type: "default", size: "medium", width: "default",
+    disabled: false, required: false,
+  },
   overflow: { disabled: false, required: false },
   select_static: { disabled: false, required: false },
   multi_select_static: {
@@ -322,7 +326,9 @@ const invalidPatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
     columns: [{ data_type: "widget" }] },
   hr: { margin: "100px" },
   input: { input_type: "email", max_length: 1001 },
-  button: { form_action_type: "send" },
+  button: {
+    form_action_type: "send", type: "unknown", size: "huge", width: "auto",
+  },
   overflow: { options: "invalid" },
   select_static: { options: "invalid", initial_index: -1 },
   multi_select_static: { selected_values: "invalid" },
@@ -351,7 +357,7 @@ const invalidCodesByTag: Record<CardComponentTag, readonly string[]> = {
   table: ["invalid_enum", "invalid_structure"],
   hr: ["invalid_style"],
   input: ["invalid_enum", "invalid_structure"],
-  button: ["invalid_enum"],
+  button: ["invalid_enum", "invalid_enum", "invalid_enum", "invalid_enum"],
   overflow: ["invalid_structure"],
   select_static: ["invalid_structure"],
   multi_select_static: ["invalid_structure"],

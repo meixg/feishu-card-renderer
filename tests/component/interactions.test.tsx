@@ -19,6 +19,29 @@ function choose(label: string, option: string) {
 }
 
 describe("interactive components and CardAction", () => {
+  it("renders every protocol Button style and size as semantic buttons", () => {
+    render(<CardRenderer onAction={() => {}} card={{
+      schema: "2.0",
+      body: { elements: [
+        { tag: "button", type: "default", size: "small",
+          text: { tag: "plain_text", content: "次要" } },
+        { tag: "button", type: "primary", size: "medium",
+          text: { tag: "plain_text", content: "主要" } },
+        { tag: "button", type: "danger_filled", size: "large",
+          text: { tag: "plain_text", content: "危险" } },
+        { tag: "button", type: "primary_text",
+          text: { tag: "plain_text", content: "文字" } },
+        { tag: "button", type: "primary_filled", width: "fill",
+          text: { tag: "plain_text", content: "填满" } },
+      ] },
+    }} />);
+
+    for (const name of ["次要", "主要", "危险", "文字", "填满"]) {
+      expect(screen.getByRole("button", { name }))
+        .toHaveAttribute("data-slot", "button");
+    }
+  });
+
   it("delays form fields, restores protocol initial values, validates required, and submits once", () => {
     const onAction = vi.fn();
     render(<CardRenderer card={completeInteractiveCard} onAction={onAction} />);

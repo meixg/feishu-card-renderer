@@ -34,6 +34,7 @@ import { Input as UiInput } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Textarea } from "../ui/textarea";
+import { EllipsisIcon } from "lucide-react";
 
 type InteractiveElement = InputElement | SelectStaticElement |
   MultiSelectStaticElement | SelectPersonElement | MultiSelectPersonElement |
@@ -653,9 +654,29 @@ export function Button({ element, path }: { element: ButtonElement; path: string
     if (element.confirm) setConfirm(true);
     else run(true);
   };
+  const variant = {
+    default: "outline",
+    primary: "default",
+    secondary: "secondary",
+    danger: "destructive",
+    text: "ghost",
+    primary_text: "link",
+    danger_text: "destructive",
+    primary_filled: "default",
+    danger_filled: "destructive",
+    laser: "secondary",
+  }[element.type ?? "default"] as
+    "default" | "outline" | "secondary" | "ghost" | "destructive" | "link";
+  const size = {
+    small: "sm",
+    medium: "default",
+    large: "lg",
+  }[element.size ?? "medium"] as "sm" | "default" | "lg";
   return <><UiButton ref={trigger}
     type={element.form_action_type === "submit" ? "submit" : "button"}
-    className="fcr-button" disabled={element.disabled || (business && !onAction)}
+    variant={variant} size={size}
+    className={element.width === "fill" ? "fcr-button-width-fill" : undefined}
+    disabled={element.disabled || (business && !onAction)}
     aria-describedby={tips.describedBy}
     onKeyDown={(event) => event.stopPropagation()}
     onClick={(event) => { event.stopPropagation(); event.preventDefault(); activate(); }}>
@@ -683,13 +704,14 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
     >
       <DropdownMenuTrigger
         ref={trigger}
+        render={<UiButton variant="outline" size="icon" />}
         aria-label="更多操作"
         disabled={element.disabled}
         aria-describedby={tips.describedBy}
         onKeyDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
-        ⋯
+        <EllipsisIcon aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent aria-label="更多操作">
         {(element.options ?? []).map((option, index) =>

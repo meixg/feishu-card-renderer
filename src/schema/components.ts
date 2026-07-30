@@ -232,6 +232,11 @@ export type InputElement = InteractiveBase<"input"> & {
 export type ButtonElement = InteractiveBase<"button"> & {
   form_action_type?: "submit" | "reset";
   text?: TextElement;
+  type?: "default" | "primary" | "secondary" | "danger" | "text" |
+    "primary_text" | "danger_text" | "primary_filled" |
+    "danger_filled" | "laser";
+  size?: "small" | "medium" | "large";
+  width?: "default" | "fill";
 };
 export type OverflowElement = InteractiveBase<"overflow"> & {
   options?: SelectOption[];

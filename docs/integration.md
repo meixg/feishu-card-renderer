@@ -117,6 +117,25 @@ chunk。宿主 CSP 应继续禁止非预期脚本来源。不要全局覆盖 `.f
 token，多张卡片不会共享 host。卸载一张打开 overlay 的卡片会同时移除其 portal、
 焦点陷阱和 inert 状态，不影响页面中的其它卡片。
 
+宿主主题只通过文档化变量定制，例如：
+
+```css
+.my-card-theme.fcr-root {
+  --fcr-color-primary: oklch(0.6 0.2 250);
+  --fcr-color-primary-contrast: oklch(0.98 0 0);
+  --fcr-color-surface: oklch(0.96 0.02 250);
+  --fcr-color-text: oklch(0.2 0.03 250);
+  --fcr-color-text-secondary: oklch(0.45 0.03 250);
+  --fcr-color-border: oklch(0.82 0.03 250);
+  --fcr-color-danger: oklch(0.58 0.22 25);
+  --fcr-radius-card: 0.625rem;
+}
+```
+
+把 `my-card-theme` 作为 `CardRenderer.className` 传入后，卡片 root 与该卡自己的
+portal 内容会同步继承这些值。未在本文档列出的内部 `--fcr-ui-*` 映射、原始
+shadcn token 和 Base UI `data-*` 都不是公共接口。
+
 confirm 使用文档级单活动 modal 协调。正常用户输入只能到达当前 modal；若宿主
 程序化请求另一张卡的 confirm，renderer 会先取消旧 confirm（不产生 action），
 再激活新 confirm。退出动画期间两个 portal DOM 可以短暂同时挂载，但只有新
@@ -126,7 +145,8 @@ modal 保持 focus trap，旧 modal 不会把新卡互相设为 inert。
 不包含 Tailwind preflight、通用 `:root`、`body` 或未作用域 reset。库构建将
 React/ReactDOM、Base UI、Calendar、CVA、`clsx` 和 `tailwind-merge`
 externalize；包内 shadcn wrapper 仍会编译进 `dist/index.js`，且产物不得含
-`@/` 或 `#` 源码 alias。
+`@/` 或 `#` 源码 alias。Lucide 只通过具名 import 使用，并由构建器 tree-shake
+进包；消费者不需要 shadcn、Tailwind 或 Lucide 配置。
 
 ## Base UI 交互集成
 
@@ -169,7 +189,7 @@ schema 子路径、协议值和 `CardAction` 才是集成兼容边界。
   `img.scale_type/size/transparent/preview`、
   `img_combination.combination_transparent` 与图片项 `transparent`、
   `person.style`、`person_list.drop_invalid_user_id`、`chart.color_theme`、
-  `table.freeze_first_column/header_style`、`button.type/size/width`、
+  `table.freeze_first_column/header_style`、
   `checker.checked_style/button_area`，以及 multi-select/date-time picker 当前
   未消费的 `placeholder`、`select_img.required`。它们不在当前版本
   `completeFields` 中；宿主不得把

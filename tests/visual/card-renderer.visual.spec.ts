@@ -253,6 +253,75 @@ test("Alert Dialog traps focus, cancels safely, and confirms exactly once", asyn
   });
 });
 
+test("Button tokens, sizes, and portaled confirm inherit each card theme", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const baseline = page.locator("#case-button-baseline");
+  const themes = ["light", "dark", "host"] as const;
+  const primaryBackgrounds = new Map<string, string>();
+
+  for (const theme of themes) {
+    const owner = baseline.locator(`[data-button-theme="${theme}"]`);
+    const primary = owner.getByRole("button", {
+      name: theme === "light" ? "浅色" : theme === "dark" ? "深色" : "宿主",
+      exact: true,
+    });
+    const measurements = await owner.evaluate((element) => {
+      const buttons = [...element.querySelectorAll<HTMLButtonElement>(
+        "[data-slot=button]",
+      )];
+      const rootElement = element.querySelector<HTMLElement>(".fcr-root")!;
+      return {
+        heights: buttons.map((button) => button.getBoundingClientRect().height),
+        widths: buttons.map((button) => button.getBoundingClientRect().width),
+        primary: getComputedStyle(buttons[0]).backgroundColor,
+        danger: getComputedStyle(buttons[1]).color,
+        secondary: getComputedStyle(buttons[2]).backgroundColor,
+        outlineBorder: getComputedStyle(buttons[3]).borderTopColor,
+        rootPrimary: getComputedStyle(rootElement)
+          .getPropertyValue("--fcr-color-primary").trim(),
+      };
+    });
+    expect(measurements.heights).toEqual([32, 28, 36, 32]);
+    expect(measurements.widths[3]).toBeGreaterThan(measurements.widths[0]);
+    expect(measurements.primary).not.toBe("rgba(0, 0, 0, 0)");
+    expect(measurements.danger).not.toBe("");
+    expect(measurements.secondary).not.toBe(measurements.primary);
+    expect(measurements.outlineBorder).not.toBe("rgba(0, 0, 0, 0)");
+    primaryBackgrounds.set(theme, measurements.primary);
+
+    await primary.focus();
+    await expect(primary).toBeFocused();
+    expect(await primary.evaluate((button) =>
+      getComputedStyle(button).boxShadow)).not.toBe("none");
+    await primary.press("Enter");
+    const dialog = owner.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    const inherited = await dialog.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const root = node.closest<HTMLElement>(".fcr-root")!;
+      return {
+        portalPrimary: style.getPropertyValue("--fcr-color-primary").trim(),
+        rootPrimary: getComputedStyle(root)
+          .getPropertyValue("--fcr-color-primary").trim(),
+        surface: style.backgroundColor,
+      };
+    });
+    expect(inherited.portalPrimary).toBe(inherited.rootPrimary);
+    expect(inherited.surface).not.toBe("rgba(0, 0, 0, 0)");
+    await dialog.getByRole("button", { name: "取消" }).click();
+  }
+
+  expect(primaryBackgrounds.get("light")).not.toBe(
+    primaryBackgrounds.get("dark"),
+  );
+  expect(primaryBackgrounds.get("host")).not.toBe(
+    primaryBackgrounds.get("light"),
+  );
+  await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");
+});
+
 test("an open card portal tears down without disturbing another card", async ({
   page,
 }) => {

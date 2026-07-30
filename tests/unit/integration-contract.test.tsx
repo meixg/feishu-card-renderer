@@ -53,6 +53,7 @@ it("keeps the documented host integration aligned with public types", () => {
     "@base-ui/react": "^1.6.0",
     "class-variance-authority": "^0.7.1",
     clsx: "^2.1.1",
+    "lucide-react": "^0.536.0",
     "react-day-picker": "^9.7.0",
     "tailwind-merge": "^3.6.0",
   });

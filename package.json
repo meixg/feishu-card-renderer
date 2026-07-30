@@ -56,15 +56,16 @@
     "accessibility": "vitest run --project accessibility",
     "visual": "playwright test",
     "visual:update": "playwright test --update-snapshots",
-    "build": "vite build && node scripts/verify-build.mjs",
+    "build": "node scripts/verify-ui-architecture.mjs && vite build && node scripts/verify-build.mjs",
     "package:verify": "node scripts/verify-package.mjs",
     "workflows:verify": "node scripts/verify-workflows.mjs",
     "governance:verify": "node scripts/verify-governance.mjs",
+    "ui:verify": "node scripts/verify-ui-architecture.mjs",
     "changeset:status": "changeset status",
     "site:dev": "vite --config vite.site.config.ts",
     "site:build": "vite build --config vite.site.config.ts",
     "site:preview": "vite preview --config vite.site.config.ts",
-    "check": "pnpm typecheck && pnpm lint && pnpm unit && pnpm component && pnpm accessibility && pnpm visual && pnpm build && pnpm site:build"
+    "check": "pnpm typecheck && pnpm lint && pnpm ui:verify && pnpm unit && pnpm component && pnpm accessibility && pnpm visual && pnpm build && pnpm site:build"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.1",
@@ -98,6 +99,7 @@
     "@visactor/vchart": "^2.1.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lucide-react": "^0.536.0",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm-strikethrough": "^2.0.0",
     "mdast-util-gfm-table": "^2.0.0",

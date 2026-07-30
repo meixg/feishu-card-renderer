@@ -8,7 +8,7 @@ function token(selector: string, name: string): string {
     `${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`,
   ))?.[1];
   const value = block?.match(new RegExp(
-    `--${name}:\\s*(#[0-9a-fA-F]{6})`,
+    `--${name}:\\s*(oklch\\([^;]+\\))`,
   ))?.[1];
   if (!value) throw new Error(`Missing ${name} in ${selector}`);
   return value;
@@ -22,16 +22,10 @@ const darkSurface = token(".fcr-theme-dark", "fcr-color-surface");
 const darkText = token(".fcr-theme-dark", "fcr-color-text");
 const darkSecondary = token(".fcr-theme-dark", "fcr-color-text-secondary");
 
-function luminance(hex: string): number {
-  const channels = hex.match(/[0-9a-f]{2}/gi);
-  if (!channels || channels.length !== 3) throw new Error(`Invalid color ${hex}`);
-  const values = channels.map((channel) => {
-    const value = Number.parseInt(channel, 16) / 255;
-    return value <= 0.04045
-      ? value / 12.92
-      : ((value + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2];
+function luminance(color: string): number {
+  const match = color.match(/^oklch\(([\d.]+)\s+0\s+0\)$/);
+  if (!match) throw new Error(`Expected an achromatic OKLCH color: ${color}`);
+  return Number(match[1]) ** 3;
 }
 
 function contrast(first: string, second: string): number {
@@ -56,8 +50,7 @@ describe("1.0 accessibility release audit", () => {
       ".fcr-preview-trigger:focus-visible",
       ".fcr-collapsible-trigger:focus-visible",
       ".fcr-field :focus-visible",
-      ".fcr-button:focus-visible",
-      ".fcr-overflow button:focus-visible",
+      ".fcr-ui-button:focus-visible",
       ".fcr-overflow-menu-item:focus-visible",
       ".fcr-checker input:focus-visible",
     ]) {

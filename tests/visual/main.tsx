@@ -260,6 +260,71 @@ export function PortalLifecycleCases(): React.JSX.Element {
   );
 }
 
+const buttonBaselineCard = (label: string) => ({
+  schema: "2.0" as const,
+  body: {
+    elements: [
+      {
+        tag: "button" as const,
+        type: "primary" as const,
+        size: "medium" as const,
+        text: { tag: "plain_text" as const, content: label },
+        confirm: {
+          title: { tag: "plain_text" as const, content: `${label}确认` },
+          text: { tag: "plain_text" as const, content: "主题继承检查" },
+        },
+        behaviors: [{ type: "callback" as const }],
+      },
+      {
+        tag: "button" as const,
+        type: "danger" as const,
+        size: "small" as const,
+        text: { tag: "plain_text" as const, content: `${label}危险` },
+        behaviors: [{ type: "callback" as const }],
+      },
+      {
+        tag: "button" as const,
+        type: "secondary" as const,
+        size: "large" as const,
+        text: { tag: "plain_text" as const, content: `${label}次要` },
+        behaviors: [{ type: "callback" as const }],
+      },
+      {
+        tag: "button" as const,
+        type: "default" as const,
+        width: "fill" as const,
+        text: { tag: "plain_text" as const, content: `${label}描边` },
+        behaviors: [{ type: "callback" as const }],
+      },
+    ],
+  },
+});
+
+function ButtonBaselineCases(): React.JSX.Element {
+  return (
+    <section id="case-button-baseline">
+      <style>{`
+        .fcr-root.fcr-host-button-theme {
+          --fcr-color-primary: oklch(0.6 0.2 250);
+          --fcr-color-primary-contrast: oklch(0.98 0 0);
+          --fcr-color-surface: oklch(0.96 0.02 250);
+        }
+      `}</style>
+      <div data-button-theme="light">
+        <CardRenderer card={buttonBaselineCard("浅色")} onAction={() => {}} />
+      </div>
+      <div data-button-theme="dark">
+        <CardRenderer card={buttonBaselineCard("深色")} colorScheme="dark"
+          onAction={() => {}} />
+      </div>
+      <div data-button-theme="host">
+        <CardRenderer card={buttonBaselineCard("宿主")} onAction={() => {}}
+          className="fcr-host-button-theme" />
+      </div>
+    </section>
+  );
+}
+
 export function FormControlCases({
   colorScheme = "light",
   device = "pc",
@@ -367,6 +432,7 @@ createRoot(document.getElementById("root")!).render(
       ))}
       <OverlayCases />
       <PortalLifecycleCases />
+      <ButtonBaselineCases />
       <section id="case-choices-pc" style={{ width: 400 }}>
         <CardRenderer
           card={choiceVisualCard}

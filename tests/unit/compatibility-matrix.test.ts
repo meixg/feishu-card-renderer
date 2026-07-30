@@ -23,7 +23,6 @@ describe("1.0 executable per-tag compatibility matrix", () => {
     person_list: ["drop_invalid_user_id"],
     chart: ["color_theme"],
     table: ["freeze_first_column", "header_style"],
-    button: ["type", "size", "width"],
     checker: ["checked_style", "button_area"],
   } as const;
 

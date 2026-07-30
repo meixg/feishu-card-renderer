@@ -154,6 +154,15 @@ function cloneAndNormalizeComponent(
       Number(output.max_length) >= 1 && Number(output.max_length) <= 1000
       ? output.max_length : 1000;
   }
+  if (tag === "button") {
+    output.type = ["default", "primary", "secondary", "danger", "text",
+      "primary_text", "danger_text", "primary_filled", "danger_filled", "laser"]
+      .includes(String(output.type)) ? output.type : "default";
+    output.size = ["small", "medium", "large"].includes(String(output.size))
+      ? output.size : "medium";
+    output.width = ["default", "fill"].includes(String(output.width))
+      ? output.width : "default";
+  }
   if (["input", "button", "overflow", "select_static",
     "multi_select_static", "select_person", "multi_select_person",
     "date_picker", "picker_time", "picker_datetime", "select_img",
