@@ -11,6 +11,7 @@ const workflows = new Map(await Promise.all(workflowFiles.map(async (file) => [
   await readFile(resolve(workflowsDirectory, file), "utf8"),
 ])));
 const dependabot = await readFile(resolve(root, ".github/dependabot.yml"), "utf8");
+const playwrightConfig = await readFile(resolve(root, "playwright.config.ts"), "utf8");
 const mainRuleset = JSON.parse(await readFile(resolve(root, ".github/rulesets/main.json"), "utf8"));
 const releaseTagsRuleset = JSON.parse(
   await readFile(resolve(root, ".github/rulesets/release-tags.json"), "utf8"),
@@ -134,12 +135,14 @@ for (const [file, source] of workflows) {
 const ci = workflows.get("ci.yml");
 const pages = workflows.get("pages.yml");
 const visualRefresh = workflows.get("visual-refresh.yml");
+const visualDeterminism = workflows.get("visual-determinism.yml");
 const releaseImpact = workflows.get("release-impact.yml");
 const changesets = workflows.get("changesets.yml");
 const release = workflows.get("release.yml");
 requireContract(ci, "ci.yml is required");
 requireContract(pages, "pages.yml is required");
 requireContract(visualRefresh, "visual-refresh.yml is required");
+requireContract(visualDeterminism, "visual-determinism.yml is required");
 requireContract(releaseImpact, "release-impact.yml is required");
 requireContract(changesets, "changesets.yml is required");
 requireContract(release, "the npm Trusted Publisher requires release.yml");
@@ -170,13 +173,26 @@ requireContract(
   occurrences(ci, /^\s*run: pnpm visual\s*$/gm) === 1,
   "required full-quality must run pnpm visual exactly once",
 );
+requireContract(
+  /workers: 1/.test(playwrightConfig)
+    && !/workers: process\.env/.test(playwrightConfig),
+  "all visual rendering must use exactly one Playwright worker",
+);
+requireContract(
+  /launchOptions:\s*\{\s*args: \[\s*"--disable-skia-runtime-opts",\s*"--disable-partial-raster"\s*\],\s*\}/m.test(playwrightConfig),
+  "visual rendering must lock Skia optimization and partial-raster behavior",
+);
+requireContract(
+  /name: Install managed Chromium\n\s*run: pnpm exec playwright install --with-deps chromium/.test(ci)
+    && /name: Verify visual environment contract\n\s*run: pnpm visual:environment/.test(ci),
+  "full-quality must install and verify the lockfile-managed browser before screenshots",
+);
 requireContract(!/\bvisual:update\b/.test(ci), "required CI must never update visual baselines");
 requireContract(
   /name: Verify workflow safety contracts\n\s*run: pnpm workflows:verify/.test(ci),
   "Node 24 full-quality must execute the workflow verifier",
 );
 
-const playwrightConfig = await readFile(resolve(root, "playwright.config.ts"), "utf8");
 requireContract(
   /name: "chromium"/.test(playwrightConfig),
   "Playwright must define the managed chromium project",
@@ -221,6 +237,11 @@ requireContract(
   "visual refresh must regenerate snapshots exactly once",
 );
 requireContract(
+  /run: pnpm exec playwright install --with-deps chromium/.test(visualRefresh)
+    && /name: Verify visual environment contract\n\s*run: pnpm visual:environment/.test(visualRefresh),
+  "visual refresh must install and verify the same managed browser as required CI",
+);
+requireContract(
   /uses: actions\/upload-artifact@[0-9a-f]{40}\s+#\s+v[0-9]/.test(visualRefresh),
   "visual refresh must upload its result as an artifact",
 );
@@ -228,6 +249,22 @@ requireContract(
   !/^\s*[a-z-]+:\s*write\s*$/m.test(visualRefresh)
     && !/\b(?:git\s+push|gh\s+pr|npm\s+publish)\b/.test(visualRefresh),
   "visual refresh must not write repository or registry state",
+);
+
+requireContract(
+  /^on:\n {2}workflow_dispatch:\n\npermissions:\n {2}contents: read\n/m.test(visualDeterminism),
+  "visual determinism proof must be dispatch-only with read-only contents",
+);
+requireContract(
+  /run: pnpm exec playwright install --with-deps chromium/.test(visualDeterminism)
+    && /run: pnpm visual:environment/.test(visualDeterminism)
+    && occurrences(visualDeterminism, /^\s*run: pnpm visual:determinism\s*$/gm) === 1,
+  "visual determinism proof must verify the managed browser and execute its three-run gate once",
+);
+requireContract(
+  !/\bvisual:update\b/.test(visualDeterminism)
+    && !/^\s*[a-z-]+:\s*write\s*$/m.test(visualDeterminism),
+  "visual determinism proof must never update snapshots or request write permissions",
 );
 
 requireContract(

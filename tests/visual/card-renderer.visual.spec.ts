@@ -1,5 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
 import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";
+
+async function captureHashEvidence(locator: Locator, name: string) {
+  const directory = process.env.FCR_VISUAL_HASH_EVIDENCE_DIR;
+  if (!directory) return;
+  await mkdir(directory, { recursive: true });
+  await locator.screenshot({
+    animations: "disabled",
+    path: resolve(directory, name),
+  });
+}
 
 async function settleVisualLayout(
   page: import("@playwright/test").Page,
@@ -335,6 +347,7 @@ test("Button tokens, sizes, and portaled confirm inherit each card theme", async
     primaryBackgrounds.get("light"),
   );
   await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");
+  await captureHashEvidence(baseline, "button-base-nova-themes.png");
 });
 
 test("an open card portal tears down without disturbing another card", async ({
@@ -1311,6 +1324,7 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await form.getByRole("textbox", { name: "标题" }).fill("");
   await form.getByRole("button", { name: "提交" }).click();
   await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
+  await captureHashEvidence(form, "card-form-controls-error-compact.png");
 
   await expect(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");
@@ -1327,4 +1341,49 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   expect(await calendar.evaluate((node) =>
     getComputedStyle(node).transitionDuration)).toBe("0s");
   await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
+});
+
+test("table pagination keeps standard controls, keyboard behavior, and narrow overflow scoped", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/tests/visual/?case=table-pagination");
+
+  for (const name of ["compact", "default", "fill", "narrow"]) {
+    const host = page.locator(`#case-table-pagination-${name}`);
+    const root = host.locator(".fcr-root");
+    const tableContainer = root.locator('[data-slot="table-container"]');
+    const pagination = root.getByRole("navigation");
+    const next = pagination.getByRole("button", { name: "下一页" });
+    const previous = pagination.getByRole("button", { name: "上一页" });
+
+    expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true);
+    expect(await pagination.evaluate((node) =>
+      node.scrollWidth <= node.clientWidth)).toBe(true);
+    if (name === "compact" || name === "narrow") {
+      expect(await tableContainer.evaluate((node) =>
+        node.scrollWidth > node.clientWidth)).toBe(true);
+    }
+    expect(await next.evaluate((node) =>
+      node.getBoundingClientRect().width)).toBe(32);
+
+    await next.focus();
+    await next.press("Enter");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 2 页，共 3 页");
+    await next.press("Space");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 3 页，共 3 页");
+    await expect(next).toBeDisabled();
+    await next.press("Enter");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 3 页，共 3 页");
+    await previous.focus();
+    expect(await previous.evaluate((node) =>
+      getComputedStyle(node).boxShadow)).not.toBe("none");
+  }
+
+  await expect(page.locator("main"))
+    .toHaveScreenshot("table-pagination-base-nova-widths.png");
 });

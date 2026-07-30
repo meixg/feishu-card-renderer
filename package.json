@@ -55,6 +55,8 @@
     "component": "vitest run --project component",
     "accessibility": "vitest run --project accessibility",
     "visual": "playwright test",
+    "visual:environment": "node scripts/verify-visual-environment.mjs",
+    "visual:determinism": "node scripts/prove-visual-determinism.mjs",
     "visual:update": "playwright test --update-snapshots",
     "build": "node scripts/verify-ui-architecture.mjs && vite build && node scripts/verify-build.mjs",
     "package:verify": "node scripts/verify-package.mjs",

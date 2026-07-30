@@ -1,6 +1,7 @@
 @import "./styles/button-nova.css";
 @import "./styles/form-controls-nova.css";
 @import "./styles/calendar-nova.css";
+@import "./styles/table-pagination-nova.css";
 @import "./styles/choice-nova.css";
 @import "./styles/drawer-nova.css";
 @import "./styles/overlays-nova.css";
@@ -183,8 +184,7 @@
     overflow: hidden; padding: 0; border: 0; color: inherit;
     background: transparent; text-align: inherit; cursor: zoom-in;
   }
-  .fcr-preview-trigger:focus-visible, .fcr-preview-dialog button:focus-visible,
-  .fcr-table-pagination button:focus-visible {
+  .fcr-preview-trigger:focus-visible, .fcr-preview-dialog button:focus-visible {
     outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
   }
   .fcr-image-combination {
@@ -228,10 +228,6 @@
   }
   .fcr-person-small img, .fcr-person-small .fcr-person-avatar { width: 22px; height: 22px; }
   .fcr-person-large img, .fcr-person-large .fcr-person-avatar { width: 36px; height: 36px; }
-  .fcr-table-wrap { max-width: 100%; min-width: 0; }
-  .fcr-ui-table-container {
-    position: relative; width: 100%; max-width: 100%; overflow-x: auto;
-  }
   .fcr-ui-table { caption-side: bottom; }
   .fcr-ui-table-header, .fcr-ui-table-body,
   .fcr-ui-table-row, .fcr-ui-table-head, .fcr-ui-table-cell {
@@ -246,18 +242,6 @@
   .fcr-row-low td { padding-block: 4px; }
   .fcr-row-high td { padding-block: 12px; }
   .fcr-table-persons { display: flex; flex-wrap: wrap; gap: 6px; }
-  .fcr-table-pagination {
-    display: flex; justify-content: flex-end; padding-top: 8px;
-  }
-  .fcr-ui-pagination-content {
-    display: flex; align-items: center; gap: 8px;
-    margin: 0; padding: 0; list-style: none;
-  }
-  .fcr-table-page-status {
-    display: inline-flex; min-width: 48px; min-height: 28px;
-    align-items: center; justify-content: center;
-    color: var(--fcr-color-text-secondary);
-  }
   .fcr-chart-result {
     width: 100%; min-height: 180px; display: grid; place-items: center;
     border: 1px dashed var(--fcr-color-border); color: var(--fcr-color-text-secondary);
