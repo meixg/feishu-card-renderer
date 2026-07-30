@@ -1,21 +1,23 @@
-name: Visual determinism proof
+name: Visual worker experiment
 
 on:
   pull_request:
     branches: ["main"]
-    types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
+    types: [synchronize]
 
 permissions:
   contents: read
 
 jobs:
-  prove:
-    name: Three strict visual runs
+  experiment:
+    name: PR 88 worker-count experiment
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out exact PR 88 head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 93b49059aab5255a69846b33b46ce0fd41e8fd53
+          persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
@@ -32,16 +34,107 @@ jobs:
       - name: Install managed Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Verify visual environment contract
-        run: pnpm visual:environment
+      - name: Record checkout and rendering environment
+        run: |
+          mkdir -p "$RUNNER_TEMP/visual-worker-evidence/environment"
+          git rev-parse HEAD | tee "$RUNNER_TEMP/visual-worker-evidence/environment/checkout-sha.txt"
+          test "$(git rev-parse HEAD)" = "93b49059aab5255a69846b33b46ce0fd41e8fd53"
+          cp playwright.config.ts "$RUNNER_TEMP/visual-worker-evidence/environment/playwright.config.ts"
+          cp package.json pnpm-lock.yaml "$RUNNER_TEMP/visual-worker-evidence/environment/"
+          {
+            printf 'runner_os=%s\n' "$RUNNER_OS"
+            printf 'runner_arch=%s\n' "$RUNNER_ARCH"
+            printf 'image_os=%s\n' "${ImageOS:-}"
+            printf 'image_version=%s\n' "${ImageVersion:-}"
+            node --version
+            pnpm --version
+            pnpm exec playwright --version
+            "$HOME/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome" --version
+            fc-match sans-serif
+            dpkg-query -W -f='${Package}=${Version}\n' \
+              libfontconfig1 libfreetype6 fonts-liberation fonts-noto-color-emoji
+          } | tee "$RUNNER_TEMP/visual-worker-evidence/environment/runtime.txt"
+          sha256sum \
+            tests/visual/card-renderer.visual.spec.ts-snapshots/button-base-nova-themes-chromium-linux.png \
+            tests/visual/card-renderer.visual.spec.ts-snapshots/card-form-controls-error-compact-chromium-linux.png \
+            | tee "$RUNNER_TEMP/visual-worker-evidence/environment/baseline-sha256.txt"
 
-      - name: Run strict visual suite three times
-        run: pnpm visual:determinism
+      - name: Add observation-only captures
+        run: |
+          node <<'NODE'
+          const { readFileSync, writeFileSync } = require("node:fs");
+          const path = "tests/visual/card-renderer.visual.spec.ts";
+          let source = readFileSync(path, "utf8");
+          source = source.replace(
+            'import { expect, test } from "@playwright/test";',
+            `import { expect, test, type Locator } from "@playwright/test";
+          import { mkdir } from "node:fs/promises";
+          import { resolve } from "node:path";`,
+          );
+          source = source.replace(
+            'import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";',
+            `import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";
 
-      - name: Upload hash evidence
+          async function captureExperiment(locator: Locator, name: string) {
+            const directory = process.env.FCR_EXPERIMENT_CAPTURE_DIR;
+            if (!directory) return;
+            await mkdir(directory, { recursive: true });
+            await locator.screenshot({
+              animations: "disabled",
+              path: resolve(directory, name),
+            });
+          }`,
+          );
+          source = source.replace(
+            '  await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");',
+            `  await captureExperiment(baseline, "button-base-nova-themes.png");
+            await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");`,
+          );
+          source = source.replace(
+            '  await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");',
+            `  await captureExperiment(form, "card-form-controls-error-compact.png");
+            await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");`,
+          );
+          writeFileSync(path, source);
+          NODE
+          git diff -- tests/visual/card-renderer.visual.spec.ts \
+            > "$RUNNER_TEMP/visual-worker-evidence/environment/observation-only.patch"
+          git diff --exit-code -- . \
+            ':(exclude)tests/visual/card-renderer.visual.spec.ts' \
+            ':(exclude)test-results'
+
+      - name: Run controlled strict suites
+        run: |
+          mkdir -p "$RUNNER_TEMP/visual-worker-evidence/runs"
+          for workers in 2 1; do
+            for repetition in 1 2 3; do
+              run_dir="$RUNNER_TEMP/visual-worker-evidence/runs/workers-$workers/run-$repetition"
+              mkdir -p "$run_dir/captures"
+              set +e
+              FCR_EXPERIMENT_CAPTURE_DIR="$run_dir/captures" \
+                pnpm exec playwright test --workers="$workers" \
+                > "$run_dir/playwright.log" 2>&1
+              status=$?
+              set -e
+              printf '%s\n' "$status" > "$run_dir/exit-code.txt"
+              cp playwright.config.ts "$run_dir/playwright.config.ts"
+              printf '%s\n' "$workers" > "$run_dir/worker-override.txt"
+              find "$run_dir/captures" -type f -name '*.png' -print0 \
+                | sort -z \
+                | xargs -0 sha256sum \
+                > "$run_dir/capture-sha256.txt"
+              find "$run_dir/captures" -type f -name '*.png' -print0 \
+                | sort -z \
+                | xargs -0 file \
+                > "$run_dir/capture-file.txt"
+            done
+          done
+
+      - name: Upload controlled worker evidence
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: visual-determinism-${{ github.run_attempt }}
-          path: test-results/visual-determinism
+          name: pr88-worker-experiment-${{ github.run_id }}
+          path: ${{ runner.temp }}/visual-worker-evidence
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
