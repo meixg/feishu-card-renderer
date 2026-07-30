@@ -34,7 +34,7 @@ import { Input as UiInput } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Textarea } from "../ui/textarea";
-import { EllipsisIcon } from "lucide-react";
+import { CalendarIcon, EllipsisIcon } from "lucide-react";
 import { BUTTON_VARIANT_BY_TYPE } from "./button-semantics";
 
 type InteractiveElement = InputElement | SelectStaticElement |
@@ -450,11 +450,7 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
             onKeyDown={(event) => event.stopPropagation()}
           >
             <span>{value || "请选择"}</span>
-            <svg aria-hidden="true" className="fcr-date-icon"
-              viewBox="0 0 16 16">
-              <path d="M4 1.5v2M12 1.5v2M2.5 6h11M3 3h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
-                fill="none" stroke="currentColor" strokeWidth="1.25" />
-            </svg>
+            <CalendarIcon aria-hidden="true" className="fcr-date-icon" />
           </PopoverTrigger>
           <PopoverContent
             aria-label={`选择${label}`}

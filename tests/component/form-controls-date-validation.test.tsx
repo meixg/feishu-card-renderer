@@ -24,7 +24,7 @@ function clear(control: HTMLElement): void {
   fireEvent.change(control, { target: { value: "" } });
 }
 
-describe("Issue #28 form controls, Field validation, and date interaction", () => {
+describe("Issue #76 base-nova form controls, Field validation, and date interaction", () => {
   it("keeps field IDs and label, description, and error references inside each card", () => {
     const card = {
       schema: "2.0",
@@ -227,6 +227,9 @@ describe("Issue #28 form controls, Field validation, and date interaction", () =
 
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(2);
+    expect(radios[0]!.querySelector("svg")).not.toBeNull();
+    expect(screen.getByRole("checkbox", { name: "多图一" })
+      .querySelector("svg")).not.toBeNull();
     expect(radios[0]).toBeChecked();
     radios[1]!.focus();
     fireEvent.keyDown(radios[1]!, { key: " " });

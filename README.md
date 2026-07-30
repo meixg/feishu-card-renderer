@@ -238,6 +238,13 @@ Button 默认采用 scoped shadcn `base-nova` neutral 主题；`type`、`size` �
 `width` 会映射到内部 variant、标准尺寸和 fill 布局。宿主主题变量与 portal
 继承示例见 [集成指南](docs/integration.md)。
 
+Input、Textarea、Field、Label、Checkbox、RadioGroup、Checker、原生
+time/datetime 和 `select_img` 同样采用该固定快照。`select_img` 的图片和文字仍是
+协议内容布局，只有单选/多选状态分别交给 RadioGroup/Checkbox；不再使用旧的飞书式
+选中边框。required、invalid、disabled、placeholder、说明和错误反馈保持可见及
+ARIA 关联，表单 submit/reset、confirm、表单外即时动作、图片 resolver 三态与
+日期时间动作中的浏览器 IANA 时区不变。
+
 Issue #75 补齐了此前 compatibility matrix 标为缺口、现已由官方资料验证的
 Button `type/size/width` 协议支持。枚举与视觉类别
 依据[飞书新版卡片按钮说明](https://open.feishu.cn/document/feishu-cards/feishu-card-cardkit/configure-card-variables?lang=zh-CN)，

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const css = readFileSync("src/styles.css", "utf8");
 const buttonCss = readFileSync("src/styles/button-nova.css", "utf8");
+const formControlCss = readFileSync("src/styles/form-controls-nova.css", "utf8");
 
 function token(selector: string, name: string): string {
   const block = css.match(new RegExp(
@@ -56,12 +57,14 @@ describe("1.0 accessibility release audit", () => {
     for (const selector of [
       ".fcr-preview-trigger:focus-visible",
       ".fcr-collapsible-trigger:focus-visible",
-      ".fcr-field :focus-visible",
+      ".fcr-ui-input:focus-visible",
+      ".fcr-ui-textarea:focus-visible",
+      ".fcr-ui-checkbox:focus-visible",
+      ".fcr-ui-radio:focus-visible",
       ".fcr-ui-button:focus-visible",
       ".fcr-overflow-menu-item:focus-visible",
-      ".fcr-checker input:focus-visible",
     ]) {
-      expect(`${css}\n${buttonCss}`).toContain(selector);
+      expect(`${css}\n${buttonCss}\n${formControlCss}`).toContain(selector);
     }
   });
 

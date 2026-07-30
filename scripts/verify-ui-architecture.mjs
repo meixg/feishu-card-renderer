@@ -124,7 +124,7 @@ export async function verifyUiProvenance() {
   }
   const upstreamHashes = Object.values(provenance.upstream?.files ?? {});
   if (
-    upstreamHashes.length !== 3
+    upstreamHashes.length !== 9
     || upstreamHashes.some((hash) => !/^[0-9a-f]{64}$/u.test(String(hash)))
   ) {
     violations.push("reviewed upstream blob hashes are incomplete");

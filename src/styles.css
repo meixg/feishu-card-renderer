@@ -1,4 +1,5 @@
 @import "./styles/button-nova.css";
+@import "./styles/form-controls-nova.css";
 
 @layer components {
   .fcr-root {
@@ -313,70 +314,6 @@
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
-  .fcr-field { display: grid; gap: 4px; min-width: 0; }
-  .fcr-ui-field { display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 4px; }
-  .fcr-ui-label, .fcr-ui-field-label { font-weight: 500; line-height: 1.35; }
-  .fcr-ui-field-description {
-    margin: 0; color: var(--fcr-color-text-secondary); font-size: 12px;
-  }
-  .fcr-ui-field-error {
-    margin: 0; color: var(--fcr-color-danger); font-size: 12px;
-  }
-  .fcr-ui-input, .fcr-ui-textarea {
-    width: 100%; min-width: 0; min-height: 34px;
-    border: 1px solid var(--fcr-color-border); border-radius: 6px;
-    padding: 6px 10px; outline: none; background: var(--fcr-color-surface);
-    color: inherit; color-scheme: light; font: inherit;
-  }
-  .fcr-theme-dark .fcr-ui-input, .fcr-theme-dark .fcr-ui-textarea {
-    color-scheme: dark;
-  }
-  .fcr-ui-textarea { min-height: 72px; resize: vertical; }
-  .fcr-ui-input::placeholder, .fcr-ui-textarea::placeholder {
-    color: var(--fcr-color-text-secondary);
-  }
-  .fcr-ui-input:disabled, .fcr-ui-textarea:disabled {
-    cursor: not-allowed; opacity: 0.55;
-  }
-  .fcr-ui-input:focus-visible, .fcr-ui-textarea:focus-visible {
-    border-color: var(--fcr-color-primary);
-    outline: 2px solid var(--fcr-color-primary); outline-offset: 1px;
-  }
-  .fcr-ui-field[data-invalid] .fcr-ui-input,
-  .fcr-ui-field[data-invalid] .fcr-ui-textarea,
-  .fcr-ui-field[data-invalid] .fcr-choice-control,
-  .fcr-ui-field[data-invalid] .fcr-choice-trigger {
-    border-color: var(--fcr-color-danger);
-  }
-  .fcr-ui-checkbox, .fcr-ui-radio {
-    position: relative; display: inline-grid; width: 18px; height: 18px;
-    flex: 0 0 18px; place-content: center;
-    border: 1px solid var(--fcr-color-border); outline: none;
-    background: var(--fcr-color-surface); color: var(--fcr-color-primary-contrast);
-  }
-  .fcr-ui-checkbox { border-radius: 5px; }
-  .fcr-ui-radio { border-radius: 50%; }
-  .fcr-ui-checkbox[data-checked], .fcr-ui-radio[data-checked] {
-    border-color: var(--fcr-color-primary); background: var(--fcr-color-primary);
-  }
-  .fcr-ui-checkbox[data-disabled], .fcr-ui-radio[data-disabled] {
-    cursor: not-allowed; opacity: 0.55;
-  }
-  .fcr-ui-checkbox:focus-visible, .fcr-ui-radio:focus-visible {
-    outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
-  }
-  .fcr-ui-checkbox-indicator { font-size: 13px; line-height: 1; }
-  .fcr-ui-radio-indicator {
-    width: 7px; height: 7px; border-radius: 50%; background: currentColor;
-  }
-  .fcr-field input, .fcr-field textarea {
-    min-height: 32px; border: 1px solid var(--fcr-color-border);
-    border-radius: 6px; padding: 6px 10px; background: var(--fcr-color-surface);
-    color: inherit; font: inherit;
-  }
-  .fcr-field :focus-visible, .fcr-checker input:focus-visible {
-    outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
-  }
   .fcr-confirm-backdrop {
     position: fixed; z-index: 1100; inset: 0;
     padding: 24px; background: rgb(0 0 0 / 56%);
@@ -551,12 +488,7 @@
     gap: 8px;
   }
   .fcr-select-image-option {
-    min-height: 44px; border: 1px solid var(--fcr-color-border);
-    border-radius: 8px; padding: 7px; cursor: pointer;
-  }
-  .fcr-select-image-option:has([data-checked]) {
-    border-color: var(--fcr-color-primary);
-    background: color-mix(in srgb, var(--fcr-color-primary), transparent 92%);
+    min-height: 44px; padding: 7px; cursor: pointer;
   }
   .fcr-select-image-option img, .fcr-select-image-option .fcr-image-placeholder {
     width: 32px; height: 32px; flex: 0 0 32px; border-radius: 5px;

@@ -24,6 +24,16 @@ size 与 `default|fill` width。协议的 bordered、text、filled、laser 是�
 [飞书新版卡片按钮变量枚举与说明](https://open.feishu.cn/document/feishu-cards/feishu-card-cardkit/configure-card-variables?lang=zh-CN)、
 [CardKit JSON 2.0 Button 示例](https://open.feishu.cn/document/cardkit-v1/card-element/create)。
 
+基础表单与图片选择采用同一固定 `base-nova` 快照：`input` 的 text/password 使用
+Input，`multiline_text` 使用 Textarea，`checker` 使用 Checkbox + Label，
+`select_img` 单选/多选分别使用 RadioGroup/Checkbox。图片、文字和选项排列仍由
+协议视图负责，选中状态不再绘制旧的卡片边框主题。`picker_time` 和
+`picker_datetime` 保持浏览器原生输入类型、协议值格式与 IANA 时区动作输出。
+组件测试覆盖 required/invalid/disabled/placeholder、submit/reset/confirm、
+表单外即时动作和键盘/指针；资源矩阵覆盖 `select_img` resolver 的
+missing/resolved/rejected/aborted；视觉矩阵覆盖 light/dark、PC/mobile 与
+compact/default/fill。
+
 ## Markdown 发布证据
 
 `markdownReleaseFixtures` 独立提供 minimal、complete、defaults、invalid 和
