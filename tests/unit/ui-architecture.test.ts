@@ -119,3 +119,52 @@ it("pins the Issue #79 Dropdown Menu and Alert Dialog adaptations", async () => 
     "src/styles/overlays-nova.css",
   ]));
 });
+
+it("pins the Issue #82 Collapsible adaptation in the trusted registry", async () => {
+  const provenance = JSON.parse(await readFile(
+    resolve(root, "docs/specs/shadcn-base-nova-containers-baseline.json"),
+    "utf8",
+  )) as {
+    upstream: { files: Record<string, string> };
+    localFiles: Record<string, string>;
+  };
+  expect(Object.keys(provenance.upstream.files)).toContain(
+    "apps/v4/registry/bases/base/ui/collapsible.tsx",
+  );
+  expect(Object.keys(provenance.localFiles)).toEqual(expect.arrayContaining([
+    "src/components/ui/collapsible.tsx",
+    "src/components/containers/containers.tsx",
+    "src/styles/containers-nova.css",
+  ]));
+});
+
+it("rejects a self-approved Issue #82 Collapsible upstream mutation", async () => {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-ui-containers-"));
+  try {
+    await cp(
+      resolve(root, "docs"),
+      resolve(temporaryRoot, "docs"),
+      { recursive: true },
+    );
+    const manifestPath = resolve(
+      temporaryRoot,
+      "docs/specs/shadcn-base-nova-containers-baseline.json",
+    );
+    const provenance = JSON.parse(await readFile(manifestPath, "utf8")) as {
+      upstream: { files: Record<string, string> };
+    };
+    const collapsiblePath =
+      "apps/v4/registry/bases/base/ui/collapsible.tsx";
+    provenance.upstream.files[collapsiblePath] = "b".repeat(64);
+    await writeFile(manifestPath, `${JSON.stringify(provenance, null, 2)}\n`);
+
+    await expect(verifyUiProvenance({
+      manifestRoot: temporaryRoot,
+      localRoot: root,
+    })).resolves.toContain(
+      `containers: ${collapsiblePath} upstream blob hash drifted`,
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
