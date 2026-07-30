@@ -264,8 +264,20 @@ describe("Issue #80 base-nova date Popover and Calendar", () => {
     fireEvent.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "选择预约日期" });
     expect(dialog.closest("[data-fcr-portal-host]")).not.toBeNull();
-    expect(dialog.querySelectorAll(".lucide-chevron-left")).toHaveLength(1);
-    expect(dialog.querySelectorAll(".lucide-chevron-right")).toHaveLength(1);
+    const previousMonth = within(dialog).getByRole("button", {
+      name: "转到上个月",
+    });
+    const nextMonth = within(dialog).getByRole("button", {
+      name: "转到下个月",
+    });
+    expect(previousMonth).toBeEnabled();
+    expect(nextMonth).toBeEnabled();
+    fireEvent.click(previousMonth);
+    expect(within(dialog).getByRole("grid", { name: "2026年6月" }))
+      .toBeInTheDocument();
+    fireEvent.click(nextMonth);
+    expect(within(dialog).getByRole("grid", { name: "2026年7月" }))
+      .toBeInTheDocument();
     expect(trigger.querySelector(".lucide-calendar")).not.toBeNull();
     const selected = within(dialog).getByRole("button", {
       name: "2026-07-28，已选择",

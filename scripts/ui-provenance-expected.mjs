@@ -10,6 +10,8 @@ export const PINNED_SHADCN_UPSTREAM_HASHES = Object.freeze({
     "c88319b932b378349d643ef2c452f6095d5681998acc0c1e3c2a1682500c5bc9",
   "apps/v4/registry/bases/base/ui/checkbox.tsx":
     "2e9c7159b275f0fc4906147b155a48640a072b84c32980c63fd4e7a1c3213ed0",
+  "apps/v4/registry/bases/base/ui/collapsible.tsx":
+    "ead4349ff7b01d696ef89294a81d18ee1d3f732321398896462c834ab9b9e065",
   "apps/v4/registry/bases/base/ui/dropdown-menu.tsx":
     "dce5089f19f0bcdbb8bd137ccc8167eb51197f9c4f626e3b3c1ec9d31cb0d686",
   "apps/v4/registry/bases/base/ui/field.tsx":
@@ -28,4 +30,59 @@ export const PINNED_SHADCN_UPSTREAM_HASHES = Object.freeze({
     "c7fc024e5c432210b1af12a713386306703c9adeffa5b32ae380ed8cc083826e",
   "apps/v4/registry/themes.ts":
     "60cb5ed25f7b39d9973e2280f476dd2119a4268317f45bd7ee3cac7883db8ea0",
+});
+
+export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
+  button: Object.freeze({
+    "src/components/ui/button.tsx":
+      "4458517aef65d5571bb689cf0996de32af093170c905851d29fed3ed3524b570",
+    "src/components/ui/button-variants.ts":
+      "dc1339f34d3ba0f1c7e610b4e36975d676b545b11ae1bbff9469e1aa331284ba",
+    "src/components/interactive/button-semantics.ts":
+      "fd14a8fc422acc8ab03d6cecc5c4c644a8702baf79af5d8e51a8ae45a4c641a5",
+    "src/styles/button-nova.css":
+      "41e1430bc8ba02734143f74e158b76e0f454319a8f81b815fe0394ce34133e8f",
+  }),
+  "form controls": Object.freeze({
+    "src/components/ui/input.tsx":
+      "e47ffe5471e4525c6787be43efe80e486e5675be54d1f5547034f53a47646b65",
+    "src/components/ui/textarea.tsx":
+      "e56903be5faa3fae06d3f9bf59a0c660f5ccb1dc6061ac8dbfd058402eb41087",
+    "src/components/ui/field.tsx":
+      "d1a80cfd4c72a296bf8b2c2c6ad223206ed6cc8999494e209257f930aad25509",
+    "src/components/ui/label.tsx":
+      "d9bb5179ab8d78825ad63fdbe7fd3f00a96ee5afaf619edddc7bdba2c2d34f9e",
+    "src/components/ui/checkbox.tsx":
+      "ceedc99d8748bba3e9861932bdfc175c456c85b92c6d58a635aea564e65ce43e",
+    "src/components/ui/radio-group.tsx":
+      "bb2759d487791fdb51abe914c1d6129f34ddebdea70dfd0b15cc168a80145a14",
+    "src/styles/form-controls-nova.css":
+      "ea0a08f5c0c752127b12f7f3f713a563cc31b345020068e4d37fd3906b870f2d",
+  }),
+  overlays: Object.freeze({
+    "src/components/ui/dropdown-menu.tsx":
+      "2bbf46cb8d989ed4dd6458a6a1a88c92b446c4efe39380468776211d2e137cbe",
+    "src/components/ui/alert-dialog.tsx":
+      "5b521aeb44494b944ee46df9f131805809e04277582579773a1ff2ea15d2c4d6",
+    "src/components/primitives/ConfirmDialog.tsx":
+      "d72d43a2a2a7c3ec62cda51f6dcf12f521c456bd3e271f6b878bdad2c776cb8a",
+    "src/styles/overlays-nova.css":
+      "300ec02b2445c8ac5535a4ece39d07a0b20610a2a7773c283623c0e8cc37a6c4",
+  }),
+  containers: Object.freeze({
+    "src/components/ui/collapsible.tsx":
+      "70bdce26e380876ab9906b588a55bf103137755548c1c26d2b920c1c45b3e73f",
+    "src/components/containers/containers.tsx":
+      "5fd20585fbccfe8bf76c5b355178ba74565a25590dd7e40d62d0b73a561b209e",
+    "src/styles/containers-nova.css":
+      "99f0dbb4dfb227a325cc73e7caa5a292ba6eaf082b68bac67c969c9e3b237bdf",
+  }),
+  calendar: Object.freeze({
+    "src/components/ui/popover.tsx":
+      "93da9433883d449026ba430c42e3c2da90c147a7bfd30a6cda06b71dd03a1568",
+    "src/components/ui/calendar.tsx":
+      "6bd902d06a1ecf6dbb99853cbc70ef8631fbca6b43f88bc6a35a38c925d71992",
+    "src/styles/calendar-nova.css":
+      "5d2940e5a1fc6a7497fe539ff5824a5ddb85bb0d17e8f87f4fe8d559a269d5fc",
+  }),
 });

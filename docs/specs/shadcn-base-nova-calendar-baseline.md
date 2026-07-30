@@ -9,7 +9,11 @@ Issue #80 基于 shadcn-ui/ui commit
 
 机器可读的 preset、依赖、上游文件和本地适配 SHA-256 记录在
 [`shadcn-base-nova-calendar-baseline.json`](./shadcn-base-nova-calendar-baseline.json)。
-`pnpm ui:verify` 会与 Button、表单控件 provenance 一并校验。
+`pnpm ui:verify` 会与 Button、表单控件、overlays 和 containers provenance
+一并执行 upstream/local 双向强校验。Calendar manifest 的 `localFiles` key
+集合、其中每个 hash，以及真实 scoped wrapper/CSS 文件 hash 都必须分别等于
+独立 reviewed registry；删除、清空、替换路径或同时修改 manifest 与本地文件
+都会 fail closed。共享 `src/styles.css` 不属于该 hash 边界。
 
 本地 wrapper 保留上游的 Base UI Popover 与 React DayPicker 组合边界、Button
 视觉和 Lucide navigation，同时适配 React 18、逐卡 portal、renderer locale

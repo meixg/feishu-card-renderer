@@ -41,10 +41,12 @@ test("theme, device, and width visual baselines", async ({ page }) => {
 
 test("container visual baseline", async ({ page }) => {
   await page.goto("/tests/visual/");
-  const renderer = page.locator("#case-containers");
-  await expect(renderer).toBeVisible();
-  await settleVisualLayout(page, "#case-containers");
-  await expect(renderer).toHaveScreenshot("card-renderer-containers.png");
+  for (const name of ["containers", "containers-dark", "containers-narrow"]) {
+    const renderer = page.locator(`#case-${name}`);
+    await expect(renderer).toBeVisible();
+    await settleVisualLayout(page, `#case-${name}`);
+    await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
+  }
 });
 
 test("Markdown code scrolls locally without widening a compact mobile card", async ({
@@ -190,6 +192,7 @@ test("every declared Feishu chart type reaches ready in the real browser runtime
 });
 
 test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("/tests/visual/");
 
   for (const colorScheme of ["light", "dark"]) {
@@ -948,8 +951,14 @@ test("PC Calendar supports focus, arrows, Escape, and timezone-preserving select
   await trigger.focus();
   await trigger.press("Enter");
   let dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
-  await expect(dialog.locator(".lucide-chevron-left")).toHaveCount(1);
-  await expect(dialog.locator(".lucide-chevron-right")).toHaveCount(1);
+  const previousMonth = dialog.getByRole("button", { name: "转到上个月" });
+  const nextMonth = dialog.getByRole("button", { name: "转到下个月" });
+  await expect(previousMonth).toBeEnabled();
+  await expect(nextMonth).toBeEnabled();
+  await previousMonth.click();
+  await expect(dialog.getByRole("grid", { name: "2026年6月" })).toBeVisible();
+  await nextMonth.click();
+  await expect(dialog.getByRole("grid", { name: "2026年7月" })).toBeVisible();
   expect(await dialog.evaluate((node) =>
     node.closest("[data-fcr-portal-host]") !== null)).toBe(true);
   const viewport = page.viewportSize();

@@ -5,6 +5,7 @@ import ts from "typescript";
 
 import {
   PINNED_SHADCN_COMMIT,
+  PINNED_SHADCN_LOCAL_HASHES,
   PINNED_SHADCN_UPSTREAM_HASHES,
 } from "./ui-provenance-expected.mjs";
 
@@ -152,6 +153,12 @@ export async function verifyUiProvenance({
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
     ], "2026-07-30"],
+    ["containers", "docs/specs/shadcn-base-nova-containers-baseline.json", [
+      "apps/v4/registry/bases/base/ui/collapsible.tsx",
+      "apps/v4/registry/bases/base/ui/button.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ], "2026-07-30"],
     ["calendar", "docs/specs/shadcn-base-nova-calendar-baseline.json", [
       "apps/v4/registry/bases/base/ui/popover.tsx",
       "apps/v4/registry/bases/base/ui/calendar.tsx",
@@ -191,12 +198,25 @@ export async function verifyUiProvenance({
         violations.push(`${owner}: ${file} upstream blob hash drifted`);
       }
     }
-    for (const [file, expectedHash] of Object.entries(
-      provenance.localFiles ?? {},
-    )) {
-      const actualHash = sha256(await readFile(resolve(localRoot, file)));
-      if (actualHash !== expectedHash) {
-        violations.push(`${file}: local adaptation hash drifted`);
+    const localFiles = provenance.localFiles ?? {};
+    const reviewedLocalFiles = PINNED_SHADCN_LOCAL_HASHES[owner] ?? {};
+    if (
+      JSON.stringify(Object.keys(localFiles).sort())
+      !== JSON.stringify(Object.keys(reviewedLocalFiles).sort())
+    ) {
+      violations.push(`${owner} reviewed local adaptation paths drifted`);
+    }
+    for (const [file, reviewedHash] of Object.entries(reviewedLocalFiles)) {
+      if (localFiles[file] !== reviewedHash) {
+        violations.push(`${owner}: ${file} reviewed local hash drifted`);
+      }
+      try {
+        const actualHash = sha256(await readFile(resolve(localRoot, file)));
+        if (actualHash !== reviewedHash) {
+          violations.push(`${file}: local adaptation hash drifted`);
+        }
+      } catch {
+        violations.push(`${file}: reviewed local adaptation is missing`);
       }
     }
   }
