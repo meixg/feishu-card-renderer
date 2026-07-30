@@ -478,6 +478,30 @@ test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
   await expect(host).toHaveScreenshot("card-choices-pc-compact.png");
 });
 
+test("multi-select uses the shadcn choice field height on PC and mobile", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  for (const device of ["pc", "mobile"]) {
+    const host = page.locator(`#case-choices-${device}`);
+    const single = host.locator(
+      ".fcr-choice-trigger, .fcr-choice-control:not([data-multiple])",
+    ).first();
+    const multiple = host.locator(
+      ".fcr-choice-control[data-multiple]",
+    ).first();
+
+    await expect(single).toBeVisible();
+    await expect(multiple).toBeVisible();
+    const [singleHeight, multipleHeight] = await Promise.all([
+      single.evaluate((node) => node.getBoundingClientRect().height),
+      multiple.evaluate((node) => node.getBoundingClientRect().height),
+    ]);
+
+    expect(multipleHeight, device).toBe(singleHeight);
+  }
+});
+
 test("mobile choices use a keyboard-safe Drawer without horizontal overflow", async ({
   page,
 }) => {

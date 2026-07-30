@@ -448,14 +448,14 @@
     display: flex; width: 100%; min-width: 0; min-height: 34px;
     align-items: center; justify-content: space-between; gap: 6px;
     border: 1px solid var(--fcr-color-border); border-radius: 6px;
-    padding: 4px 8px; background: var(--fcr-color-surface);
+    background: var(--fcr-color-surface);
     color: var(--fcr-color-text); font: inherit; text-align: left;
   }
+  .fcr-choice-control { padding: 2px 8px; }
+  .fcr-choice-trigger { padding: 4px 8px; }
   .fcr-choice-control:focus-within, .fcr-choice-trigger:focus-visible {
     outline: 2px solid var(--fcr-color-primary); outline-offset: 2px;
   }
-  .fcr-device-pc .fcr-choice-control[data-multiple] { min-height: 86px; }
-  .fcr-device-mobile .fcr-choice-control[data-multiple] { min-height: 84px; }
   .fcr-choice-trigger:disabled, .fcr-choice-control:has(button:disabled) {
     opacity: 0.55;
   }
