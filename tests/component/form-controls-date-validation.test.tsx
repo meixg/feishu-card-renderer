@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -6,6 +7,8 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CardRenderer } from "../../src";
@@ -24,7 +27,7 @@ function clear(control: HTMLElement): void {
   fireEvent.change(control, { target: { value: "" } });
 }
 
-describe("Issue #76 base-nova form controls, Field validation, and date interaction", () => {
+describe("Issue #80 base-nova date Popover and Calendar", () => {
   it("keeps field IDs and label, description, and error references inside each card", () => {
     const card = {
       schema: "2.0",
@@ -260,6 +263,22 @@ describe("Issue #76 base-nova form controls, Field validation, and date interact
     trigger.focus();
     fireEvent.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "选择预约日期" });
+    expect(dialog.closest("[data-fcr-portal-host]")).not.toBeNull();
+    const previousMonth = within(dialog).getByRole("button", {
+      name: "转到上个月",
+    });
+    const nextMonth = within(dialog).getByRole("button", {
+      name: "转到下个月",
+    });
+    expect(previousMonth).toBeEnabled();
+    expect(nextMonth).toBeEnabled();
+    fireEvent.click(previousMonth);
+    expect(within(dialog).getByRole("grid", { name: "2026年6月" }))
+      .toBeInTheDocument();
+    fireEvent.click(nextMonth);
+    expect(within(dialog).getByRole("grid", { name: "2026年7月" }))
+      .toBeInTheDocument();
+    expect(trigger).toHaveAccessibleName("预约日期：2026-07-28");
     const selected = within(dialog).getByRole("button", {
       name: "2026-07-28，已选择",
     });
@@ -282,6 +301,204 @@ describe("Issue #76 base-nova form controls, Field validation, and date interact
       expect(screen.queryByRole("dialog", { name: "选择预约日期" })).toBeNull();
       expect(trigger).toHaveFocus();
     });
+  });
+
+  it("server-renders and hydrates a closed PC date Popover without replacing its portal host", async () => {
+    const card = {
+      schema: "2.0",
+      body: {
+        elements: [
+          {
+            tag: "date_picker",
+            name: "hydrated-date",
+            label: { tag: "plain_text", content: "Hydrated date" },
+            initial_date: "2026-07-28",
+          },
+          {
+            tag: "date_picker",
+            name: "required-date",
+            label: { tag: "plain_text", content: "Required date" },
+            required: true,
+          },
+          {
+            tag: "date_picker",
+            name: "disabled-date",
+            label: { tag: "plain_text", content: "Disabled date" },
+            disabled: true,
+          },
+        ],
+      },
+    } as const;
+    const onAction = vi.fn();
+    const renderer = <CardRenderer
+      card={card}
+      device="pc"
+      locale="en_us"
+      onAction={onAction}
+    />;
+    const firstMarkup = renderToString(renderer);
+    const secondMarkup = renderToString(renderer);
+    expect(secondMarkup).toBe(firstMarkup);
+    expect(firstMarkup).not.toContain("data-slot=\"popover-content\"");
+
+    const container = document.createElement("div");
+    container.innerHTML = firstMarkup;
+    document.body.append(container);
+    const serverHost = container.querySelector("[data-fcr-portal-host]");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    let root: Root | undefined;
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, renderer);
+      });
+
+      expect(container.querySelector("[data-fcr-portal-host]")).toBe(serverHost);
+      expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
+        /hydration|didn't match|server rendered/i,
+      );
+      const ordinary = within(container).getByRole("combobox", {
+        name: "Hydrated date: 2026-07-28",
+      });
+      expect(within(container).getByRole("combobox", {
+        name: "Required date: Choose date",
+      })).toHaveAttribute("aria-required", "true");
+      expect(within(container).getByRole("combobox", {
+        name: "Disabled date: Choose date",
+      })).toBeDisabled();
+
+      fireEvent.click(ordinary);
+      const dialog = within(container).getByRole("dialog", {
+        name: "Choose Hydrated date",
+      });
+      expect(dialog.closest("[data-fcr-portal-host]")).toBe(serverHost);
+      fireEvent.click(within(dialog).getByRole("button", {
+        name: "2026-07-29",
+      }));
+      await waitFor(() => expect(ordinary).toHaveFocus());
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+        value: "2026-07-29",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }));
+
+      fireEvent.click(ordinary);
+      fireEvent.keyDown(within(container).getByRole("dialog", {
+        name: "Choose Hydrated date",
+      }), { key: "Escape" });
+      await waitFor(() => {
+        expect(within(container).queryByRole("dialog", {
+          name: "Choose Hydrated date",
+        })).toBeNull();
+        expect(ordinary).toHaveFocus();
+      });
+    } finally {
+      await act(async () => root?.unmount());
+      consoleError.mockRestore();
+      container.remove();
+    }
+  });
+
+  it("localizes the PC date trigger, dialog, grid, and navigation labels", () => {
+    render(<CardRenderer
+      card={standaloneDateControlsCard}
+      device="pc"
+      locale="en_us"
+      onAction={() => {}}
+    />);
+
+    const trigger = screen.getByRole("combobox", {
+      name: "预约日期: 2026-07-28",
+    });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog", { name: "Choose 预约日期" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("grid", { name: "July 2026" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go to the Previous Month" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go to the Next Month" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", {
+      name: "2026-07-28, selected",
+    })).toBeInTheDocument();
+  });
+
+  it("keeps disabled PC dates closed and preserves native mobile/time controls", () => {
+    const card = {
+      schema: "2.0",
+      body: {
+        elements: [
+          {
+            tag: "date_picker",
+            name: "disabled-date",
+            label: { tag: "plain_text", content: "禁用日期" },
+            initial_date: "2026-07-28",
+            disabled: true,
+          },
+          { tag: "picker_time", name: "time", initial_time: "09:30" },
+          {
+            tag: "picker_datetime",
+            name: "datetime",
+            initial_datetime: "2026-07-28 09:30",
+          },
+        ],
+      },
+    } as const;
+    const { rerender } = render(<CardRenderer card={card} device="pc" />);
+    const trigger = screen.getByRole("combobox", {
+      name: "禁用日期：2026-07-28",
+    });
+    expect(trigger).toBeDisabled();
+    fireEvent.click(trigger);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByLabelText("time")).toHaveAttribute("type", "time");
+    expect(screen.getByLabelText("datetime"))
+      .toHaveAttribute("type", "datetime-local");
+
+    rerender(<CardRenderer card={card} device="mobile" />);
+    expect(screen.getByLabelText("禁用日期")).toHaveAttribute("type", "date");
+  });
+
+  it("keeps standalone PC date updates behind confirm and returns focus", async () => {
+    const onAction = vi.fn();
+    render(<CardRenderer
+      device="pc"
+      onAction={onAction}
+      card={{
+        schema: "2.0",
+        body: {
+          elements: [{
+            tag: "date_picker",
+            name: "confirmed-date",
+            label: { tag: "plain_text", content: "确认日期" },
+            initial_date: "2026-07-28",
+            confirm: {
+              title: { tag: "plain_text", content: "更新日期" },
+              text: { tag: "plain_text", content: "是否更新？" },
+            },
+          }],
+        },
+      }}
+    />);
+    const trigger = screen.getByRole("combobox", {
+      name: "确认日期：2026-07-28",
+    });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "2026-07-29" }));
+    expect(onAction).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog", { name: "更新日期" }))
+      .toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(trigger).toHaveAccessibleName("确认日期：2026-07-28");
+
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "2026-07-29" }));
+    fireEvent.click(screen.getByRole("button", { name: "确认" }));
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+      value: "2026-07-29",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }));
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("exposes required state on the PC date Popover trigger", () => {

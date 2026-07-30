@@ -1011,12 +1011,31 @@ test("PC Calendar supports focus, arrows, Escape, and timezone-preserving select
     name: /^预约日期：/,
   });
 
+  await trigger.scrollIntoViewIfNeeded();
   await trigger.focus();
   await trigger.press("Enter");
   let dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
+  const previousMonth = dialog.getByRole("button", { name: "转到上个月" });
+  const nextMonth = dialog.getByRole("button", { name: "转到下个月" });
+  await expect(previousMonth).toBeEnabled();
+  await expect(nextMonth).toBeEnabled();
+  await previousMonth.click();
+  await expect(dialog.getByRole("grid", { name: "2026年6月" })).toBeVisible();
+  await nextMonth.click();
+  await expect(dialog.getByRole("grid", { name: "2026年7月" })).toBeVisible();
+  expect(await dialog.evaluate((node) =>
+    node.closest("[data-fcr-portal-host]") !== null)).toBe(true);
+  const viewport = page.viewportSize();
+  const bounds = await dialog.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.y).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height);
   const selected = dialog.getByRole("button", {
     name: "2026-07-28，已选择",
   });
+  await selected.focus();
   await expect(selected).toBeFocused();
   await selected.press("ArrowRight");
   const next = dialog.getByRole("button", { name: "2026-07-29" });
