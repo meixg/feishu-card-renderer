@@ -61,7 +61,7 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
         "data-choice-kind",
         "combobox",
       );
-    expect(screen.getByRole("combobox", { name: "Multi，打开选项" })
+    expect(screen.getByRole("button", { name: "Multi，打开选项" })
       .closest("[data-choice-kind]")).toHaveAttribute(
         "data-choice-kind",
         "combobox",
@@ -196,7 +196,8 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
     activateOption("Five");
     expect(screen.getByText("+2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "完成" }));
-    expect(screen.queryByRole("combobox", { name: "搜索Tags" })).toBeNull();
+    expect(screen.getByRole("combobox", { name: "搜索Tags" }))
+      .toHaveAttribute("aria-expanded", "false");
     fireEvent.click(screen.getByRole("button", { name: "移除 One" }));
     fireEvent.click(screen.getByRole("button", { name: "Submit tags" }));
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
@@ -430,29 +431,46 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
     expect(onAction).not.toHaveBeenCalled();
   });
 
-  it("server-renders and hydrates closed Select, Combobox, and Drawer trees without mismatch", async () => {
+  it("server-renders and hydrates PC Select, single Combobox, and multiple Combobox", async () => {
     const card = {
       schema: "2.0",
-      body: { elements: [{
-        tag: "select_static",
-        name: "ssr",
-        label: text("SSR select"),
-        options: Array.from({ length: 8 }, (_, index) => option(`SSR ${index}`, index)),
-      }] },
+      body: { elements: [
+        { tag: "select_static", name: "small", label: text("SSR small"),
+          options: [option("Small A", "a"), option("Small B", "b")] },
+        { tag: "select_static", name: "large", label: text("SSR large"),
+          options: Array.from({ length: 8 }, (_, index) =>
+            option(`Large ${index}`, index)) },
+        { tag: "form", name: "ssr-form", elements: [
+          { tag: "multi_select_static", name: "multi", label: text("SSR multi"),
+            options: [option("Multi A", "a"), option("Multi B", "b")] },
+          { tag: "button", form_action_type: "submit", text: text("SSR submit") },
+        ] },
+      ] },
     };
-    const html = renderToString(<CardRenderer card={card} device="mobile" />);
+    const onAction = vi.fn();
+    const html = renderToString(<CardRenderer card={card} onAction={onAction} />);
     const container = document.createElement("div");
     container.innerHTML = html;
     document.body.append(container);
     const before = container.querySelector("[data-fcr-portal-host]");
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const root = hydrateRoot(container, <CardRenderer card={card} device="mobile" />);
+    const root = hydrateRoot(container, <CardRenderer card={card} onAction={onAction} />);
     await act(async () => {});
 
     expect(container.querySelector("[data-fcr-portal-host]")).toBe(before);
     expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
       /hydration|didn't match|server rendered/i,
     );
+    fireEvent.click(screen.getByRole("combobox", { name: "SSR small" }));
+    activateOption("Small B");
+    fireEvent.click(screen.getByRole("combobox", { name: "SSR large" }));
+    activateOption("Large 7");
+    fireEvent.click(screen.getByRole("button", { name: "SSR multi，打开选项" }));
+    activateOption("Multi A");
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+    expect(screen.getByRole("combobox", { name: "搜索SSR multi" }))
+      .toHaveAttribute("aria-expanded", "false");
+    expect(container.querySelector("[data-fcr-portal-host]")).toBe(before);
     await act(async () => root.unmount());
     consoleError.mockRestore();
     container.remove();

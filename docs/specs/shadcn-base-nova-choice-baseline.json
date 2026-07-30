@@ -23,8 +23,10 @@
     "lucide-react": "0.536.0"
   },
   "localFiles": {
-    "src/components/ui/choice-field.tsx": "14ff2f730b491680a857c2158cca6a0fef4ae826bb7f7ffa03f4bc76c68b3114",
+    "src/components/ui/select.tsx": "a7ec5ce882d22ad3928b1b7212766c9b8435e0af1e7ef96c38ab2f844fa8fce3",
+    "src/components/ui/combobox.tsx": "05d81e0b360522b6df9423777b80bce9fab35f088b3382bdd4f4ba16df924748",
+    "src/components/ui/choice-field.tsx": "a80d57e3275e24c57d103544f3f3480794af9223e78b802aeb0953ab92971bd1",
     "src/components/interactive/interactive.tsx": "e8c2c0dc2e9755cc15bd5ee12cd70b920cbe856c0ad938fbcd6094f958dce219",
-    "src/styles/choice-nova.css": "48a51a6e1e9a333455c2b2435532b34a4f0d8cd26804b23a085c49c48c17c72f"
+    "src/styles/choice-nova.css": "19647e4a4922906c5faf2b0127e79cba16a0e8c30bf60964c174705a2bb6e788"
   }
 }

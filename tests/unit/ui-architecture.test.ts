@@ -40,3 +40,24 @@ it("pins the Issue #76 base-nova form-control adaptations", async () => {
     "src/styles/form-controls-nova.css",
   ]));
 });
+
+it("pins official Select and Combobox wrappers including multiple chips", async () => {
+  const provenance = JSON.parse(await readFile(
+    resolve(root, "docs/specs/shadcn-base-nova-choice-baseline.json"),
+    "utf8",
+  )) as { localFiles: Record<string, string> };
+  expect(Object.keys(provenance.localFiles)).toEqual(expect.arrayContaining([
+    "src/components/ui/select.tsx",
+    "src/components/ui/combobox.tsx",
+    "src/styles/choice-nova.css",
+  ]));
+
+  const choiceSource = await readFile(
+    resolve(root, "src/components/ui/choice-field.tsx"),
+    "utf8",
+  );
+  expect(choiceSource).toMatch(/<ComboboxChips/u);
+  expect(choiceSource).toMatch(/<ComboboxValue/u);
+  expect(choiceSource).toMatch(/<ComboboxChip/u);
+  expect(choiceSource).toMatch(/<ComboboxChipsInput/u);
+});

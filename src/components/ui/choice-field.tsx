@@ -1,16 +1,31 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer";
-import { Select as SelectPrimitive } from "@base-ui/react/select";
 import {
-  CheckIcon,
-  ChevronDownIcon,
   SearchIcon,
-  XIcon,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { UiPortalEventBoundary } from "@/renderer/portal";
 import { useUiPortalHost } from "@/renderer/portal-context";
+import { Button } from "./button";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "./combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
 
 export type ChoiceOption = Readonly<{
   token: string;
@@ -92,35 +107,41 @@ function normalizedSearch(value: string, locale: string): string {
 
 function ChoiceItems({
   options,
-  pc = false,
 }: {
   options: readonly ChoiceOption[];
-  pc?: boolean;
 }) {
   return options.map((option) => (
     <ComboboxPrimitive.Item
-      className={`fcr-choice-option${pc ? " fcr-choice-pc-option" : ""}`}
-      data-slot={pc ? "combobox-item" : undefined}
+      className="fcr-choice-option"
       disabled={option.disabled}
       key={option.token}
       value={option.token}
     >
       <ComboboxPrimitive.ItemIndicator className="fcr-choice-indicator">
-        {pc ? <CheckIcon aria-hidden="true" /> : "✓"}
+        ✓
       </ComboboxPrimitive.ItemIndicator>
       <span>{option.label}</span>
     </ComboboxPrimitive.Item>
   ));
 }
 
-function ChoiceStatus({ locale, total }: { locale: string; total: number }) {
+function ChoiceStatus({
+  locale,
+  pc = false,
+  total,
+}: {
+  locale: string;
+  pc?: boolean;
+  total: number;
+}) {
   const copy = choiceCopy(locale);
+  const className = pc ? "fcr-choice-pc-status" : "fcr-choice-status";
   return (
     <>
-      <ComboboxPrimitive.Empty className="fcr-choice-status">
+      <ComboboxPrimitive.Empty className={className}>
         {copy.empty}
       </ComboboxPrimitive.Empty>
-      <ComboboxPrimitive.Status className="fcr-choice-status">
+      <ComboboxPrimitive.Status className={className}>
         {copy.status(total)}
       </ComboboxPrimitive.Status>
     </>
@@ -181,7 +202,7 @@ function SelectedValue({
   if (!multiple) {
     const token = typeof value === "string" ? value : "";
     return (
-      <span className="fcr-choice-value">
+      <span className={pc ? "fcr-choice-pc-value" : "fcr-choice-value"}>
         {optionByToken.get(token)?.label || placeholder}
       </span>
     );
@@ -209,7 +230,7 @@ function SelectedValue({
             onKeyDown={(event) => event.stopPropagation()}
             type="button"
           >
-            {pc ? <XIcon aria-hidden="true" /> : "×"}
+            ×
           </button>
         </span>
       ))}
@@ -228,7 +249,7 @@ function SelectField(props: ChoiceFieldProps) {
     [props.options],
   );
   return (
-    <SelectPrimitive.Root
+    <Select
       disabled={props.disabled}
       items={items}
       onValueChange={(token) => {
@@ -237,13 +258,13 @@ function SelectField(props: ChoiceFieldProps) {
       required={props.required}
       value={selected || null}
     >
-      <SelectPrimitive.Trigger
+      <SelectTrigger
         ref={props.controlRef}
         aria-describedby={props.describedBy}
         aria-invalid={props.invalid || undefined}
         aria-label={props.label}
         aria-required={props.required}
-        className="fcr-choice-trigger fcr-choice-pc-trigger"
+        className="fcr-choice-pc-trigger"
         data-slot="select-trigger"
         data-choice-kind="select"
         data-option-count={props.options.length}
@@ -251,52 +272,24 @@ function SelectField(props: ChoiceFieldProps) {
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        <SelectPrimitive.Value
-          data-slot="select-value"
-          placeholder={props.placeholder}
-        />
-        <SelectPrimitive.Icon aria-hidden="true">
-          <ChevronDownIcon />
-        </SelectPrimitive.Icon>
-      </SelectPrimitive.Trigger>
+        <SelectValue placeholder={props.placeholder} />
+      </SelectTrigger>
       {portalHost && (
-        <SelectPrimitive.Portal container={portalHost}>
-          <UiPortalEventBoundary>
-            <SelectPrimitive.Positioner
-              align="start"
-              alignItemWithTrigger={false}
-              className="fcr-choice-positioner fcr-choice-pc-positioner"
-              sideOffset={4}
+        <SelectContent container={portalHost}>
+          {props.options.map((option) => (
+            <SelectItem
+              className="fcr-choice-pc-option"
+              disabled={option.disabled}
+              key={option.token}
+              label={option.label}
+              value={option.token}
             >
-              <SelectPrimitive.Popup
-                className="fcr-choice-popup fcr-choice-pc-popup"
-                data-slot="select-content"
-              >
-                <SelectPrimitive.List>
-                  {props.options.map((option) => (
-                    <SelectPrimitive.Item
-                      className="fcr-choice-option fcr-choice-pc-option"
-                      data-slot="select-item"
-                      disabled={option.disabled}
-                      key={option.token}
-                      label={option.label}
-                      value={option.token}
-                    >
-                      <SelectPrimitive.ItemIndicator
-                        className="fcr-choice-indicator"
-                      >
-                        <CheckIcon aria-hidden="true" />
-                      </SelectPrimitive.ItemIndicator>
-                      <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-                    </SelectPrimitive.Item>
-                  ))}
-                </SelectPrimitive.List>
-              </SelectPrimitive.Popup>
-            </SelectPrimitive.Positioner>
-          </UiPortalEventBoundary>
-        </SelectPrimitive.Portal>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       )}
-    </SelectPrimitive.Root>
+    </Select>
   );
 }
 
@@ -333,46 +326,37 @@ function PopupCombobox(props: ChoiceFieldProps) {
     () => filtered.visible.map((option) => option.token),
     [filtered.visible],
   );
-  const remove = (token: string) => {
-    if (!Array.isArray(props.value)) return;
-    props.onValueChange(props.value.filter((item) => item !== token));
-  };
-  const control = (
+  const singleControl = (
     <div
       ref={anchorRef}
-      className="fcr-choice-control fcr-choice-pc-control"
-      data-slot="combobox-chips"
+      className="fcr-choice-pc-anchor"
       data-choice-kind="combobox"
-      data-multiple={props.multiple || undefined}
+      data-multiple={undefined}
       data-option-count={props.options.length}
       data-placeholder-text={props.placeholder}
     >
-      <SelectedValue
-        disabled={props.disabled}
-        multiple={props.multiple}
-        onRemove={remove}
-        optionByToken={optionByToken}
-        placeholder={props.placeholder}
-        locale={props.locale}
-        pc
-        value={props.value}
-      />
-      <ComboboxPrimitive.Trigger
+      <ComboboxTrigger
         ref={props.controlRef}
         aria-describedby={props.describedBy}
         aria-invalid={props.invalid || undefined}
-        aria-label={props.multiple
-          ? choiceCopy(props.locale).open(props.label)
-          : props.label}
+        aria-label={props.label}
         aria-required={props.required}
-        className="fcr-choice-open fcr-choice-pc-open"
-        data-slot="combobox-trigger"
+        className="fcr-choice-pc-trigger"
         disabled={props.disabled}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        <ChevronDownIcon aria-hidden="true" />
-      </ComboboxPrimitive.Trigger>
+        <SelectedValue
+          disabled={props.disabled}
+          multiple={false}
+          onRemove={() => {}}
+          optionByToken={optionByToken}
+          placeholder={props.placeholder}
+          locale={props.locale}
+          pc
+          value={props.value}
+        />
+      </ComboboxTrigger>
     </div>
   );
   const shared = {
@@ -389,25 +373,37 @@ function PopupCombobox(props: ChoiceFieldProps) {
     },
     open,
   } as const;
+  const search = (
+    <div className="fcr-choice-pc-search-group" data-slot="combobox-input">
+      <SearchIcon aria-hidden="true" />
+      <ComboboxPrimitive.Input
+        aria-expanded={open}
+        aria-label={choiceCopy(props.locale).search(props.label)}
+        autoComplete="off"
+          className="fcr-choice-pc-search"
+        placeholder={choiceCopy(props.locale).searchPlaceholder}
+      />
+    </div>
+  );
   const content = (
     <>
-      <div className="fcr-choice-pc-search-group" data-slot="combobox-input">
-        <SearchIcon aria-hidden="true" />
-        <ComboboxPrimitive.Input
-          aria-expanded={open}
-          aria-label={choiceCopy(props.locale).search(props.label)}
-          autoComplete="off"
-          className="fcr-choice-search fcr-choice-pc-search"
-          placeholder={choiceCopy(props.locale).searchPlaceholder}
-        />
-      </div>
-      <ComboboxPrimitive.List className="fcr-choice-list">
-        <ChoiceItems options={filtered.visible} pc />
-      </ComboboxPrimitive.List>
-      <ChoiceStatus locale={props.locale} total={filtered.total} />
+      {!props.multiple && search}
+      <ComboboxList className="fcr-choice-pc-list">
+        {filtered.visible.map((option) => (
+          <ComboboxItem
+            className="fcr-choice-pc-option"
+            disabled={option.disabled}
+            key={option.token}
+            value={option.token}
+          >
+            <span>{option.label}</span>
+          </ComboboxItem>
+        ))}
+      </ComboboxList>
+      <ChoiceStatus locale={props.locale} pc total={filtered.total} />
       {props.multiple && (
-        <button
-          className="fcr-choice-done"
+        <Button
+          className="fcr-choice-pc-done"
           onClick={(event) => {
             event.stopPropagation();
             setOpen(false);
@@ -415,46 +411,75 @@ function PopupCombobox(props: ChoiceFieldProps) {
           type="button"
         >
           {choiceCopy(props.locale).done}
-        </button>
+        </Button>
       )}
     </>
   );
   if (props.multiple) {
     const value = Array.isArray(props.value) ? [...props.value] : [];
     return (
-      <ComboboxPrimitive.Root
+      <Combobox
         {...shared}
         multiple
         onValueChange={(tokens) => props.onValueChange(tokens)}
         value={value}
       >
-        {control}
-        {portalHost && (
-          <ComboboxPrimitive.Portal container={portalHost}>
-            <UiPortalEventBoundary>
-              <ComboboxPrimitive.Positioner
-                align="start"
-                anchor={anchorRef}
-                className="fcr-choice-positioner fcr-choice-pc-positioner"
-                sideOffset={4}
-              >
-                <ComboboxPrimitive.Popup
-                  aria-label={choiceCopy(props.locale).options(props.label)}
-                  className="fcr-choice-popup fcr-choice-pc-popup"
-                  data-slot="combobox-content"
+        <ComboboxChips
+          ref={anchorRef}
+          aria-invalid={props.invalid || undefined}
+          aria-required={props.required}
+          className="fcr-choice-pc-chips"
+          data-choice-kind="combobox"
+          data-multiple=""
+          data-option-count={props.options.length}
+          data-placeholder-text={props.placeholder}
+        >
+          <ComboboxValue>
+            {(tokens: string[]) => <>
+              {tokens.slice(0, CHIP_LIMIT).map((token) => {
+                const label = optionByToken.get(token)?.label || token;
+                return <ComboboxChip
+                  key={token}
+                  removeLabel={choiceCopy(props.locale).remove(label)}
                 >
-                  {content}
-                </ComboboxPrimitive.Popup>
-              </ComboboxPrimitive.Positioner>
-            </UiPortalEventBoundary>
-          </ComboboxPrimitive.Portal>
+                  <span>{label}</span>
+                </ComboboxChip>;
+              })}
+              {tokens.length > CHIP_LIMIT && (
+                <span className="fcr-choice-pc-chip-count">
+                  +{tokens.length - CHIP_LIMIT}
+                </span>
+              )}
+              <ComboboxChipsInput
+                ref={props.controlRef as (node: HTMLInputElement | null) => void}
+                aria-describedby={props.describedBy}
+                aria-label={choiceCopy(props.locale).search(props.label)}
+                autoComplete="off"
+                disabled={props.disabled}
+                placeholder={tokens.length === 0 ? props.placeholder : ""}
+              />
+            </>}
+          </ComboboxValue>
+          <ComboboxTrigger
+            aria-label={choiceCopy(props.locale).open(props.label)}
+            disabled={props.disabled}
+          />
+        </ComboboxChips>
+        {portalHost && (
+          <ComboboxContent
+            anchor={anchorRef}
+            container={portalHost}
+            label={choiceCopy(props.locale).options(props.label)}
+          >
+            {content}
+          </ComboboxContent>
         )}
-      </ComboboxPrimitive.Root>
+      </Combobox>
     );
   }
   const value = typeof props.value === "string" ? props.value : "";
   return (
-    <ComboboxPrimitive.Root
+    <Combobox
       {...shared}
       onValueChange={(token) => {
         if (typeof token !== "string") return;
@@ -463,28 +488,17 @@ function PopupCombobox(props: ChoiceFieldProps) {
       }}
       value={value || null}
     >
-      {control}
+      {singleControl}
       {portalHost && (
-        <ComboboxPrimitive.Portal container={portalHost}>
-          <UiPortalEventBoundary>
-            <ComboboxPrimitive.Positioner
-              align="start"
-              anchor={anchorRef}
-              className="fcr-choice-positioner fcr-choice-pc-positioner"
-              sideOffset={4}
-            >
-              <ComboboxPrimitive.Popup
-                aria-label={choiceCopy(props.locale).options(props.label)}
-                className="fcr-choice-popup fcr-choice-pc-popup"
-                data-slot="combobox-content"
-              >
-                {content}
-              </ComboboxPrimitive.Popup>
-            </ComboboxPrimitive.Positioner>
-          </UiPortalEventBoundary>
-        </ComboboxPrimitive.Portal>
+        <ComboboxContent
+          anchor={anchorRef}
+          container={portalHost}
+          label={choiceCopy(props.locale).options(props.label)}
+        >
+          {content}
+        </ComboboxContent>
       )}
-    </ComboboxPrimitive.Root>
+    </Combobox>
   );
 }
 

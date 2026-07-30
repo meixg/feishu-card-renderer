@@ -66,7 +66,12 @@ const choiceVisualCard = {
           name: "large",
           label: { tag: "plain_text", content: "Searchable Combobox" },
           options: Array.from({ length: 12 }, (_, index) => ({
-            text: { tag: "plain_text", content: `Search option ${index + 1}` },
+            text: {
+              tag: "plain_text",
+              content: index === 9
+                ? "Search option with an intentionally long label that must wrap"
+                : `Search option ${index + 1}`,
+            },
             value: { index },
           })),
         },
@@ -422,9 +427,12 @@ const isolatedVisualCase = new URLSearchParams(window.location.search).get("case
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {isolatedVisualCase === "choice"
+    {isolatedVisualCase === "choice" || isolatedVisualCase === "choice-narrow"
       ? <main>
-          <section id="case-choices-pc" style={{ width: 400 }}>
+          <section
+            id="case-choices-pc"
+            style={{ width: isolatedVisualCase === "choice-narrow" ? 320 : 400 }}
+          >
             <CardRenderer
               card={choiceVisualCard}
               onAction={() => {}}
