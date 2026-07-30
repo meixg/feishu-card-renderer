@@ -13,8 +13,11 @@ function AlertDialog(props: AlertDialogPrimitive.Root.Props) {
 function AlertDialogContent({
   className,
   children,
+  size = "default",
   ...props
-}: AlertDialogPrimitive.Popup.Props) {
+}: AlertDialogPrimitive.Popup.Props & {
+  size?: "default" | "sm";
+}) {
   const portalHost = useUiPortalHost();
   if (!portalHost) return null;
   return (
@@ -29,6 +32,7 @@ function AlertDialogContent({
         />
         <AlertDialogPrimitive.Popup
           data-slot="alert-dialog-content"
+          data-size={size}
           className={cn("fcr-ui-alert-dialog-content", className)}
           {...props}
         >

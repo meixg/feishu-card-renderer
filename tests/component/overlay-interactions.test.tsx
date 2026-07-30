@@ -226,6 +226,36 @@ describe("Base UI overlays", () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
+  it("treats overflow selected as protocol-inapplicable unknown data", async () => {
+    const onAction = vi.fn();
+    render(<CardRenderer onAction={onAction} card={{
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "overflow",
+          options: [{
+            text: { tag: "plain_text", content: "Action item" },
+            value: "action",
+            selected: true,
+          }],
+        }],
+      },
+    }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+    const item = await screen.findByRole("menuitem", { name: "Action item" });
+    expect(item).not.toHaveAttribute("aria-checked");
+    expect(item).not.toHaveAttribute("aria-selected");
+    expect(screen.queryByRole("menuitemradio")).toBeNull();
+    expect(screen.queryByRole("menuitemcheckbox")).toBeNull();
+    fireEvent.click(item);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+      type: "callback",
+      value: "action",
+    }));
+  });
+
   it("hands overflow selection to confirm with cancel and exactly-once action semantics", async () => {
     const onAction = vi.fn();
     render(<CardRenderer onAction={onAction} card={{

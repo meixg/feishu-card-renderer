@@ -63,11 +63,23 @@ describe("1.0 accessibility release audit", () => {
       ".fcr-ui-checkbox:focus-visible",
       ".fcr-ui-radio:focus-visible",
       ".fcr-ui-button:focus-visible",
-      ".fcr-ui-dropdown-menu-item:focus-visible",
+      ".fcr-ui-dropdown-menu-item:is(:focus, [data-highlighted])",
     ]) {
       expect(`${css}\n${buttonCss}\n${formControlCss}\n${overlayCss}`)
         .toContain(selector);
     }
+  });
+
+  it("keeps pinned base-nova menu and Alert Dialog static results scoped", () => {
+    expect(overlayCss).toContain("padding: 4px 6px");
+    expect(overlayCss).toContain("font-size: 14px; line-height: 20px");
+    expect(overlayCss).toContain("background: rgb(0 0 0 / 10%)");
+    expect(overlayCss).toContain("backdrop-filter: blur(4px)");
+    expect(overlayCss).toContain("width: calc(100% - 32px); max-width: 320px");
+    expect(overlayCss).toContain("padding: 16px");
+    expect(overlayCss).toContain("border-radius: 12px");
+    expect(overlayCss).toContain("margin: 0 -16px -16px");
+    expect(overlayCss).toContain("animation-duration: 100ms");
   });
 
   it("keeps the documented focus ring neutral in both themes", () => {

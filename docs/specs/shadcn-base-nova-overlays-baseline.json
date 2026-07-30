@@ -24,8 +24,8 @@
   },
   "localFiles": {
     "src/components/ui/dropdown-menu.tsx": "2bbf46cb8d989ed4dd6458a6a1a88c92b446c4efe39380468776211d2e137cbe",
-    "src/components/ui/alert-dialog.tsx": "db82c517f1dede4ce0c8e39c5950db057a14bd15cd8e99c3d0bfeccdabbf9085",
+    "src/components/ui/alert-dialog.tsx": "5b521aeb44494b944ee46df9f131805809e04277582579773a1ff2ea15d2c4d6",
     "src/components/primitives/ConfirmDialog.tsx": "03de3a07fabbf2a1a978d5a43d1200a3256655476803a41bee747bd0046bef7a",
-    "src/styles/overlays-nova.css": "05862ee719eb9ecf5994dcb2d53e0220c7f7c052b63d32e1a3df29bb83287e6a"
+    "src/styles/overlays-nova.css": "300ec02b2445c8ac5535a4ece39d07a0b20610a2a7773c283623c0e8cc37a6c4"
   }
 }
