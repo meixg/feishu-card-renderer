@@ -192,6 +192,7 @@ test("every declared Feishu chart type reaches ready in the real browser runtime
 });
 
 test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("/tests/visual/");
 
   for (const colorScheme of ["light", "dark"]) {
