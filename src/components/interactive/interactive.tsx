@@ -199,7 +199,8 @@ export function Input({ element, path }: { element: InputElement; path: string }
     placeholder: element.placeholder?.content,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       field.set(event.target.value, path) };
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-form-control"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel htmlFor={id}>
       {element.label?.content ?? element.name ?? "输入"}
     </FieldLabel>
@@ -429,7 +430,9 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   const value = String(field.value ?? "");
   const selected = parseDateValue(value);
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className={tag === "date_picker" && device === "pc"
+    ? undefined : "fcr-form-control"}
+    data-invalid={field.invalid || undefined}>
     <FieldLabel htmlFor={id}>{label}</FieldLabel>
     {tag === "date_picker" && device === "pc"
       ? <Popover open={open} onOpenChange={setOpen}>
@@ -498,7 +501,8 @@ export function Checker({ element, path }: { element: CheckerElement; path: stri
   const tips = useTips(element, ids.description);
   const id = ids.control;
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-form-control"
+    data-invalid={field.invalid || undefined}>
     <div className="fcr-checker">
       <Checkbox
         ref={(node) => field.controlRef(node)}
@@ -544,7 +548,8 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
     rawOptionValue(option) !== undefined && option.disabled !== true);
   const selectedToken = options.findIndex((option) =>
     sameOptionValue(rawOptionValue(option), field.value));
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-form-control"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel id={labelId}>{label}</FieldLabel>
     <fieldset className="fcr-select-image"
       aria-describedby={feedback.describedBy}

@@ -96,6 +96,56 @@ const choiceVisualCard = {
   },
 };
 
+const selectImageResourceCard = {
+  schema: "2.0" as const,
+  body: {
+    elements: [{
+      tag: "select_img",
+      name: "resource-image",
+      label: { tag: "plain_text" as const, content: "Resource image" },
+      selected_values: ["one"],
+      options: [
+        {
+          text: { tag: "plain_text" as const, content: "Resource one" },
+          value: "one",
+          img_key: "resource-one",
+        },
+        {
+          text: { tag: "plain_text" as const, content: "Resource two" },
+          value: "two",
+          img_key: "resource-two",
+        },
+      ],
+    }],
+  },
+};
+const selectImageResourceUrl = new URL(
+  "./card-renderer.visual.spec.ts-snapshots/card-choices-pc-compact-chromium-linux.png",
+  import.meta.url,
+).href;
+
+function SelectImageResourceCase({
+  id,
+  resolveImage,
+}: {
+  id: string;
+  resolveImage: React.ComponentProps<typeof CardRenderer>["resolveImage"];
+}): React.JSX.Element {
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id={id}>
+      <CardRenderer
+        card={selectImageResourceCard}
+        onAction={(action) => setActions((current) => [...current, action])}
+        resolveImage={resolveImage}
+      />
+      <output hidden data-select-image-actions="">
+        {JSON.stringify(actions)}
+      </output>
+    </section>
+  );
+}
+
 export function OverlayCases(): React.JSX.Element {
   const [actions, setActions] = useState<unknown[]>([]);
   return (
@@ -348,7 +398,7 @@ export function FormControlCases({
         colorScheme={colorScheme}
         device={device}
         onAction={(action) => setActions((current) => [...current, action])}
-        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+        resolveImage={() => undefined}
       />
       <CardRenderer
         card={standaloneDateControlsCard}
@@ -361,7 +411,7 @@ export function FormControlCases({
         colorScheme={colorScheme}
         device={device}
         onAction={(action) => setActions((current) => [...current, action])}
-        resolveImage={(key) => `https://cdn.example.com/${key}.png`}
+        resolveImage={() => undefined}
       />
       <output hidden data-form-control-actions="">{JSON.stringify(actions)}</output>
     </section>
@@ -434,7 +484,7 @@ createRoot(document.getElementById("root")!).render(
       <OverlayCases />
       <PortalLifecycleCases />
       <ButtonBaselineCases />
-      <section id="case-choices-pc" style={{ width: 400 }}>
+      <section id="case-choices-pc" style={{ width: 400, height: 293 }}>
         <CardRenderer
           card={choiceVisualCard}
           onAction={() => {}}
@@ -455,6 +505,18 @@ createRoot(document.getElementById("root")!).render(
           })}
         />
       </section>
+      <SelectImageResourceCase
+        id="case-select-image-ready"
+        resolveImage={() => selectImageResourceUrl}
+      />
+      <SelectImageResourceCase
+        id="case-select-image-missing"
+        resolveImage={() => undefined}
+      />
+      <SelectImageResourceCase
+        id="case-select-image-error"
+        resolveImage={() => Promise.reject(new Error("resolver rejected"))}
+      />
       <FormControlCases
         id="case-form-controls-pc"
         widthMode="compact"

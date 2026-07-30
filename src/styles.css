@@ -314,6 +314,21 @@
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
+  .fcr-field { display: grid; gap: 4px; min-width: 0; }
+  .fcr-ui-field {
+    display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 4px;
+  }
+  .fcr-ui-label, .fcr-ui-field-label { font-weight: 500; line-height: 1.35; }
+  .fcr-ui-field-description {
+    margin: 0; color: var(--fcr-color-text-secondary); font-size: 12px;
+  }
+  .fcr-ui-field-error {
+    margin: 0; color: var(--fcr-color-danger); font-size: 12px;
+  }
+  .fcr-ui-field[data-invalid] .fcr-choice-control,
+  .fcr-ui-field[data-invalid] .fcr-choice-trigger {
+    border-color: var(--fcr-color-danger);
+  }
   .fcr-confirm-backdrop {
     position: fixed; z-index: 1100; inset: 0;
     padding: 24px; background: rgb(0 0 0 / 56%);

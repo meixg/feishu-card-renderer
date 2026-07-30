@@ -988,6 +988,41 @@ test("select_img preserves pointer, keyboard, and touch semantics in a real brow
   expect(actions[0]?.value).toBe("two");
 });
 
+test("select_img exposes ready, missing, and error adapter states without losing selection", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const ready = page.locator("#case-select-image-ready");
+  const missing = page.locator("#case-select-image-missing");
+  const error = page.locator("#case-select-image-error");
+
+  await expect(ready.locator("img")).toHaveCount(2);
+  await expect(ready.locator(".fcr-image-placeholder")).toHaveCount(0);
+  await expect(missing.locator(
+    '.fcr-image-placeholder[data-state="error"]',
+  )).toHaveCount(2);
+  await expect(error.locator(
+    '.fcr-image-placeholder[data-state="error"]',
+  )).toHaveCount(2);
+
+  const readySecond = ready.getByRole("radio", { name: "Resource two" });
+  await readySecond.click();
+  await expect(readySecond).toBeChecked();
+
+  const missingSecond = missing.getByRole("radio", { name: "Resource two" });
+  await missingSecond.focus();
+  await missingSecond.press("Space");
+  await expect(missingSecond).toBeChecked();
+
+  for (const host of [ready, missing]) {
+    const actions = await host.locator("[data-select-image-actions]").evaluate(
+      (node) => JSON.parse(node.textContent || "[]"),
+    ) as Array<{ value?: unknown }>;
+    expect(actions).toHaveLength(1);
+    expect(actions[0]?.value).toBe("two");
+  }
+});
+
 test("form controls cover light/dark, PC/mobile, widths, reduced motion, and scoped overflow", async ({
   page,
 }) => {
@@ -1021,6 +1056,7 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await expect(calendar).toBeVisible();
   expect(await calendar.evaluate((node) =>
     getComputedStyle(node).transitionDuration)).toBe("0s");
+  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
 
   await expect(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");

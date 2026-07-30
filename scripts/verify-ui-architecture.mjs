@@ -17,6 +17,10 @@ async function sourceFiles(directory) {
 
 export async function verifyUiArchitecture() {
   const violations = [];
+  const requiredLucideImports = new Map([
+    ["src/components/ui/checkbox.tsx", new Set(["CheckIcon"])],
+    ["src/components/ui/radio-group.tsx", new Set(["CircleIcon"])],
+  ]);
   for (const file of await sourceFiles(resolve(root, "src"))) {
     const source = await readFile(file, "utf8");
     const ast = ts.createSourceFile(
@@ -27,6 +31,7 @@ export async function verifyUiArchitecture() {
       file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     );
     const relative = file.slice(root.length + 1);
+    const foundLucideImports = new Set();
     function visit(node) {
       if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
         const specifier = node.moduleSpecifier.text;
@@ -45,6 +50,10 @@ export async function verifyUiArchitecture() {
             || !ts.isNamedImports(clause.namedBindings)
           ) {
             violations.push(`${relative}: Lucide imports must be named`);
+          } else {
+            for (const element of clause.namedBindings.elements) {
+              foundLucideImports.add(element.propertyName?.text ?? element.name.text);
+            }
           }
         }
       }
@@ -80,6 +89,11 @@ export async function verifyUiArchitecture() {
       ts.forEachChild(node, visit);
     }
     visit(ast);
+    for (const icon of requiredLucideImports.get(relative) ?? []) {
+      if (!foundLucideImports.has(icon)) {
+        violations.push(`${relative}: reviewed named Lucide import ${icon} is required`);
+      }
+    }
   }
   return violations.sort();
 }

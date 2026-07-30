@@ -27,8 +27,13 @@ function useResource<T>(
       cache.set(key, entry);
     }
     entry.listeners.add(listener);
+    if (entry.controller?.signal.aborted) {
+      entry.promise = undefined;
+      entry.controller = undefined;
+    }
     if (!entry.promise) {
       const controller = new AbortController();
+      entry.controller = controller;
       controllers.add(controller);
       let resolution: T | undefined | Promise<T | undefined>;
       try {
@@ -50,7 +55,10 @@ function useResource<T>(
             entry!.listeners.forEach((notify) => notify());
           }
         })
-        .finally(() => controllers.delete(controller));
+        .finally(() => {
+          controllers.delete(controller);
+          if (entry?.controller === controller) entry.controller = undefined;
+        });
     }
     listener();
     return () => {
