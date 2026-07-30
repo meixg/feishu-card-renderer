@@ -212,6 +212,7 @@ export function Input({ element, path }: { element: InputElement; path: string }
 }
 
 type Single = SelectStaticElement | SelectPersonElement;
+const SELECT_STATIC_SEARCH_THRESHOLD = 8;
 
 type PersonResolution = Readonly<{
   status: "loading" | "ready" | "error";
@@ -331,7 +332,8 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
       options={choices}
       placeholder={element.placeholder?.content ?? "请选择"}
       required={element.required}
-      searchable={element.tag === "select_person" || choices.length >= 8}
+      searchable={element.tag === "select_person" ||
+        choices.length >= SELECT_STATIC_SEARCH_THRESHOLD}
       value={selectedIndex < 0 ? "" : optionToken(path, selectedIndex)}
     />
     {tips.nodes}{feedback.error}

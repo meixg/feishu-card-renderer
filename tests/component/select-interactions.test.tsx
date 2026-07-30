@@ -66,6 +66,15 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
         "data-choice-kind",
         "combobox",
       );
+
+    openChoice("Small");
+    expect(screen.queryByRole("combobox", { name: "搜索Small" }))
+      .not.toBeInTheDocument();
+    activateOption("Small 0");
+
+    openChoice("Large");
+    expect(screen.getByRole("combobox", { name: "搜索Large" }))
+      .toBeInTheDocument();
   });
 
   it("round-trips string, number, boolean, and object protocol values through opaque tokens", () => {
@@ -206,6 +215,10 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
       body: { elements: [
         { tag: "select_static", name: "single", label: text("Mobile single"),
           options: [option("Alpha", { id: "a" }), option("Beta", { id: "b" })] },
+        { tag: "select_static", name: "searchable",
+          label: text("Mobile searchable"),
+          options: Array.from({ length: 8 }, (_, index) =>
+            option(`Searchable ${index}`, index)) },
         { tag: "form", name: "mobile-form", elements: [
           { tag: "multi_select_static", name: "multi", label: text("Mobile multi"),
             options: [option("One", 1), option("Two", 2)] },
@@ -217,12 +230,27 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
     openChoice("Mobile single，打开选项");
     const drawer = screen.getByRole("dialog", { name: "Mobile single" });
     await waitFor(() => expect(
-      within(drawer).getByRole("combobox", { name: "搜索Mobile single" }),
+      within(drawer).getByRole("button", { name: "关闭选择器" }),
     ).toHaveFocus());
+    expect(within(drawer).queryByRole("combobox", {
+      name: "搜索Mobile single",
+    })).not.toBeInTheDocument();
     activateOption("Beta");
     expect(screen.queryByRole("dialog", { name: "Mobile single" })).toBeNull();
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
       value: { id: "b" },
+    }));
+
+    openChoice("Mobile searchable，打开选项");
+    const searchableDrawer = screen.getByRole("dialog", {
+      name: "Mobile searchable",
+    });
+    await waitFor(() => expect(within(searchableDrawer).getByRole(
+      "combobox",
+      { name: "搜索Mobile searchable" },
+    )).toHaveFocus());
+    fireEvent.click(within(searchableDrawer).getByRole("button", {
+      name: "关闭选择器",
     }));
 
     openChoice("Mobile multi，打开选项");
