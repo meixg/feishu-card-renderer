@@ -240,6 +240,7 @@ function PersonNameProbe({ id, token, onResolution }: {
 function useChoiceOptions(
   element: Single | Multi,
   path: string,
+  locale: string,
 ): {
   choices: readonly ChoiceOption[];
   probes: React.ReactNode;
@@ -266,11 +267,12 @@ function useChoiceOptions(
     const supplied = isPerson ? option.text?.content ?? "" : optionText(option);
     const resolution = personResolutions[token];
     const resolved = resolution?.name;
+    const zh = locale.toLowerCase().startsWith("zh");
     const fallback = resolution?.status === "loading"
-      ? "人员信息加载中"
+      ? (zh ? "人员信息加载中" : "Loading person")
       : resolution?.status === "error"
-        ? "人员信息不可用"
-        : "未命名选项";
+        ? (zh ? "人员信息不可用" : "Person unavailable")
+        : (zh ? "未命名选项" : "Unnamed option");
     const label = option.text?.content ?? resolved ?? (supplied || fallback);
     return {
       token,
@@ -281,7 +283,7 @@ function useChoiceOptions(
         ? { resourceState: resolution.status }
         : {}),
     };
-  }), [element.options, isPerson, path, personResolutions]);
+  }), [element.options, isPerson, locale, path, personResolutions]);
   const probes = isPerson
     ? (element.options ?? []).map((option, index) => {
         const value = rawOptionValue(option);
@@ -307,7 +309,7 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
   const ids = useElementIds(path);
   const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
-  const { choices, probes } = useChoiceOptions(element, path);
+  const { choices, probes } = useChoiceOptions(element, path, locale);
   const selectedIndex = (element.options ?? []).findIndex((option) =>
     sameOptionValue(rawOptionValue(option), field.value));
   const label = element.label?.content ?? element.placeholder?.content ??
@@ -350,7 +352,7 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
   const ids = useElementIds(path);
   const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
-  const { choices, probes } = useChoiceOptions(element, path);
+  const { choices, probes } = useChoiceOptions(element, path, locale);
   const selectedTokens = (element.options ?? []).flatMap((option, index) => {
     const value = rawOptionValue(option);
     return value !== undefined && includesOption(field.value, value)

@@ -20,14 +20,18 @@ import { PINNED_SHADCN_LOCAL_HASHES } from
 const root = resolve(import.meta.dirname, "../..");
 const calendarManifest =
   "docs/specs/shadcn-base-nova-calendar-baseline.json";
+const choiceManifest =
+  "docs/specs/shadcn-base-nova-choice-baseline.json";
 
-async function mutateCalendarManifest(
+async function mutateLocalManifest(
+  manifest: string,
+  prefix: string,
   mutation: (provenance: {
     localFiles: Record<string, string>;
   }, temporaryRoot: string) => Promise<void> | void,
   { copyLocalFiles = false } = {},
 ) {
-  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-calendar-local-"));
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), prefix));
   try {
     await cp(resolve(root, "docs"), resolve(temporaryRoot, "docs"), {
       recursive: true,
@@ -37,7 +41,7 @@ async function mutateCalendarManifest(
         recursive: true,
       });
     }
-    const manifestPath = resolve(temporaryRoot, calendarManifest);
+    const manifestPath = resolve(temporaryRoot, manifest);
     const provenance = JSON.parse(await readFile(manifestPath, "utf8")) as {
       localFiles: Record<string, string>;
     };
@@ -50,6 +54,30 @@ async function mutateCalendarManifest(
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
   }
+}
+
+function mutateCalendarManifest(
+  mutation: Parameters<typeof mutateLocalManifest>[2],
+  options?: Parameters<typeof mutateLocalManifest>[3],
+) {
+  return mutateLocalManifest(
+    calendarManifest,
+    "fcr-calendar-local-",
+    mutation,
+    options,
+  );
+}
+
+function mutateChoiceManifest(
+  mutation: Parameters<typeof mutateLocalManifest>[2],
+  options?: Parameters<typeof mutateLocalManifest>[3],
+) {
+  return mutateLocalManifest(
+    choiceManifest,
+    "fcr-choice-local-",
+    mutation,
+    options,
+  );
 }
 
 it("keeps Base UI behind the internal UI module and Lucide imports tree-shakable", async () => {
@@ -65,6 +93,8 @@ it("pins every manifest local key set to the reviewed local registry", async () 
     button: "docs/specs/shadcn-base-nova-baseline.json",
     "form controls":
       "docs/specs/shadcn-base-nova-form-controls-baseline.json",
+    "PC choice fields":
+      "docs/specs/shadcn-base-nova-choice-baseline.json",
     overlays: "docs/specs/shadcn-base-nova-overlays-baseline.json",
     containers: "docs/specs/shadcn-base-nova-containers-baseline.json",
     calendar: calendarManifest,
@@ -125,6 +155,31 @@ it("rejects a Calendar manifest and local file changed to the same new hash", as
       .digest("hex");
   }, { copyLocalFiles: true })).resolves.toEqual(expect.arrayContaining([
     `calendar: ${file} reviewed local hash drifted`,
+    `${file}: local adaptation hash drifted`,
+  ]));
+});
+
+it("rejects a choice provenance local key deletion", async () => {
+  const file = "src/components/ui/combobox.tsx";
+  await expect(mutateChoiceManifest((provenance) => {
+    delete provenance.localFiles[file];
+  })).resolves.toEqual(expect.arrayContaining([
+    "PC choice fields reviewed local adaptation paths drifted",
+    `PC choice fields: ${file} reviewed local hash drifted`,
+  ]));
+});
+
+it("rejects a choice manifest and local file changed to the same new hash", async () => {
+  const file = "src/components/ui/choice-field.tsx";
+  await expect(mutateChoiceManifest(async (provenance, temporaryRoot) => {
+    const localPath = resolve(temporaryRoot, file);
+    const changed = `${await readFile(localPath, "utf8")}\n// mutation\n`;
+    await writeFile(localPath, changed);
+    provenance.localFiles[file] = createHash("sha256")
+      .update(changed)
+      .digest("hex");
+  }, { copyLocalFiles: true })).resolves.toEqual(expect.arrayContaining([
+    `PC choice fields: ${file} reviewed local hash drifted`,
     `${file}: local adaptation hash drifted`,
   ]));
 });
@@ -212,6 +267,27 @@ it("pins the Issue #76 base-nova form-control adaptations", async () => {
     "src/components/ui/radio-group.tsx",
     "src/styles/form-controls-nova.css",
   ]));
+});
+
+it("pins official Select and Combobox wrappers including multiple chips", async () => {
+  const provenance = JSON.parse(await readFile(
+    resolve(root, "docs/specs/shadcn-base-nova-choice-baseline.json"),
+    "utf8",
+  )) as { localFiles: Record<string, string> };
+  expect(Object.keys(provenance.localFiles)).toEqual(expect.arrayContaining([
+    "src/components/ui/select.tsx",
+    "src/components/ui/combobox.tsx",
+    "src/styles/choice-nova.css",
+  ]));
+
+  const choiceSource = await readFile(
+    resolve(root, "src/components/ui/choice-field.tsx"),
+    "utf8",
+  );
+  expect(choiceSource).toMatch(/<ComboboxChips/u);
+  expect(choiceSource).toMatch(/<ComboboxValue/u);
+  expect(choiceSource).toMatch(/<ComboboxChip/u);
+  expect(choiceSource).toMatch(/<ComboboxChipsInput/u);
 });
 
 it("pins the Issue #79 Dropdown Menu and Alert Dialog adaptations", async () => {

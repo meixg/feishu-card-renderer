@@ -24,6 +24,10 @@ export const PINNED_SHADCN_UPSTREAM_HASHES = Object.freeze({
     "27b854b12d7c7c0d531d2ee928b0d2b882bbb2081938c510d237c22cb819d25f",
   "apps/v4/registry/bases/base/ui/radio-group.tsx":
     "0023e241c867f90fbd5ebe7e7c6aa9e5be3485557c3ccb396cba207a0ad7337a",
+  "apps/v4/registry/bases/base/ui/select.tsx":
+    "2dadd3212c5d3c83d083c81dbca4184d45640086381c7ec4899b8e3996a7716f",
+  "apps/v4/registry/bases/base/ui/combobox.tsx":
+    "a3c833eb2216ca31f2ae306396d2d9a724adaa0047009d202867fafe453b1d9c",
   "apps/v4/registry/bases/base/ui/textarea.tsx":
     "b6948bf2916d1cf5487c24f3755cd3f90981680c06f51481545634276317c691",
   "apps/v4/registry/styles/style-nova.css":
@@ -58,6 +62,18 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
       "bb2759d487791fdb51abe914c1d6129f34ddebdea70dfd0b15cc168a80145a14",
     "src/styles/form-controls-nova.css":
       "ea0a08f5c0c752127b12f7f3f713a563cc31b345020068e4d37fd3906b870f2d",
+  }),
+  "PC choice fields": Object.freeze({
+    "src/components/ui/select.tsx":
+      "a7ec5ce882d22ad3928b1b7212766c9b8435e0af1e7ef96c38ab2f844fa8fce3",
+    "src/components/ui/combobox.tsx":
+      "05d81e0b360522b6df9423777b80bce9fab35f088b3382bdd4f4ba16df924748",
+    "src/components/ui/choice-field.tsx":
+      "dd74b01dc6f95cb684ca743a8d3c3aa2a5c8b2d290961fcb68de54ef2ffa8c64",
+    "src/components/interactive/interactive.tsx":
+      "8521d64fe6eb046e8f0379fb6e2c6f1b6a4d4ffb02104ea4cf7f7ff52adb6230",
+    "src/styles/choice-nova.css":
+      "d82d04b62a84e6a27419137351d11c62fdc4f8120728187617875084a13863b3",
   }),
   overlays: Object.freeze({
     "src/components/ui/dropdown-menu.tsx":

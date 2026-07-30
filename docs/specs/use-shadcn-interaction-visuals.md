@@ -65,6 +65,16 @@
 - shadcn standard size variants take precedence over the existing compact 34px control density. A smaller control may be selected only when it is an official shadcn size variant appropriate to the context.
 - Select remains the primitive for non-searchable single choice. Static single selects with fewer than eight options use Select; static single selects with eight or more options and all person selects use searchable Combobox.
 - Multi-select fields use the official shadcn Combobox multiple/chips composition. Existing opaque option tokens continue to protect string, number, boolean and object protocol values; form state and actions expose protocol values, not internal tokens.
+- The PC choice implementation pins editable `Select` and `Combobox` wrappers in
+  `src/components/ui/select.tsx` and `src/components/ui/combobox.tsx`. Multiple
+  choice composes `ComboboxChips`, `ComboboxValue`, `ComboboxChip` with
+  `ChipRemove`, and `ComboboxChipsInput`; protocol conversion remains outside
+  those wrappers.
+- `src/styles/choice-nova.css` is the card-scoped adaptation of the pinned
+  base-nova Select/Combobox rules and is the only PC choice visual source. The
+  legacy choice rules remain solely for the not-yet-migrated mobile Drawer;
+  PC-specific additions are limited to portal collision, width and overflow
+  integration. The Done action uses the pinned Button wrapper.
 - Mobile choice fields use the official Base UI-backed shadcn Drawer. The existing single-select close behavior, multi-select Done behavior, virtual-keyboard accommodation and per-card portal ownership remain intact.
 - Generic interaction icons use named Lucide imports with shadcn default dimensions and accessible decorative treatment. Protocol-specified business icons continue through the renderer icon adapter.
 - Protocol visual semantics are mapped to the closest shadcn variant. Dangerous actions use a destructive treatment; primary actions use the default primary treatment; secondary actions use an appropriate secondary or outline treatment. Required, invalid, disabled and selected states remain visually and semantically observable.

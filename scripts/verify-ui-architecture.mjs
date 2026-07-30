@@ -147,6 +147,12 @@ export async function verifyUiProvenance({
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
     ], "2026-07-30"],
+    ["PC choice fields", "docs/specs/shadcn-base-nova-choice-baseline.json", [
+      "apps/v4/registry/bases/base/ui/select.tsx",
+      "apps/v4/registry/bases/base/ui/combobox.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ], "2026-07-30"],
     ["overlays", "docs/specs/shadcn-base-nova-overlays-baseline.json", [
       "apps/v4/registry/bases/base/ui/dropdown-menu.tsx",
       "apps/v4/registry/bases/base/ui/alert-dialog.tsx",
