@@ -1,0 +1,133 @@
+@layer components {
+  .fcr-ui-popover-positioner {
+    z-index: var(--fcr-z-index-overlay);
+    max-width: var(--available-width);
+    max-height: var(--available-height);
+    outline: none;
+  }
+
+  .fcr-ui-popover-content {
+    max-width: min(var(--available-width), calc(100vw - 16px));
+    max-height: min(var(--available-height), calc(100vh - 16px));
+    overflow: auto;
+    padding: 12px;
+    border: 1px solid var(--fcr-ui-border);
+    border-radius: var(--fcr-ui-radius);
+    outline: none;
+    background: var(--fcr-ui-background);
+    color: var(--fcr-ui-foreground);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%),
+      0 2px 4px -2px rgb(0 0 0 / 10%);
+    transform-origin: var(--transform-origin);
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+
+  .fcr-ui-popover-content[data-starting-style],
+  .fcr-ui-popover-content[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  .fcr-ui-calendar {
+    --fcr-calendar-cell-size: 32px;
+    width: fit-content;
+    font-size: 14px;
+  }
+  .fcr-ui-calendar-months,
+  .fcr-ui-calendar-month {
+    position: relative;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .fcr-ui-calendar-nav {
+    position: absolute;
+    z-index: 1;
+    inset: 0 0 auto;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .fcr-ui-calendar-previous,
+  .fcr-ui-calendar-next {
+    pointer-events: auto;
+    user-select: none;
+  }
+  .fcr-ui-calendar-caption {
+    display: flex;
+    width: 100%;
+    height: var(--fcr-calendar-cell-size);
+    align-items: center;
+    justify-content: center;
+    padding-inline: var(--fcr-calendar-cell-size);
+  }
+  .fcr-ui-calendar-caption-label {
+    font-size: 14px;
+    font-weight: 500;
+    user-select: none;
+  }
+  .fcr-ui-calendar-grid {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .fcr-ui-calendar-weekdays,
+  .fcr-ui-calendar-week {
+    display: flex;
+    width: 100%;
+  }
+  .fcr-ui-calendar-week { margin-top: 8px; }
+  .fcr-ui-calendar-weekday {
+    width: var(--fcr-calendar-cell-size);
+    color: var(--fcr-ui-muted-foreground);
+    font-size: 12.8px;
+    font-weight: 400;
+    text-align: center;
+    user-select: none;
+  }
+  .fcr-ui-calendar-day {
+    position: relative;
+    width: var(--fcr-calendar-cell-size);
+    height: var(--fcr-calendar-cell-size);
+    padding: 0;
+    text-align: center;
+  }
+  .fcr-ui-calendar-day-button {
+    position: relative;
+    width: 100%;
+    min-width: var(--fcr-calendar-cell-size);
+    height: 100%;
+    border: 0;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .fcr-ui-calendar-day-button[data-selected-single] {
+    background: var(--fcr-ui-primary);
+    color: var(--fcr-ui-primary-foreground);
+  }
+  .fcr-ui-calendar-today:not(.rdp-selected)
+    .fcr-ui-calendar-day-button {
+    background: var(--fcr-ui-muted);
+    color: var(--fcr-ui-foreground);
+  }
+  .fcr-ui-calendar-outside { color: var(--fcr-ui-muted-foreground); }
+  .fcr-ui-calendar-disabled {
+    pointer-events: none;
+    color: var(--fcr-ui-muted-foreground);
+    opacity: 0.5;
+  }
+  .fcr-ui-calendar-hidden { visibility: hidden; }
+  .fcr-ui-calendar-chevron {
+    width: 16px;
+    height: 16px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fcr-ui-popover-content {
+      transition: none;
+    }
+  }
+}

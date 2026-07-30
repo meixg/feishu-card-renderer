@@ -20,6 +20,12 @@ export async function verifyUiArchitecture() {
   const requiredLucideImports = new Map([
     ["src/components/ui/checkbox.tsx", new Set(["CheckIcon"])],
     ["src/components/ui/radio-group.tsx", new Set(["CircleIcon"])],
+    ["src/components/ui/calendar.tsx", new Set([
+      "ChevronDownIcon", "ChevronLeftIcon", "ChevronRightIcon",
+    ])],
+    ["src/components/interactive/interactive.tsx", new Set([
+      "CalendarIcon", "EllipsisIcon",
+    ])],
   ]);
   for (const file of await sourceFiles(resolve(root, "src"))) {
     const source = await readFile(file, "utf8");
@@ -117,10 +123,13 @@ export async function verifyUiProvenance() {
     lucide: "0.536.0",
   };
   const manifests = [
-    ["button", "docs/specs/shadcn-base-nova-baseline.json", 3],
-    ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", 8],
+    ["button", "docs/specs/shadcn-base-nova-baseline.json", 3, "2026-07-30"],
+    ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", 8,
+      "2026-07-30"],
+    ["calendar", "docs/specs/shadcn-base-nova-calendar-baseline.json", 2,
+      "2026-07-31"],
   ];
-  for (const [owner, path, upstreamCount] of manifests) {
+  for (const [owner, path, upstreamCount, reviewedAt] of manifests) {
     const provenance = JSON.parse(await readFile(resolve(root, path), "utf8"));
     const actual = {
       reviewedAt: provenance.reviewedAt,
@@ -134,7 +143,10 @@ export async function verifyUiProvenance() {
       baseUi: provenance.dependencies?.["@base-ui/react"],
       lucide: provenance.dependencies?.["lucide-react"],
     };
-    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    if (JSON.stringify(actual) !== JSON.stringify({
+      ...expected,
+      reviewedAt,
+    })) {
       violations.push(`${owner} base-nova reviewed versions or preset drifted`);
     }
     const upstreamHashes = Object.values(provenance.upstream?.files ?? {});
@@ -164,5 +176,5 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename
   if (violations.length > 0) {
     throw new Error(`UI architecture verification failed:\n${violations.join("\n")}`);
   }
-  console.log("UI architecture and both base-nova provenance manifests verified.");
+  console.log("UI architecture and all base-nova provenance manifests verified.");
 }

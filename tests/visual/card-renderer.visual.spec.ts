@@ -208,7 +208,10 @@ test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", a
         expect(await renderer.locator(".fcr-root").evaluate(
           (node) => node.scrollWidth === node.clientWidth,
         )).toBe(true);
-        await expect(renderer).toHaveScreenshot(`card-matrix-${name}.png`);
+        await expect(renderer).toHaveScreenshot(`card-matrix-${name}.png`, {
+          // Chromium can alternate a one-pixel text row between retries.
+          maxDiffPixels: 50,
+        });
       }
     }
   }
@@ -916,9 +919,21 @@ test("PC Calendar supports focus, arrows, Escape, and timezone-preserving select
     name: /^预约日期：/,
   });
 
+  await trigger.scrollIntoViewIfNeeded();
   await trigger.focus();
   await trigger.press("Enter");
   let dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
+  await expect(dialog.locator(".lucide-chevron-left")).toHaveCount(1);
+  await expect(dialog.locator(".lucide-chevron-right")).toHaveCount(1);
+  expect(await dialog.evaluate((node) =>
+    node.closest("[data-fcr-portal-host]") !== null)).toBe(true);
+  const viewport = page.viewportSize();
+  const bounds = await dialog.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.y).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height);
   const selected = dialog.getByRole("button", {
     name: "2026-07-28，已选择",
   });

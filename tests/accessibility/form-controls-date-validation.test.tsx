@@ -45,6 +45,16 @@ it("keeps the PC date Popover and calendar keyboard surface accessible", async (
     .toBeInTheDocument();
   expect(screen.getByRole("grid", { name: "2026年7月" }))
     .toBeInTheDocument();
+  const selected = screen.getByRole("button", {
+    name: "2026-07-28，已选择",
+  });
+  selected.focus();
+  fireEvent.keyDown(selected, { key: "ArrowRight" });
+  expect(screen.getByRole("button", { name: "2026-07-29" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "转到上个月" }))
+    .toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "转到下个月" }))
+    .toBeInTheDocument();
   expect((await axe(container, axeOptions)).violations).toEqual([]);
 });
 
