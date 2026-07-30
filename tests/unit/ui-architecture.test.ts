@@ -55,6 +55,36 @@ it("rejects a valid-format mutation of a pinned upstream hash", async () => {
   }
 });
 
+it("rejects a valid-format mutation of the pinned media Dialog hash", async () => {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-media-provenance-"));
+  try {
+    await cp(
+      resolve(root, "docs"),
+      resolve(temporaryRoot, "docs"),
+      { recursive: true },
+    );
+    const manifestPath = resolve(
+      temporaryRoot,
+      "docs/specs/shadcn-base-nova-media-dialog-baseline.json",
+    );
+    const provenance = JSON.parse(await readFile(manifestPath, "utf8")) as {
+      upstream: { files: Record<string, string> };
+    };
+    const dialogPath = "apps/v4/registry/bases/base/ui/dialog.tsx";
+    provenance.upstream.files[dialogPath] = "b".repeat(64);
+    await writeFile(manifestPath, `${JSON.stringify(provenance, null, 2)}\n`);
+
+    await expect(verifyUiProvenance({
+      manifestRoot: temporaryRoot,
+      localRoot: root,
+    })).resolves.toContain(
+      `media dialog: ${dialogPath} upstream blob hash drifted`,
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 it("pins the Issue #76 base-nova form-control adaptations", async () => {
   const provenance = JSON.parse(await readFile(
     resolve(root, "docs/specs/shadcn-base-nova-form-controls-baseline.json"),
