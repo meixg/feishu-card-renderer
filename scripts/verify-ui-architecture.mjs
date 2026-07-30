@@ -29,6 +29,9 @@ export async function verifyUiArchitecture() {
     ["src/components/ui/calendar.tsx", new Set([
       "ChevronDownIcon", "ChevronLeftIcon", "ChevronRightIcon",
     ])],
+    ["src/components/ui/pagination.tsx", new Set([
+      "ChevronLeft", "ChevronRight",
+    ])],
     ["src/components/interactive/interactive.tsx", new Set([
       "CalendarIcon", "EllipsisIcon",
     ])],
@@ -169,6 +172,13 @@ export async function verifyUiProvenance({
       "apps/v4/registry/bases/base/ui/popover.tsx",
       "apps/v4/registry/bases/base/ui/calendar.tsx",
     ], "2026-07-31"],
+    ["table pagination",
+      "docs/specs/shadcn-base-nova-table-pagination-baseline.json", [
+        "apps/v4/registry/bases/base/ui/pagination.tsx",
+        "apps/v4/registry/bases/base/ui/button.tsx",
+        "apps/v4/registry/styles/style-nova.css",
+        "apps/v4/registry/themes.ts",
+      ], "2026-07-31"],
   ];
   for (const [owner, path, expectedPaths, reviewedAt] of manifests) {
     const provenance = JSON.parse(

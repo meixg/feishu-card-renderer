@@ -10,11 +10,14 @@ import type {
 } from "../../schema/components";
 import { safePx } from "../../styles/safe";
 import { useImageResource, usePersonResource } from "../../renderer/resources";
-import { Button } from "../ui/button";
+import { useRendererContext } from "../../renderer/context";
 import {
   Pagination,
+  PaginationButton,
   PaginationContent,
   PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
 } from "../ui/pagination";
 import {
   Table as TablePrimitive,
@@ -138,6 +141,8 @@ function formatCell(value: unknown, column: TableColumn): React.ReactNode {
 }
 
 export function Table({ element }: { element: TableElement }): React.JSX.Element {
+  const { locale } = useRendererContext();
+  const isChinese = locale.toLowerCase().startsWith("zh");
   const columns = (element.columns ?? []).slice(0, 50);
   const rows = element.rows ?? [];
   const pageSize = Number.isInteger(element.page_size) &&
@@ -158,21 +163,31 @@ export function Table({ element }: { element: TableElement }): React.JSX.Element
             {column.name ? formatCell(row[column.name], column) : ""}
           </TableCell>)}</TableRow>)}</TableBody>
     </TablePrimitive>
-    {pages > 1 && <Pagination className="fcr-table-pagination" aria-label="表格分页">
+    {pages > 1 && <Pagination className="fcr-table-pagination"
+      aria-label={isChinese ? "表格分页" : "Table pagination"}>
       <PaginationContent>
         <PaginationItem>
-          <Button type="button" variant="outline" size="sm" disabled={page === 0}
-            onClick={() => setPage(page - 1)}>上一页</Button>
+          <PaginationPrevious
+            aria-label={isChinese ? "上一页" : "Previous page"}
+            disabled={page === 0}
+            onClick={() => setPage((current) => Math.max(0, current - 1))}
+          />
         </PaginationItem>
         <PaginationItem>
-          <span className="fcr-table-page-status" aria-live="polite">
+          <PaginationButton isActive size="default"
+            aria-label={isChinese
+              ? `第 ${page + 1} 页，共 ${pages} 页`
+              : `Page ${page + 1} of ${pages}`}
+            aria-live="polite">
             {page + 1} / {pages}
-          </span>
+          </PaginationButton>
         </PaginationItem>
         <PaginationItem>
-          <Button type="button" variant="outline" size="sm"
+          <PaginationNext
+            aria-label={isChinese ? "下一页" : "Next page"}
             disabled={page + 1 === pages}
-            onClick={() => setPage(page + 1)}>下一页</Button>
+            onClick={() => setPage((current) => Math.min(pages - 1, current + 1))}
+          />
         </PaginationItem>
       </PaginationContent>
     </Pagination>}

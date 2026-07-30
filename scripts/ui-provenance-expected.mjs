@@ -22,6 +22,8 @@ export const PINNED_SHADCN_UPSTREAM_HASHES = Object.freeze({
     "80581ffa241ed57c9b976ebca5bc44c7e98d287c629717fda2dd3135c96ebbc1",
   "apps/v4/registry/bases/base/ui/popover.tsx":
     "27b854b12d7c7c0d531d2ee928b0d2b882bbb2081938c510d237c22cb819d25f",
+  "apps/v4/registry/bases/base/ui/pagination.tsx":
+    "7c1c3be5f743e8651300fa4f3d18201d298dde3ab5e28a3aebd688f2d48b86d3",
   "apps/v4/registry/bases/base/ui/radio-group.tsx":
     "0023e241c867f90fbd5ebe7e7c6aa9e5be3485557c3ccb396cba207a0ad7337a",
   "apps/v4/registry/bases/base/ui/select.tsx":
@@ -100,5 +102,15 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
       "6bd902d06a1ecf6dbb99853cbc70ef8631fbca6b43f88bc6a35a38c925d71992",
     "src/styles/calendar-nova.css":
       "5d2940e5a1fc6a7497fe539ff5824a5ddb85bb0d17e8f87f4fe8d559a269d5fc",
+  }),
+  "table pagination": Object.freeze({
+    "src/components/ui/pagination.tsx":
+      "edffc70ea0aeb4cd6dd43db06751da73ee16903dc7004d7cb55f86b1e1631671",
+    "src/components/ui/table.tsx":
+      "8d9b091b034ddd9c8c6abe5e53041c3168c2d6e29ddfc0251c3249d48698e988",
+    "src/components/content/complex.tsx":
+      "a6d2e8a71611d966d48ec5143f0b98acc09274a60d4bdd26231ea8adb7043ff9",
+    "src/styles/table-pagination-nova.css":
+      "544aa6d39bb1d566b80bee6974aa478827790b9ecfa9044c7b7f08d07a40667c",
   }),
 });
