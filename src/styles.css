@@ -3,6 +3,7 @@
 @import "./styles/calendar-nova.css";
 @import "./styles/table-pagination-nova.css";
 @import "./styles/choice-nova.css";
+@import "./styles/drawer-nova.css";
 @import "./styles/overlays-nova.css";
 @import "./styles/media-dialog-nova.css";
 @import "./styles/containers-nova.css";
@@ -317,7 +318,7 @@
     border-radius: 5px; background: transparent; color: inherit; font: inherit;
   }
   .fcr-choice-open:focus-visible, .fcr-choice-chip button:focus-visible,
-  .fcr-choice-done:focus-visible, .fcr-drawer-header button:focus-visible {
+  .fcr-choice-done:focus-visible {
     outline: 2px solid var(--fcr-color-primary); outline-offset: 1px;
   }
   .fcr-choice-positioner {
@@ -380,40 +381,6 @@
   .fcr-choice-chip-count {
     flex: 0 0 auto; color: var(--fcr-color-text-secondary); font-size: 12px;
   }
-  .fcr-drawer-backdrop {
-    position: fixed; z-index: var(--fcr-z-index-overlay); inset: 0;
-    background: rgb(0 0 0 / 48%);
-  }
-  .fcr-drawer-viewport {
-    position: fixed; z-index: calc(var(--fcr-z-index-overlay) + 1); inset: 0;
-    bottom: var(--drawer-keyboard-inset, 0px);
-    display: flex;
-    align-items: flex-end; justify-content: center; pointer-events: none;
-  }
-  .fcr-drawer-popup {
-    width: 100%; max-height: min(82dvh, 720px); pointer-events: auto;
-    transform: translateY(var(--drawer-translation-y));
-    border-radius: 14px 14px 0 0; background: var(--fcr-color-surface);
-    color: var(--fcr-color-text); box-shadow: 0 -8px 28px rgb(0 0 0 / 18%);
-    outline: none;
-  }
-  .fcr-drawer-content {
-    display: grid; gap: 8px; max-height: min(82dvh, 720px);
-    overflow: hidden; padding: 8px 14px max(14px, env(safe-area-inset-bottom));
-  }
-  .fcr-drawer-handle {
-    width: 36px; height: 4px; margin: 0 auto; border-radius: 999px;
-    background: var(--fcr-color-border);
-  }
-  .fcr-drawer-header {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  }
-  .fcr-drawer-header h2 { min-width: 0; margin: 0; font: inherit; font-weight: 600; }
-  .fcr-drawer-header button {
-    width: 34px; height: 34px; border: 0; border-radius: 6px;
-    background: transparent; color: inherit; font: inherit;
-  }
-  .fcr-drawer-content .fcr-choice-list { max-height: min(52dvh, 440px); }
   .fcr-checker, .fcr-select-image-option {
     display: flex; min-width: 0; align-items: center; gap: 7px;
   }

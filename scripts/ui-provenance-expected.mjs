@@ -14,6 +14,8 @@ export const PINNED_SHADCN_UPSTREAM_HASHES = Object.freeze({
     "ead4349ff7b01d696ef89294a81d18ee1d3f732321398896462c834ab9b9e065",
   "apps/v4/registry/bases/base/ui/dropdown-menu.tsx":
     "dce5089f19f0bcdbb8bd137ccc8167eb51197f9c4f626e3b3c1ec9d31cb0d686",
+  "apps/v4/registry/bases/base/ui/drawer.tsx":
+    "c3b8efa83260e1622d88b216bb794dbe46b803ced695040e7750f172d91bec79",
   "apps/v4/registry/bases/base/ui/dialog.tsx":
     "85f9a33d1a8c495b0faecd066dae1581b8feb5d27f912ecf65f814386f6da3a9",
   "apps/v4/registry/bases/base/ui/field.tsx":
@@ -73,11 +75,21 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/ui/combobox.tsx":
       "05d81e0b360522b6df9423777b80bce9fab35f088b3382bdd4f4ba16df924748",
     "src/components/ui/choice-field.tsx":
-      "dd74b01dc6f95cb684ca743a8d3c3aa2a5c8b2d290961fcb68de54ef2ffa8c64",
+      "5c1652dc1457b0a1af6fe4653a4f5fed007731f005a9110df91214c868aca3b1",
     "src/components/interactive/interactive.tsx":
       "8521d64fe6eb046e8f0379fb6e2c6f1b6a4d4ffb02104ea4cf7f7ff52adb6230",
     "src/styles/choice-nova.css":
-      "d82d04b62a84e6a27419137351d11c62fdc4f8120728187617875084a13863b3",
+      "ad543220c8a6022733cfe874d9640101d6d2f4941c9c0061328360941a13e0ff",
+  }),
+  "mobile choice Drawer": Object.freeze({
+    "src/components/ui/drawer.tsx":
+      "0331e1597f2a63c2b8a7e4a46172729e8b6dc5d23a8e2b8304c5c8d3a557ead3",
+    "src/components/ui/choice-field.tsx":
+      "5c1652dc1457b0a1af6fe4653a4f5fed007731f005a9110df91214c868aca3b1",
+    "src/styles/drawer-nova.css":
+      "5c22078c4287c50eea9d3461b8f7457e3d5aeacf2851261c801008b11a8477cf",
+    "src/styles/choice-nova.css":
+      "ad543220c8a6022733cfe874d9640101d6d2f4941c9c0061328360941a13e0ff",
   }),
   overlays: Object.freeze({
     "src/components/ui/dropdown-menu.tsx":

@@ -59,6 +59,22 @@
     min-width: min(var(--anchor-width), var(--available-width));
     max-width: var(--available-width); outline: none;
   }
+
+  .fcr-choice-drawer { width: 100%; }
+  .fcr-choice-drawer-header {
+    position: relative; min-width: 0; padding-right: 56px; text-align: left;
+  }
+  .fcr-choice-drawer-header [data-slot="drawer-close"] {
+    position: absolute; top: 8px; right: 12px;
+  }
+  .fcr-choice-drawer-body {
+    display: flex; min-height: 0; flex: 1; flex-direction: column;
+    gap: 8px; overflow: hidden; padding: 12px 16px;
+  }
+  .fcr-choice-drawer-body .fcr-choice-list {
+    min-height: 0; max-height: min(52dvh, 440px); overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   [data-slot="select-content"],
   [data-slot="combobox-content"] {
     display: grid; gap: 4px; box-sizing: border-box; width: 100%;

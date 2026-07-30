@@ -101,6 +101,52 @@ const choiceVisualCard = {
   },
 };
 
+function ChoiceVisualCase({
+  colorScheme = "light",
+  id,
+  width,
+}: {
+  colorScheme?: "light" | "dark";
+  id: string;
+  width: number;
+}) {
+  const [actions, setActions] = useState<unknown[]>([]);
+  return (
+    <section id={id} style={{ width }}>
+      <CardRenderer
+        card={choiceVisualCard}
+        colorScheme={colorScheme}
+        device="mobile"
+        onAction={(action) => setActions((current) => [...current, action])}
+        resolvePerson={(personId) => ({
+          id: personId,
+          name: personId === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+        })}
+      />
+      <output hidden data-choice-actions="">{JSON.stringify(actions)}</output>
+    </section>
+  );
+}
+
+const personResourceChoiceCard = {
+  schema: "2.0" as const,
+  config: { update_multi: true, width_mode: "compact" as const },
+  body: {
+    elements: [{
+      tag: "select_person",
+      name: "person-resources",
+      label: { tag: "plain_text" as const, content: "Person resources" },
+      options: [
+        { value: "opaque-ready" },
+        { value: "opaque-loading" },
+        { value: "opaque-error" },
+      ],
+    }],
+  },
+};
+
+const pendingPerson = new Promise<never>(() => {});
+
 const selectImageResourceCard = {
   schema: "2.0" as const,
   body: {
@@ -468,6 +514,32 @@ createRoot(document.getElementById("root")!).render(
             />
           </section>
         </main>
+      : isolatedVisualCase === "mobile-choice"
+        ? <main style={{ display: "grid", gap: 24 }}>
+            <ChoiceVisualCase id="case-choices-mobile" width={390} />
+            <ChoiceVisualCase
+              colorScheme="dark"
+              id="case-choices-mobile-dark"
+              width={400}
+            />
+            <section
+              id="case-choices-mobile-person-resources"
+              style={{ width: 390 }}
+            >
+              <CardRenderer
+                card={personResourceChoiceCard}
+                device="mobile"
+                onAction={() => {}}
+                resolvePerson={(personId) => {
+                  if (personId === "opaque-loading") return pendingPerson;
+                  if (personId === "opaque-error") {
+                    return Promise.reject(new Error("private resolver failure"));
+                  }
+                  return { id: personId, name: "Resolved person" };
+                }}
+              />
+            </section>
+          </main>
       : isolatedVisualCase === "table-pagination"
         ? <main style={{ display: "grid", gap: 24 }}>
             {([

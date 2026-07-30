@@ -258,12 +258,26 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
 
     openChoice("Mobile multi，打开选项");
     activateOption("Two");
+    expect(screen.getByRole("dialog", { name: "Mobile multi" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "完成" }))
+      .toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "关闭选择器" }));
     expect(screen.getByRole("button", { name: "移除 Two" }))
       .toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Mobile submit" }));
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
       formValue: { multi: [2] },
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "移除 Two" }));
+    openChoice("Mobile multi，打开选项");
+    activateOption("One");
+    activateOption("One");
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mobile submit" }));
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      formValue: { multi: [] },
     }));
   });
 
@@ -316,6 +330,7 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
             options: [{ value: "ou_loading" }, { value: "ou_error" }],
           }] },
         }}
+        device="mobile"
         onAction={() => {}}
         resolvePerson={resolvePerson}
       />,
@@ -330,7 +345,7 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
     });
     expect(container).not.toHaveTextContent(/ou_loading|ou_error/);
 
-    openChoice("Person status");
+    openChoice("Person status，打开选项");
     expect(screen.getByRole("option", { name: "人员信息加载中" }))
       .toBeInTheDocument();
     expect(screen.getByRole("option", { name: "人员信息不可用" }))
@@ -512,6 +527,142 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
       .not.toBeInTheDocument();
     await waitFor(() => expect(multi).toHaveFocus());
     expect(container.querySelector("[data-fcr-portal-host]")).toBe(portalHostBefore);
+    await act(async () => root.unmount());
+    consoleError.mockRestore();
+    container.remove();
+  });
+
+  it("server-renders and hydrates closed mobile Drawer controls without replacing nodes", async () => {
+    const card = {
+      schema: "2.0",
+      body: { elements: [{
+        tag: "select_static",
+        name: "mobile",
+        label: text("SSR mobile"),
+        options: [option("First", { id: 1 }), option("Second", { id: 2 })],
+      }] },
+    };
+    const onAction = vi.fn();
+    const html = renderToString(
+      <CardRenderer card={card} device="mobile" onAction={onAction} />,
+    );
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const triggerBefore = within(container).getByRole("button", {
+      name: "SSR mobile，打开选项",
+    });
+    const portalBefore = container.querySelector("[data-fcr-portal-host]");
+    expect(triggerBefore).toHaveAttribute("aria-expanded", "false");
+    expect(within(container).queryByRole("dialog")).not.toBeInTheDocument();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const root = hydrateRoot(
+      container,
+      <CardRenderer card={card} device="mobile" onAction={onAction} />,
+    );
+    await act(async () => {});
+
+    const trigger = within(container).getByRole("button", {
+      name: "SSR mobile，打开选项",
+    });
+    expect(trigger).toBe(triggerBefore);
+    expect(container.querySelector("[data-fcr-portal-host]")).toBe(portalBefore);
+    fireEvent.click(trigger);
+    activateOption("Second");
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+      value: { id: 2 },
+    }));
+    expect(within(container).queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
+      /hydration|didn't match|server rendered/i,
+    );
+    await act(async () => root.unmount());
+    consoleError.mockRestore();
+    container.remove();
+  });
+
+  it("hydrates mobile multi Drawer identity, keeps explicit edits, and returns focus", async () => {
+    const card = {
+      schema: "2.0",
+      body: { elements: [{
+        tag: "form",
+        name: "ssr-mobile-form",
+        elements: [
+          {
+            tag: "multi_select_static",
+            name: "mobile-multi",
+            label: text("SSR mobile multi"),
+            selected_values: ["a"],
+            options: [option("Alpha", "a"), option("Beta", "b")],
+          },
+          { tag: "button", form_action_type: "submit", text: text("Submit SSR") },
+        ],
+      }] },
+    };
+    const onAction = vi.fn();
+    const html = renderToString(
+      <CardRenderer card={card} device="mobile" onAction={onAction} />,
+    );
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const server = within(container);
+    const triggerBefore = server.getByRole("button", {
+      name: "SSR mobile multi，打开选项",
+    });
+    const chipBefore = server.getByRole("button", { name: "移除 Alpha" });
+    const portalBefore = container.querySelector("[data-fcr-portal-host]");
+    expect(triggerBefore).toHaveAttribute("aria-expanded", "false");
+    expect(server.queryByRole("dialog")).not.toBeInTheDocument();
+
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const root = hydrateRoot(
+      container,
+      <CardRenderer card={card} device="mobile" onAction={onAction} />,
+    );
+    await act(async () => {});
+    const hydrated = within(container);
+    const trigger = hydrated.getByRole("button", {
+      name: "SSR mobile multi，打开选项",
+    });
+    expect(trigger).toBe(triggerBefore);
+    expect(hydrated.getByRole("button", { name: "移除 Alpha" })).toBe(chipBefore);
+    expect(container.querySelector("[data-fcr-portal-host]")).toBe(portalBefore);
+    expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
+      /hydration|didn't match|server rendered/i,
+    );
+
+    fireEvent.click(trigger);
+    const drawer = hydrated.getByRole("dialog", { name: "SSR mobile multi" });
+    const input = within(drawer).getByRole("combobox", {
+      name: "搜索SSR mobile multi",
+    });
+    await waitFor(() => expect(input).toHaveFocus());
+    activateOption("Beta");
+    fireEvent.click(within(drawer).getByRole("button", { name: "完成" }));
+    expect(hydrated.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(hydrated.getByRole("button", { name: "移除 Beta" }))
+      .toBeInTheDocument();
+    await waitFor(() => expect(trigger).toHaveFocus());
+    fireEvent.click(hydrated.getByRole("button", { name: "移除 Alpha" }));
+    expect(hydrated.queryByRole("button", { name: "移除 Alpha" }))
+      .not.toBeInTheDocument();
+
+    fireEvent.click(trigger);
+    activateOption("Alpha");
+    fireEvent.click(within(
+      hydrated.getByRole("dialog", { name: "SSR mobile multi" }),
+    ).getByRole("button", { name: "关闭选择器" }));
+    expect(hydrated.getByRole("button", { name: "移除 Alpha" }))
+      .toBeInTheDocument();
+    expect(hydrated.getByRole("button", { name: "移除 Beta" }))
+      .toBeInTheDocument();
+    fireEvent.click(hydrated.getByRole("button", { name: "Submit SSR" }));
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      formValue: { "mobile-multi": ["b", "a"] },
+    }));
+
     await act(async () => root.unmount());
     consoleError.mockRestore();
     container.remove();

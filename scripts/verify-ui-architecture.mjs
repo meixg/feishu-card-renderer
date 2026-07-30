@@ -30,6 +30,9 @@ export async function verifyUiArchitecture() {
     ["src/components/ui/calendar.tsx", new Set([
       "ChevronDownIcon", "ChevronLeftIcon", "ChevronRightIcon",
     ])],
+    ["src/components/ui/choice-field.tsx", new Set([
+      "ChevronDownIcon", "SearchIcon", "XIcon",
+    ])],
     ["src/components/ui/pagination.tsx", new Set([
       "ChevronLeft", "ChevronRight",
     ])],
@@ -155,6 +158,12 @@ export async function verifyUiProvenance({
     ["PC choice fields", "docs/specs/shadcn-base-nova-choice-baseline.json", [
       "apps/v4/registry/bases/base/ui/select.tsx",
       "apps/v4/registry/bases/base/ui/combobox.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ], "2026-07-30"],
+    ["mobile choice Drawer", "docs/specs/shadcn-base-nova-mobile-drawer-baseline.json", [
+      "apps/v4/registry/bases/base/ui/drawer.tsx",
+      "apps/v4/registry/bases/base/ui/button.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
     ], "2026-07-30"],

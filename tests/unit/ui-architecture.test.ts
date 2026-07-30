@@ -22,6 +22,8 @@ const calendarManifest =
   "docs/specs/shadcn-base-nova-calendar-baseline.json";
 const choiceManifest =
   "docs/specs/shadcn-base-nova-choice-baseline.json";
+const mobileDrawerManifest =
+  "docs/specs/shadcn-base-nova-mobile-drawer-baseline.json";
 const tablePaginationManifest =
   "docs/specs/shadcn-base-nova-table-pagination-baseline.json";
 
@@ -82,6 +84,18 @@ function mutateChoiceManifest(
   );
 }
 
+function mutateMobileDrawerManifest(
+  mutation: Parameters<typeof mutateLocalManifest>[2],
+  options?: Parameters<typeof mutateLocalManifest>[3],
+) {
+  return mutateLocalManifest(
+    mobileDrawerManifest,
+    "fcr-mobile-drawer-local-",
+    mutation,
+    options,
+  );
+}
+
 it("keeps Base UI behind the internal UI module and Lucide imports tree-shakable", async () => {
   await expect(verifyUiArchitecture()).resolves.toEqual([]);
 });
@@ -97,6 +111,7 @@ it("pins every manifest local key set to the reviewed local registry", async () 
       "docs/specs/shadcn-base-nova-form-controls-baseline.json",
     "PC choice fields":
       "docs/specs/shadcn-base-nova-choice-baseline.json",
+    "mobile choice Drawer": mobileDrawerManifest,
     overlays: "docs/specs/shadcn-base-nova-overlays-baseline.json",
     containers: "docs/specs/shadcn-base-nova-containers-baseline.json",
     calendar: calendarManifest,
@@ -236,6 +251,52 @@ it("rejects a choice manifest and local file changed to the same new hash", asyn
       .digest("hex");
   }, { copyLocalFiles: true })).resolves.toEqual(expect.arrayContaining([
     `PC choice fields: ${file} reviewed local hash drifted`,
+    `${file}: local adaptation hash drifted`,
+  ]));
+});
+
+it("rejects missing or empty mobile Drawer local provenance keys", async () => {
+  const file = "src/components/ui/drawer.tsx";
+  await expect(mutateMobileDrawerManifest((provenance) => {
+    delete provenance.localFiles[file];
+  })).resolves.toEqual(expect.arrayContaining([
+    "mobile choice Drawer reviewed local adaptation paths drifted",
+    `mobile choice Drawer: ${file} reviewed local hash drifted`,
+  ]));
+  await expect(mutateMobileDrawerManifest((provenance) => {
+    provenance.localFiles = {};
+  })).resolves.toContain(
+    "mobile choice Drawer reviewed local adaptation paths drifted",
+  );
+});
+
+it("rejects replacing mobile Drawer provenance with README and its real hash", async () => {
+  const readmeHash = createHash("sha256")
+    .update(await readFile(resolve(root, "README.md")))
+    .digest("hex");
+  await expect(mutateMobileDrawerManifest((provenance) => {
+    provenance.localFiles = { "README.md": readmeHash };
+  })).resolves.toContain(
+    "mobile choice Drawer reviewed local adaptation paths drifted",
+  );
+});
+
+it("rejects valid wrong and self-approved mobile Drawer local hashes", async () => {
+  const file = "src/components/ui/drawer.tsx";
+  await expect(mutateMobileDrawerManifest((provenance) => {
+    provenance.localFiles[file] = "a".repeat(64);
+  })).resolves.toContain(
+    `mobile choice Drawer: ${file} reviewed local hash drifted`,
+  );
+  await expect(mutateMobileDrawerManifest(async (provenance, temporaryRoot) => {
+    const localPath = resolve(temporaryRoot, file);
+    const changed = `${await readFile(localPath, "utf8")}\n// mutation\n`;
+    await writeFile(localPath, changed);
+    provenance.localFiles[file] = createHash("sha256")
+      .update(changed)
+      .digest("hex");
+  }, { copyLocalFiles: true })).resolves.toEqual(expect.arrayContaining([
+    `mobile choice Drawer: ${file} reviewed local hash drifted`,
     `${file}: local adaptation hash drifted`,
   ]));
 });
