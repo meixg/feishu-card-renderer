@@ -322,6 +322,7 @@ test("Button tokens, sizes, and portaled confirm inherit each card theme", async
     expect(inherited.portalFocus).toBe(inherited.rootFocus);
     expect(inherited.surface).not.toBe("rgba(0, 0, 0, 0)");
     await dialog.getByRole("button", { name: "取消" }).click();
+    await expect(dialog).toHaveCount(0);
   }
 
   expect(primaryBackgrounds.get("light")).not.toBe(
@@ -421,8 +422,8 @@ test("simultaneous card modal mounts hand off safely and clean up independently"
       ?.getAttribute("data-portal-card"))).toBe("second");
   expect(await secondDialog.evaluate((node) =>
     node.closest("[inert], [aria-hidden='true']") === null)).toBe(true);
+  await expect(firstDialog).toHaveCount(0);
   await expect(secondDialog.getByRole("button", { name: "取消" })).toBeFocused();
-  await expect(firstDialog).toBeHidden();
 
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#remove-second-card")?.click();
@@ -510,6 +511,33 @@ test("Dropdown Menu supports roving keys, outside press, and confirm handoff", a
   expect(actions).not.toContainEqual(expect.objectContaining({
     value: { owner: "container-parent" },
   }));
+});
+
+test("scoped Dropdown Menu and Alert Dialog match the pinned light/dark snapshot", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  for (const theme of ["light", "dark"] as const) {
+    const card = page.locator(`#case-matrix-${theme}-pc-compact`);
+    const overflow = card.getByRole("button", { name: "更多操作" });
+    await overflow.click();
+    const menu = card.getByRole("menu", { name: "更多操作" });
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveScreenshot(`overflow-base-nova-${theme}.png`, {
+      maxDiffPixelRatio: 0.04,
+    });
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+
+    await card.getByRole("button", { name: "提交", exact: true }).last().click();
+    const dialog = card.getByRole("alertdialog", { name: "确认提交" });
+    await expect(dialog.getByRole("button", { name: "取消" })).toBeFocused();
+    await expect(dialog).toHaveScreenshot(`confirm-base-nova-${theme}.png`, {
+      maxDiffPixelRatio: 0.04,
+    });
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  }
 });
 
 test("image Dialog handles arrows, trapped Tab, Escape, and outside press", async ({

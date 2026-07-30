@@ -1,0 +1,144 @@
+@layer components {
+  .fcr-root {
+    --fcr-interaction-popover: oklch(1 0 0);
+    --fcr-interaction-popover-foreground: oklch(0.145 0 0);
+    --fcr-interaction-accent: oklch(0.97 0 0);
+    --fcr-interaction-accent-foreground: oklch(0.205 0 0);
+    --fcr-ui-popover: var(--fcr-interaction-popover);
+    --fcr-ui-popover-foreground: var(--fcr-interaction-popover-foreground);
+    --fcr-ui-accent: var(--fcr-interaction-accent);
+    --fcr-ui-accent-foreground: var(--fcr-interaction-accent-foreground);
+    --fcr-ui-muted-foreground: var(--fcr-interaction-muted-foreground);
+  }
+  .fcr-theme-dark {
+    --fcr-interaction-popover: oklch(0.205 0 0);
+    --fcr-interaction-popover-foreground: oklch(0.985 0 0);
+    --fcr-interaction-accent: oklch(0.269 0 0);
+    --fcr-interaction-accent-foreground: oklch(0.985 0 0);
+  }
+  .fcr-ui-dropdown-positioner {
+    z-index: var(--fcr-z-index-overlay); isolation: isolate; outline: none;
+  }
+  .fcr-ui-dropdown-menu-content {
+    position: relative; z-index: 50; width: var(--anchor-width);
+    min-width: 8rem;
+    max-width: min(20rem, calc(100vw - 16px));
+    max-height: var(--available-height); overflow-x: hidden; overflow-y: auto;
+    padding: 4px; border-radius: 8px; outline: none;
+    background: color-mix(in oklch, var(--fcr-ui-popover) 70%, transparent);
+    color: var(--fcr-ui-popover-foreground);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%),
+      0 2px 4px -2px rgb(0 0 0 / 10%),
+      0 0 0 1px color-mix(
+        in oklch, var(--fcr-ui-popover-foreground) 10%, transparent
+      );
+    transform-origin: var(--transform-origin);
+    animation: none !important;
+  }
+  .fcr-ui-dropdown-menu-content::before {
+    position: absolute; z-index: -1; inset: 0; border-radius: inherit;
+    pointer-events: none; content: "";
+    backdrop-filter: blur(24px) saturate(150%);
+  }
+  .fcr-ui-dropdown-menu-item {
+    position: relative; display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 6px; outline: none;
+    cursor: default; user-select: none; overflow-wrap: anywhere;
+    font-size: 14px; line-height: 20px;
+  }
+  .fcr-ui-dropdown-menu-item:is(:focus, [data-highlighted]) {
+    background: color-mix(
+      in oklch, var(--fcr-ui-popover-foreground) 10%, transparent
+    );
+    color: var(--fcr-ui-accent-foreground);
+  }
+  .fcr-ui-dropdown-menu-item[data-disabled] {
+    pointer-events: none; opacity: 0.5;
+  }
+
+  .fcr-ui-alert-dialog-overlay {
+    position: fixed; z-index: 50; inset: 0; background: rgb(0 0 0 / 10%);
+    animation-duration: 100ms; animation-fill-mode: both;
+  }
+  .fcr-ui-alert-dialog-content {
+    position: fixed; z-index: 50; top: 50%; left: 50%;
+    display: grid; width: calc(100% - 32px); max-width: 320px; gap: 16px;
+    transform: translate(-50%, -50%); padding: 16px;
+    border-radius: 12px; outline: none;
+    background: var(--fcr-ui-popover); color: var(--fcr-ui-popover-foreground);
+    box-shadow: 0 0 0 1px color-mix(
+      in oklch, var(--fcr-ui-popover-foreground) 10%, transparent
+    );
+    animation-duration: 100ms; animation-fill-mode: both;
+  }
+  .fcr-ui-alert-dialog-header {
+    display: grid; grid-template-rows: auto 1fr; place-items: center;
+    gap: 6px; text-align: center;
+  }
+  .fcr-ui-alert-dialog-footer {
+    display: flex; flex-direction: column-reverse; gap: 8px;
+    margin: 0 -16px -16px; padding: 16px;
+    border-top: 1px solid var(--fcr-ui-border);
+    border-radius: 0 0 12px 12px;
+    background: color-mix(in oklch, var(--fcr-ui-muted) 50%, transparent);
+  }
+  .fcr-ui-alert-dialog-content[data-size="sm"]
+  .fcr-ui-alert-dialog-footer {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fcr-ui-alert-dialog-title {
+    margin: 0; font-size: 16px; line-height: 24px; font-weight: 500;
+  }
+  .fcr-ui-alert-dialog-description {
+    margin: 0; color: var(--fcr-ui-muted-foreground);
+    font-size: 14px; line-height: 1.5;
+    text-wrap: balance;
+  }
+
+  .fcr-ui-alert-dialog-overlay[data-open] {
+    animation-name: fcr-ui-overlay-fade-in;
+  }
+  .fcr-ui-alert-dialog-overlay[data-closed] {
+    animation-name: fcr-ui-overlay-fade-out;
+  }
+  .fcr-ui-alert-dialog-content[data-open] {
+    animation-name: fcr-ui-alert-dialog-in;
+  }
+  .fcr-ui-alert-dialog-content[data-closed] {
+    animation-name: fcr-ui-alert-dialog-out;
+  }
+  @media (min-width: 640px) {
+    .fcr-ui-alert-dialog-content[data-size="default"] { max-width: 384px; }
+    .fcr-ui-alert-dialog-content[data-size="default"]
+    .fcr-ui-alert-dialog-header {
+      place-items: start; text-align: left;
+    }
+    .fcr-ui-alert-dialog-footer {
+      display: flex; flex-direction: row; justify-content: flex-end;
+    }
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .fcr-ui-alert-dialog-overlay { backdrop-filter: blur(4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fcr-ui-dropdown-menu-content, .fcr-ui-alert-dialog-overlay,
+    .fcr-ui-alert-dialog-content { animation: none; transition: none; }
+  }
+}
+
+@keyframes fcr-ui-overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fcr-ui-overlay-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes fcr-ui-alert-dialog-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes fcr-ui-alert-dialog-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+}

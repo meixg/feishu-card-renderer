@@ -13,8 +13,11 @@ function AlertDialog(props: AlertDialogPrimitive.Root.Props) {
 function AlertDialogContent({
   className,
   children,
+  size = "default",
   ...props
-}: AlertDialogPrimitive.Popup.Props) {
+}: AlertDialogPrimitive.Popup.Props & {
+  size?: "default" | "sm";
+}) {
   const portalHost = useUiPortalHost();
   if (!portalHost) return null;
   return (
@@ -25,11 +28,12 @@ function AlertDialogContent({
       <UiPortalEventBoundary>
         <AlertDialogPrimitive.Backdrop
           data-slot="alert-dialog-overlay"
-          className="fcr-confirm-backdrop"
+          className="fcr-ui-alert-dialog-overlay"
         />
         <AlertDialogPrimitive.Popup
           data-slot="alert-dialog-content"
-          className={cn("fcr-confirm-dialog", className)}
+          data-size={size}
+          className={cn("fcr-ui-alert-dialog-content", className)}
           {...props}
         >
           {children}
@@ -39,41 +43,52 @@ function AlertDialogContent({
   );
 }
 
-function AlertDialogHeader(props: ComponentProps<"div">) {
-  return <div data-slot="alert-dialog-header" {...props} />;
+function AlertDialogHeader({ className, ...props }: ComponentProps<"div">) {
+  return <div className={cn("fcr-ui-alert-dialog-header", className)}
+    data-slot="alert-dialog-header" {...props} />;
 }
 
-function AlertDialogFooter(props: ComponentProps<"div">) {
-  return <div data-slot="alert-dialog-footer" {...props} />;
+function AlertDialogFooter({ className, ...props }: ComponentProps<"div">) {
+  return <div className={cn("fcr-ui-alert-dialog-footer", className)}
+    data-slot="alert-dialog-footer" {...props} />;
 }
 
-function AlertDialogTitle(props: AlertDialogPrimitive.Title.Props) {
-  return <AlertDialogPrimitive.Title data-slot="alert-dialog-title" {...props} />;
+function AlertDialogTitle({
+  className,
+  ...props
+}: AlertDialogPrimitive.Title.Props) {
+  return <AlertDialogPrimitive.Title
+    className={cn("fcr-ui-alert-dialog-title", className)}
+    data-slot="alert-dialog-title" {...props} />;
 }
 
 function AlertDialogDescription(
-  props: AlertDialogPrimitive.Description.Props,
+  { className, ...props }: AlertDialogPrimitive.Description.Props,
 ) {
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
+      className={cn("fcr-ui-alert-dialog-description", className)}
       {...props}
     />
   );
 }
 
-function AlertDialogAction(props: ButtonProps) {
-  return <Button data-slot="alert-dialog-action" {...props} />;
+function AlertDialogAction({ className, ...props }: ButtonProps) {
+  return <Button className={cn("fcr-ui-alert-dialog-action", className)}
+    data-slot="alert-dialog-action" {...props} />;
 }
 
 function AlertDialogCancel({
   variant = "outline",
+  className,
   ...props
 }: AlertDialogPrimitive.Close.Props &
   Pick<ButtonProps, "variant" | "size">) {
   return (
     <AlertDialogPrimitive.Close
       data-slot="alert-dialog-cancel"
+      className={cn("fcr-ui-alert-dialog-cancel", className)}
       render={<Button variant={variant} />}
       {...props}
     />

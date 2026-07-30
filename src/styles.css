@@ -1,5 +1,6 @@
 @import "./styles/button-nova.css";
 @import "./styles/form-controls-nova.css";
+@import "./styles/overlays-nova.css";
 
 @layer components {
   .fcr-root {
@@ -331,47 +332,9 @@
   .fcr-choice-field[data-invalid] .fcr-choice-trigger {
     border-color: var(--fcr-color-danger);
   }
-  .fcr-confirm-backdrop {
-    position: fixed; z-index: 1100; inset: 0;
-    padding: 24px; background: rgb(0 0 0 / 56%);
-  }
-  .fcr-confirm-dialog {
-    position: fixed; z-index: 1101; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    display: grid; gap: 12px; width: min(420px, calc(100% - 48px)); padding: 20px;
-    border-radius: 10px; background: var(--fcr-color-surface); color: var(--fcr-color-text);
-  }
-  .fcr-confirm-dialog h2, .fcr-confirm-dialog p, .fcr-preview-dialog h2,
-  .fcr-preview-dialog p { margin: 0; }
+  .fcr-preview-dialog h2, .fcr-preview-dialog p { margin: 0; }
   .fcr-preview-dialog h2 { font: inherit; }
-  .fcr-confirm-dialog [data-slot="alert-dialog-header"] {
-    display: grid; gap: 4px;
-  }
-  .fcr-confirm-dialog [data-slot="alert-dialog-footer"] {
-    display: flex; justify-content: flex-end; gap: 8px;
-  }
   .fcr-overflow { position: relative; }
-  .fcr-dropdown-positioner { z-index: var(--fcr-z-index-overlay); outline: none; }
-  .fcr-overflow-menu {
-    display: grid; min-width: 140px; max-height: var(--available-height);
-    overflow-y: auto; padding: 4px; border: 1px solid var(--fcr-color-border);
-    border-radius: 8px; background: var(--fcr-color-surface);
-    color: var(--fcr-color-text); box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
-    outline: none;
-  }
-  .fcr-overflow-menu-item {
-    display: flex; min-height: 32px; align-items: center; border-radius: 5px;
-    padding: 6px 8px; cursor: default; outline: none; user-select: none;
-  }
-  .fcr-overflow-menu-item[data-highlighted] {
-    background: var(--fcr-color-primary); color: var(--fcr-color-primary-contrast);
-  }
-  .fcr-overflow-menu-item:focus-visible {
-    outline: 2px solid var(--fcr-color-primary); outline-offset: 1px;
-  }
-  .fcr-overflow-menu-item[data-disabled] {
-    pointer-events: none; opacity: 0.5;
-  }
   .fcr-choice-control, .fcr-choice-trigger {
     display: flex; width: 100%; min-width: 0; min-height: 34px;
     align-items: center; justify-content: space-between; gap: 6px;
