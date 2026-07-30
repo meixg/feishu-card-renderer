@@ -545,10 +545,22 @@ test("image Dialog handles arrows, trapped Tab, Escape, and outside press", asyn
 });
 
 test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=choice");
   const host = page.locator("#case-choices-pc");
   const root = host.locator(".fcr-root");
   await expect(root).toBeVisible();
+  const choiceFieldStyles = await host.locator(".fcr-ui-field").evaluateAll(
+    (fields) => fields.map((field) => ({
+      classes: field.className,
+      gap: getComputedStyle(field).gap,
+      isNaturallyUnclipped: field.scrollHeight === field.clientHeight,
+    })),
+  );
+  expect(choiceFieldStyles).toEqual(Array.from({ length: 4 }, () => ({
+    classes: "fcr-ui-field fcr-choice-field",
+    gap: "4px",
+    isNaturallyUnclipped: true,
+  })));
   expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
     .toBe(true);
   expect(await host.locator(".fcr-choice-chip").count()).toBe(3);
@@ -1043,18 +1055,19 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await form.getByRole("button", { name: "提交" }).click();
   await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
 
-  const standalone = pc.locator(".fcr-root").nth(1);
-  await standalone.getByRole("combobox", {
-    name: "预约日期：2026-07-28",
-  }).click();
-  const calendar = standalone.getByRole("dialog", { name: "选择预约日期" });
-  await expect(calendar).toBeVisible();
-  expect(await calendar.evaluate((node) =>
-    getComputedStyle(node).transitionDuration)).toBe("0s");
-  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
-
   await expect(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");
   await expect(page.locator("#case-form-controls-mobile"))
     .toHaveScreenshot("card-form-controls-mobile.png");
+
+  await page.goto("/tests/visual/?case=date");
+  const isolated = page.locator("#case-form-controls-pc .fcr-root").nth(1);
+  await isolated.getByRole("combobox", {
+    name: "预约日期：2026-07-28",
+  }).click();
+  const calendar = isolated.getByRole("dialog", { name: "选择预约日期" });
+  await expect(calendar).toBeVisible();
+  expect(await calendar.evaluate((node) =>
+    getComputedStyle(node).transitionDuration)).toBe("0s");
+  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
 });

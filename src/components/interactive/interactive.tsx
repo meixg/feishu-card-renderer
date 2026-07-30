@@ -313,7 +313,8 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
   const label = element.label?.content ?? element.placeholder?.content ??
     element.name ?? "选择";
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-choice-field"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel>{label}</FieldLabel>
     <ChoiceField
       controlRef={field.controlRef}
@@ -357,7 +358,8 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
   });
   const label = element.label?.content ?? element.name ?? "多选";
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
-  return <><Field data-invalid={field.invalid || undefined}>
+  return <><Field className="fcr-choice-field"
+    data-invalid={field.invalid || undefined}>
     <FieldLabel>{label}</FieldLabel>
     <ChoiceField
       controlRef={field.controlRef}

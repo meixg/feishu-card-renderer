@@ -120,8 +120,8 @@ const selectImageResourceCard = {
   },
 };
 const selectImageResourceUrl = new URL(
-  "./card-renderer.visual.spec.ts-snapshots/card-choices-pc-compact-chromium-linux.png",
-  import.meta.url,
+  "/tests/visual/assets/select-image-resource.svg",
+  window.location.origin,
 ).href;
 
 function SelectImageResourceCase({
@@ -418,9 +418,31 @@ export function FormControlCases({
   );
 }
 
+const isolatedVisualCase = new URLSearchParams(window.location.search).get("case");
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <main style={{ display: "grid", gap: 24 }}>
+    {isolatedVisualCase === "choice"
+      ? <main>
+          <section id="case-choices-pc" style={{ width: 400 }}>
+            <CardRenderer
+              card={choiceVisualCard}
+              onAction={() => {}}
+              resolvePerson={(id) => ({
+                id,
+                name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+              })}
+            />
+          </section>
+        </main>
+      : isolatedVisualCase === "date"
+        ? <main>
+            <FormControlCases
+              id="case-form-controls-pc"
+              widthMode="compact"
+            />
+          </main>
+        : <main style={{ display: "grid", gap: 24 }}>
       {(["default", "compact", "fill"] as const).map((width) => (
         <section id={`case-${width}`} key={width}>
           <CardRenderer card={{ ...completeRendererCard,
@@ -484,7 +506,7 @@ createRoot(document.getElementById("root")!).render(
       <OverlayCases />
       <PortalLifecycleCases />
       <ButtonBaselineCases />
-      <section id="case-choices-pc" style={{ width: 400, height: 293 }}>
+      <section id="case-choices-pc" style={{ width: 400 }}>
         <CardRenderer
           card={choiceVisualCard}
           onAction={() => {}}
@@ -533,6 +555,6 @@ createRoot(document.getElementById("root")!).render(
           widthMode="fill"
         />
       </div>
-    </main>
+    </main>}
   </React.StrictMode>,
 );
