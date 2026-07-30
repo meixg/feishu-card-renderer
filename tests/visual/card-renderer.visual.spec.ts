@@ -29,6 +29,27 @@ async function settleVisualLayout(
   }));
 }
 
+async function withTouchEmulation(
+  session: import("@playwright/test").CDPSession,
+  operation: () => Promise<void>,
+): Promise<void> {
+  try {
+    await session.send("Emulation.setTouchEmulationEnabled", {
+      enabled: true,
+      maxTouchPoints: 1,
+    });
+    await operation();
+  } finally {
+    try {
+      await session.send("Emulation.setTouchEmulationEnabled", {
+        enabled: false,
+      });
+    } finally {
+      await session.detach();
+    }
+  }
+}
+
 async function overlayActions(
   page: import("@playwright/test").Page,
 ): Promise<unknown[]> {
@@ -770,26 +791,20 @@ test("mobile text choices update exactly once for pointer, keyboard, and emulate
         const bounds = await option.boundingBox();
         expect(bounds).not.toBeNull();
         const session = await page.context().newCDPSession(page);
-        await session.send("Emulation.setTouchEmulationEnabled", {
-          enabled: true,
-          maxTouchPoints: 1,
-        });
         const point = {
           x: bounds!.x + bounds!.width / 2,
           y: bounds!.y + bounds!.height / 2,
         };
-        await session.send("Input.dispatchTouchEvent", {
-          type: "touchStart",
-          touchPoints: [point],
+        await withTouchEmulation(session, async () => {
+          await session.send("Input.dispatchTouchEvent", {
+            type: "touchStart",
+            touchPoints: [point],
+          });
+          await session.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: [],
+          });
         });
-        await session.send("Input.dispatchTouchEvent", {
-          type: "touchEnd",
-          touchPoints: [],
-        });
-        await session.send("Emulation.setTouchEmulationEnabled", {
-          enabled: false,
-        });
-        await session.detach();
       }
     }
     await expect(host.getByRole("dialog", { name: "Searchable Combobox" }))
@@ -1048,25 +1063,22 @@ test("mobile Drawer closes by Esc, close button, and downward swipe with focus r
   const x = bounds!.x + bounds!.width / 2;
   const startY = bounds!.y + bounds!.height / 2;
   const session = await page.context().newCDPSession(page);
-  await session.send("Emulation.setTouchEmulationEnabled", {
-    enabled: true,
-    maxTouchPoints: 1,
-  });
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [{ x, y: startY }],
-  });
-  for (const offset of [100, 200, 300, 400]) {
+  await withTouchEmulation(session, async () => {
     await session.send("Input.dispatchTouchEvent", {
-      type: "touchMove",
-      touchPoints: [{ x, y: Math.min(startY + offset, 830) }],
+      type: "touchStart",
+      touchPoints: [{ x, y: startY }],
     });
-  }
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
+    for (const offset of [100, 200, 300, 400]) {
+      await session.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: Math.min(startY + offset, 830) }],
+      });
+    }
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
   });
-  await session.detach();
   await expect(drawer).toBeHidden();
   await expect(trigger).toBeFocused();
   await expect(host.locator("[data-choice-actions]")).toHaveText("[]");
