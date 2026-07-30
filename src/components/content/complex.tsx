@@ -10,6 +10,20 @@ import type {
 } from "../../schema/components";
 import { safePx } from "../../styles/safe";
 import { useImageResource, usePersonResource } from "../../renderer/resources";
+import { Button } from "../ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from "../ui/pagination";
+import {
+  Table as TablePrimitive,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 import { SafeMarkdown } from "../primitives/SafeText";
 import { PreviewDialog, type PreviewItem } from "../primitives/PreviewDialog";
 
@@ -133,21 +147,34 @@ export function Table({ element }: { element: TableElement }): React.JSX.Element
   const [page, setPage] = useState(0);
   const visible = rows.slice(page * pageSize, page * pageSize + pageSize);
   return <div className="fcr-table-wrap">
-    <table className={`fcr-table fcr-row-${element.row_height ?? "medium"}`}>
-      <thead><tr>{columns.map((column, index) =>
-        <th key={`${column.name ?? "column"}:${index}`} scope="col"
-          style={{ width: safePx(column.width) }}>{column.display_name ?? ""}</th>)}</tr></thead>
-      <tbody>{visible.map((row, rowIndex) =>
-        <tr key={page * pageSize + rowIndex}>{columns.map((column, columnIndex) =>
-          <td key={`${column.name ?? "column"}:${columnIndex}`}>
+    <TablePrimitive className={`fcr-table fcr-row-${element.row_height ?? "medium"}`}>
+      <TableHeader><TableRow>{columns.map((column, index) =>
+        <TableHead key={`${column.name ?? "column"}:${index}`} scope="col"
+          style={{ width: safePx(column.width) }}>{column.display_name ?? ""}</TableHead>)}</TableRow>
+      </TableHeader>
+      <TableBody>{visible.map((row, rowIndex) =>
+        <TableRow key={page * pageSize + rowIndex}>{columns.map((column, columnIndex) =>
+          <TableCell key={`${column.name ?? "column"}:${columnIndex}`}>
             {column.name ? formatCell(row[column.name], column) : ""}
-          </td>)}</tr>)}</tbody>
-    </table>
-    {pages > 1 && <nav className="fcr-table-pagination" aria-label="表格分页">
-      <button type="button" disabled={page === 0} onClick={() => setPage(page - 1)}>上一页</button>
-      <span aria-live="polite">{page + 1} / {pages}</span>
-      <button type="button" disabled={page + 1 === pages}
-        onClick={() => setPage(page + 1)}>下一页</button>
-    </nav>}
+          </TableCell>)}</TableRow>)}</TableBody>
+    </TablePrimitive>
+    {pages > 1 && <Pagination className="fcr-table-pagination" aria-label="表格分页">
+      <PaginationContent>
+        <PaginationItem>
+          <Button type="button" variant="outline" size="sm" disabled={page === 0}
+            onClick={() => setPage(page - 1)}>上一页</Button>
+        </PaginationItem>
+        <PaginationItem>
+          <span className="fcr-table-page-status" aria-live="polite">
+            {page + 1} / {pages}
+          </span>
+        </PaginationItem>
+        <PaginationItem>
+          <Button type="button" variant="outline" size="sm"
+            disabled={page + 1 === pages}
+            onClick={() => setPage(page + 1)}>下一页</Button>
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>}
   </div>;
 }

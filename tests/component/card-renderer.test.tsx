@@ -253,10 +253,16 @@ describe("CardRenderer", () => {
       resolvePerson={(id) => ({ id, name: "Owner" })} />);
     await act(async () => {});
     const table = within(first.container).getByRole("table");
+    expect(table).toHaveAttribute("data-slot", "table");
+    expect(table.closest('[data-slot="table-container"]')).not.toBeNull();
     expect(within(table).getByRole("columnheader", { name: "金额" })).toBeInTheDocument();
     expect(within(table).getByText("¥1,234.50")).toBeInTheDocument();
     expect(within(table).getByText("2026-07-26")).toBeInTheDocument();
-    fireEvent.click(within(first.container).getByRole("button", { name: "下一页" }));
+    const pagination = first.container.querySelector('[data-slot="pagination"]');
+    expect(pagination).not.toBeNull();
+    const nextPage = within(first.container).getByRole("button", { name: "下一页" });
+    expect(nextPage).toHaveAttribute("data-slot", "button");
+    fireEvent.click(nextPage);
     expect(within(first.container).getByText("项目 B")).toBeInTheDocument();
 
     const { container } = render(<CardRenderer card={{ schema: "2.0", body: {
