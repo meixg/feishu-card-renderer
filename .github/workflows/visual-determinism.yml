@@ -1,4 +1,4 @@
-name: Visual worker experiment
+name: Visual raster contract experiment
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   experiment:
-    name: PR 88 worker-count experiment
+    name: PR 88 raster flag experiment
     runs-on: ubuntu-latest
     steps:
       - name: Check out exact PR 88 head
@@ -22,10 +22,10 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Set up Node
+        uses: actions/setup-node@6044e13b5cdd74d1bd7c1eebd1a8a7d63ac7fac4 # v6.3.0
         with:
-          node-version: "24"
+          node-version: 24.18.0
           cache: pnpm
 
       - name: Install dependencies
@@ -34,107 +34,85 @@ jobs:
       - name: Install managed Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Record checkout and rendering environment
+      - name: Record controlled environment
         run: |
-          mkdir -p "$RUNNER_TEMP/visual-worker-evidence/environment"
-          git rev-parse HEAD | tee "$RUNNER_TEMP/visual-worker-evidence/environment/checkout-sha.txt"
+          evidence="$RUNNER_TEMP/visual-raster-evidence"
+          mkdir -p "$evidence/environment"
+          git rev-parse HEAD | tee "$evidence/environment/checkout-sha.txt"
           test "$(git rev-parse HEAD)" = "93b49059aab5255a69846b33b46ce0fd41e8fd53"
-          cp playwright.config.ts "$RUNNER_TEMP/visual-worker-evidence/environment/playwright.config.ts"
-          cp package.json pnpm-lock.yaml "$RUNNER_TEMP/visual-worker-evidence/environment/"
+          cp playwright.config.ts package.json pnpm-lock.yaml "$evidence/environment/"
           {
-            printf 'runner_os=%s\n' "$RUNNER_OS"
-            printf 'runner_arch=%s\n' "$RUNNER_ARCH"
-            printf 'image_os=%s\n' "${ImageOS:-}"
-            printf 'image_version=%s\n' "${ImageVersion:-}"
+            printf 'runner_os=%s\nrunner_arch=%s\nimage_os=%s\nimage_version=%s\n' \
+              "$RUNNER_OS" "$RUNNER_ARCH" "${ImageOS:-}" "${ImageVersion:-}"
             node --version
             pnpm --version
             pnpm exec playwright --version
             "$HOME/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome" --version
             fc-match sans-serif
+            fc-cache --version
             dpkg-query -W -f='${Package}=${Version}\n' \
               libfontconfig1 libfreetype6 fonts-liberation fonts-noto-color-emoji
-          } | tee "$RUNNER_TEMP/visual-worker-evidence/environment/runtime.txt"
+          } | tee "$evidence/environment/runtime.txt"
           sha256sum \
             tests/visual/card-renderer.visual.spec.ts-snapshots/button-base-nova-themes-chromium-linux.png \
             tests/visual/card-renderer.visual.spec.ts-snapshots/card-form-controls-error-compact-chromium-linux.png \
-            | tee "$RUNNER_TEMP/visual-worker-evidence/environment/baseline-sha256.txt"
+            > "$evidence/environment/baseline-sha256.txt"
 
-      - name: Add observation-only captures
+      - name: Run single-variable raster experiments
         run: |
-          node <<'NODE'
+          evidence="$RUNNER_TEMP/visual-raster-evidence"
+          cp playwright.config.ts "$RUNNER_TEMP/playwright.config.original.ts"
+          for mode in baseline deterministic-mode disable-gpu disable-gpu-rasterization swiftshader; do
+            cp "$RUNNER_TEMP/playwright.config.original.ts" playwright.config.ts
+            case "$mode" in
+              baseline) flag="" ;;
+              deterministic-mode) flag="--deterministic-mode" ;;
+              disable-gpu) flag="--disable-gpu" ;;
+              disable-gpu-rasterization) flag="--disable-gpu-rasterization" ;;
+              swiftshader) flag="--use-gl=swiftshader" ;;
+            esac
+            if [ -n "$flag" ]; then
+              FLAG="$flag" node <<'NODE'
           const { readFileSync, writeFileSync } = require("node:fs");
-          const path = "tests/visual/card-renderer.visual.spec.ts";
-          let source = readFileSync(path, "utf8");
-          source = source.replace(
-            'import { expect, test } from "@playwright/test";',
-            `import { expect, test, type Locator } from "@playwright/test";
-          import { mkdir } from "node:fs/promises";
-          import { resolve } from "node:path";`,
-          );
-          source = source.replace(
-            'import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";',
-            `import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";
-
-          async function captureExperiment(locator: Locator, name: string) {
-            const directory = process.env.FCR_EXPERIMENT_CAPTURE_DIR;
-            if (!directory) return;
-            await mkdir(directory, { recursive: true });
-            await locator.screenshot({
-              animations: "disabled",
-              path: resolve(directory, name),
-            });
-          }`,
-          );
-          source = source.replace(
-            '  await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");',
-            `  await captureExperiment(baseline, "button-base-nova-themes.png");
-            await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");`,
-          );
-          source = source.replace(
-            '  await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");',
-            `  await captureExperiment(form, "card-form-controls-error-compact.png");
-            await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");`,
+          const path = "playwright.config.ts";
+          const source = readFileSync(path, "utf8").replace(
+            'use: {',
+            `use: {\n    launchOptions: { args: [${JSON.stringify(process.env.FLAG)}] },`,
           );
           writeFileSync(path, source);
           NODE
-          git diff -- tests/visual/card-renderer.visual.spec.ts \
-            > "$RUNNER_TEMP/visual-worker-evidence/environment/observation-only.patch"
-          git diff --exit-code -- . \
-            ':(exclude)tests/visual/card-renderer.visual.spec.ts' \
-            ':(exclude)test-results'
-
-      - name: Run controlled strict suites
-        run: |
-          mkdir -p "$RUNNER_TEMP/visual-worker-evidence/runs"
-          for workers in 2 1; do
+            fi
+            mkdir -p "$evidence/modes/$mode"
+            cp playwright.config.ts "$evidence/modes/$mode/playwright.config.ts"
+            printf '%s\n' "$flag" > "$evidence/modes/$mode/flag.txt"
             for repetition in 1 2 3; do
-              run_dir="$RUNNER_TEMP/visual-worker-evidence/runs/workers-$workers/run-$repetition"
-              mkdir -p "$run_dir/captures"
+              run_dir="$evidence/modes/$mode/run-$repetition"
+              mkdir -p "$run_dir"
+              rm -rf test-results
               set +e
-              FCR_EXPERIMENT_CAPTURE_DIR="$run_dir/captures" \
-                pnpm exec playwright test --workers="$workers" \
+              pnpm exec playwright test --workers=1 \
+                --grep 'Button tokens and confirm inherit each card theme|form controls cover validation' \
                 > "$run_dir/playwright.log" 2>&1
               status=$?
               set -e
               printf '%s\n' "$status" > "$run_dir/exit-code.txt"
-              cp playwright.config.ts "$run_dir/playwright.config.ts"
-              printf '%s\n' "$workers" > "$run_dir/worker-override.txt"
-              find "$run_dir/captures" -type f -name '*.png' -print0 \
-                | sort -z \
-                | xargs -0 sha256sum \
-                > "$run_dir/capture-sha256.txt"
-              find "$run_dir/captures" -type f -name '*.png' -print0 \
-                | sort -z \
-                | xargs -0 file \
-                > "$run_dir/capture-file.txt"
+              find test-results -type f -name '*-actual.png' -print0 \
+                | sort -z | xargs -0 -r cp -t "$run_dir"
+              find "$run_dir" -type f -name '*-actual.png' -print0 \
+                | sort -z | xargs -0 -r sha256sum \
+                > "$run_dir/actual-sha256.txt"
+              find "$run_dir" -type f -name '*-actual.png' -print0 \
+                | sort -z | xargs -0 -r file \
+                > "$run_dir/actual-file.txt"
             done
           done
+          cp "$RUNNER_TEMP/playwright.config.original.ts" playwright.config.ts
 
-      - name: Upload controlled worker evidence
+      - name: Upload raster evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pr88-worker-experiment-${{ github.run_id }}
-          path: ${{ runner.temp }}/visual-worker-evidence
+          name: pr88-raster-experiment-${{ github.run_id }}
+          path: ${{ runner.temp }}/visual-raster-evidence
           if-no-files-found: error
           retention-days: 14
