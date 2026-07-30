@@ -311,7 +311,6 @@ function useFilteredOptions(
 function PopupCombobox(props: ChoiceFieldProps) {
   const portalHost = useUiPortalHost();
   const anchorRef = useRef<HTMLDivElement>(null);
-  const multiInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useFilteredOptions(props.options, query, props.locale);
@@ -370,9 +369,6 @@ function PopupCombobox(props: ChoiceFieldProps) {
     onInputValueChange: (next: string) => setQuery(next),
     onOpenChange: (next: boolean) => {
       setOpen(next);
-      if (next && props.multiple) {
-        queueMicrotask(() => multiInputRef.current?.focus());
-      }
       if (!next) setQuery("");
     },
     open,
@@ -453,10 +449,7 @@ function PopupCombobox(props: ChoiceFieldProps) {
                 </span>
               )}
               <ComboboxChipsInput
-                ref={(node) => {
-                  multiInputRef.current = node;
-                  props.controlRef?.(node);
-                }}
+                ref={props.controlRef as (node: HTMLInputElement | null) => void}
                 aria-describedby={props.describedBy}
                 aria-invalid={props.invalid || undefined}
                 aria-label={choiceCopy(props.locale).search(props.label)}
@@ -467,10 +460,6 @@ function PopupCombobox(props: ChoiceFieldProps) {
               />
             </>}
           </ComboboxValue>
-          <ComboboxTrigger
-            aria-label={choiceCopy(props.locale).open(props.label)}
-            disabled={props.disabled}
-          />
         </ComboboxChips>
         {portalHost && (
           <ComboboxContent

@@ -646,9 +646,7 @@ test("PC Select and Combobox collide within a viewport narrower than 400px", asy
   for (const remove of await host.getByRole("button", { name: /^移除/ }).all()) {
     await assertInsideViewport(remove);
   }
-  await host.getByRole("button", {
-    name: "Multiple choices，打开选项",
-  }).click();
+  await multiInput.click();
   const multiPopup = host.getByRole("dialog", {
     name: "Multiple choices选项",
   });
@@ -829,9 +827,7 @@ test("Select and Combobox preserve real-browser keyboard selection semantics", a
     name: "Searchable Combobox选项",
   })).toBeHidden();
 
-  const multi = host.getByRole("button", {
-    name: "Multiple choices，打开选项",
-  });
+  const multi = host.getByRole("combobox", { name: "搜索Multiple choices" });
   await multi.click();
   const multiSearch = host.getByRole("combobox", {
     name: "搜索Multiple choices",

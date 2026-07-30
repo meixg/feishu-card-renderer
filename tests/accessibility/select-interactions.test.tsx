@@ -81,9 +81,7 @@ it("keeps open selected, required, disabled PC multiple chips accessible", async
   expect(input).toHaveAttribute("aria-required", "true");
   expect(screen.getByRole("button", { name: "移除 Option 0" }))
     .toHaveAttribute("aria-disabled", "false");
-  fireEvent.click(screen.getByRole("button", {
-    name: "Accessible multi，打开选项",
-  }));
+  fireEvent.click(input);
   expect(input).toHaveAttribute("aria-expanded", "true");
   await waitFor(() => expect(input).toHaveFocus());
   expect(screen.getByRole("option", { name: "Option 0" }))

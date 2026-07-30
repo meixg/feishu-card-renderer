@@ -61,7 +61,7 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
         "data-choice-kind",
         "combobox",
       );
-    expect(screen.getByRole("button", { name: "Multi，打开选项" })
+    expect(screen.getByRole("combobox", { name: "搜索Multi" })
       .closest("[data-choice-kind]")).toHaveAttribute(
         "data-choice-kind",
         "combobox",
@@ -189,7 +189,7 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
       }] },
     }} />);
 
-    openChoice("Tags，打开选项");
+    fireEvent.click(screen.getByRole("combobox", { name: "搜索Tags" }));
     activateOption("Two");
     activateOption("Three");
     activateOption("Four");
@@ -465,7 +465,7 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
     activateOption("Small B");
     fireEvent.click(screen.getByRole("combobox", { name: "SSR large" }));
     activateOption("Large 7");
-    fireEvent.click(screen.getByRole("button", { name: "SSR multi，打开选项" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "搜索SSR multi" }));
     activateOption("Multi A");
     fireEvent.click(screen.getByRole("button", { name: "完成" }));
     expect(screen.getByRole("combobox", { name: "搜索SSR multi" }))

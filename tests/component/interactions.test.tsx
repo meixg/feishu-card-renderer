@@ -572,7 +572,7 @@ describe("interactive components and CardAction", () => {
     const onAction = vi.fn();
     render(<CardRenderer card={completeInteractiveCard} onAction={onAction} />);
     choose("owner", "甲");
-    const members = screen.getByRole("button", { name: "members，打开选项" });
+    const members = screen.getByRole("combobox", { name: "搜索members" });
     fireEvent.click(members);
     fireEvent.click(screen.getByRole("option", { name: "甲" }));
     fireEvent.click(screen.getByRole("option", { name: "乙" }));
