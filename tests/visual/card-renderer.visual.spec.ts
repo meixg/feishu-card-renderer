@@ -322,6 +322,7 @@ test("Button tokens, sizes, and portaled confirm inherit each card theme", async
     expect(inherited.portalFocus).toBe(inherited.rootFocus);
     expect(inherited.surface).not.toBe("rgba(0, 0, 0, 0)");
     await dialog.getByRole("button", { name: "取消" }).click();
+    await expect(dialog).toHaveCount(0);
   }
 
   expect(primaryBackgrounds.get("light")).not.toBe(
@@ -421,8 +422,8 @@ test("simultaneous card modal mounts hand off safely and clean up independently"
       ?.getAttribute("data-portal-card"))).toBe("second");
   expect(await secondDialog.evaluate((node) =>
     node.closest("[inert], [aria-hidden='true']") === null)).toBe(true);
+  await expect(firstDialog).toHaveCount(0);
   await expect(secondDialog.getByRole("button", { name: "取消" })).toBeFocused();
-  await expect(firstDialog).toBeHidden();
 
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#remove-second-card")?.click();

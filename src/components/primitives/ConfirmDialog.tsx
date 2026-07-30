@@ -38,13 +38,17 @@ export function ConfirmDialog({
     : { title: "Confirm action", text: "Do you want to continue?",
       cancel: "Cancel", confirm: "Confirm" };
   const confirmed = useRef(false);
+  const suppressFinalFocus = useRef(false);
   const cancelRef = useRef(onCancel);
   const modalRef = useRef<ActiveModal | null>(null);
   const [modalActive, setModalActive] = useState(false);
   cancelRef.current = onCancel;
   if (!modalRef.current) {
     modalRef.current = {
-      cancel: () => cancelRef.current(),
+      cancel: () => {
+        suppressFinalFocus.current = true;
+        cancelRef.current();
+      },
       id: Symbol("fcr-confirm-dialog"),
     };
   }
@@ -59,6 +63,7 @@ export function ConfirmDialog({
       setModalActive(false);
       return undefined;
     }
+    suppressFinalFocus.current = false;
 
     const previous = activeModalByDocument.get(document);
     if (previous && previous.id !== modal.id) previous.cancel();
@@ -80,7 +85,8 @@ export function ConfirmDialog({
         if (!nextOpen) onCancel();
       }}
     >
-      <AlertDialogContent finalFocus={trigger}>
+      <AlertDialogContent finalFocus={() =>
+        suppressFinalFocus.current ? false : trigger.current}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title?.content ?? copy.title}</AlertDialogTitle>
           <AlertDialogDescription>
