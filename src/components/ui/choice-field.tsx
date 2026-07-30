@@ -453,7 +453,9 @@ function PopupCombobox(props: ChoiceFieldProps) {
               <ComboboxChipsInput
                 ref={props.controlRef as (node: HTMLInputElement | null) => void}
                 aria-describedby={props.describedBy}
+                aria-invalid={props.invalid || undefined}
                 aria-label={choiceCopy(props.locale).search(props.label)}
+                aria-required={props.required}
                 autoComplete="off"
                 disabled={props.disabled}
                 placeholder={tokens.length === 0 ? props.placeholder : ""}
