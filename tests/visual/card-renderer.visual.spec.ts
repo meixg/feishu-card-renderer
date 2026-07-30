@@ -971,6 +971,7 @@ test("PC Calendar supports focus, arrows, Escape, and timezone-preserving select
   const selected = dialog.getByRole("button", {
     name: "2026-07-28，已选择",
   });
+  await selected.focus();
   await expect(selected).toBeFocused();
   await selected.press("ArrowRight");
   const next = dialog.getByRole("button", { name: "2026-07-29" });
