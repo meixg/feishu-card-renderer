@@ -174,8 +174,13 @@ requireContract(
   "required full-quality must run pnpm visual exactly once",
 );
 requireContract(
-  /workers: process\.env\.CI \? 1 : undefined/.test(playwrightConfig),
-  "CI visual rendering must use exactly one Playwright worker",
+  /workers: 1/.test(playwrightConfig)
+    && !/workers: process\.env/.test(playwrightConfig),
+  "all visual rendering must use exactly one Playwright worker",
+);
+requireContract(
+  /launchOptions:\s*\{\s*args: \["--disable-skia-runtime-opts"\],\s*\}/m.test(playwrightConfig),
+  "visual rendering must disable Skia runtime CPU optimizations",
 );
 requireContract(
   /name: Install managed Chromium\n\s*run: pnpm exec playwright install --with-deps chromium/.test(ci)
@@ -247,8 +252,8 @@ requireContract(
 );
 
 requireContract(
-  /^on:\n {2}pull_request:\n {4}branches: \["main"\]\n {4}types: \[opened, synchronize, reopened, ready_for_review\]\n {2}workflow_dispatch:\n\npermissions:\n {2}contents: read\n/m.test(visualDeterminism),
-  "visual determinism proof must run for main PRs and dispatch with read-only contents",
+  /^on:\n {2}workflow_dispatch:\n\npermissions:\n {2}contents: read\n/m.test(visualDeterminism),
+  "visual determinism proof must be dispatch-only with read-only contents",
 );
 requireContract(
   /run: pnpm exec playwright install --with-deps chromium/.test(visualDeterminism)

@@ -83,7 +83,7 @@ Attempts 1 and 4 used runner image `ubuntu24/20260720.247` (image version
 Button's one-pixel variant does not correlate with image release: attempt 3 on
 the newer image matches attempts 1 and 4 on the older image.
 
-## PR #92 single-worker confirmation
+## PR #92 evidence before the controlled experiment
 
 PR #92 run `30575919784` tested head
 `3fe1667019cd6ffed2f532cbb48896a112d134f3` through synthetic merge commit
@@ -103,10 +103,74 @@ It proves that CI read the replacement PNGs as expected:
 | Button | `0c28f261a3c3a55278bd885c15e41a0e58eb53229db01245d228ef93036c161c` | `b7ae04c89b22f31fe3775627659768ad9a8cd3eca340bea618c35b26c34e9490` | `b189c00ebfc5b164d5d8ddf3947399f97582e6011d3f9b8e5668c1728958dc79` | 2 |
 | Form | `09d495e4cb170d85c91bcb75f9d4771f326aa167f2094436de74c6396ccdd0a6` | `e811b3336e9148fcaa675be1ae326fb5bcaaf48bbdd18c9bdf30391021f28ef5` | `145f6935ae6ed073d70fa45fa2681298ba357f36d409692c65b500844d26a32b` | 33 |
 
-The one-worker actuals reproduce the existing baselines within Playwright's
+The one-worker actuals reproduced the existing baselines within Playwright's
 strict screenshot comparison. Their byte hashes differ because of 2 and 33
-sub-threshold antialiasing pixels, but they are not the broad 12-worker raster
-output. Therefore the existing snapshots are the correct baseline family.
+sub-threshold antialiasing pixels. This run proved that the snapshots were not
+stale, but did not isolate worker count: it used a different PR tree and test
+sequence from PR #88.
+
+## Controlled worker-count experiment
+
+Run `30578180149`, job `90991554072`, checked out PR #88 HEAD
+`93b49059aab5255a69846b33b46ce0fd41e8fd53` on one Ubuntu 24.04 runner and
+changed only Playwright's CLI worker override. Artifact `8773825336`
+(`pr88-worker-experiment-30578180149`, archive SHA-256
+`7987d2160fd401f3b11c70c4aee193485a083108edcdbf9c21c496e6d6820475`)
+retains the checkout, config, runtime/font records, logs, and observation PNGs.
+
+Both worker settings failed all three complete strict runs with exactly the
+same 1,346 Button and 3,598 Form significant-pixel mismatches:
+
+| Workers | Runs | Button observation SHA-256 | Form observation SHA-256 |
+| ---: | ---: | --- | --- |
+| 2 | 1–3 | `0c28f261…` each time | `09d495e4…` each time |
+| 1 | 1–2 | `1e45cd22…` | `09d495e4…` |
+| 1 | 3 | `2552da7c…` | `09d495e4…` |
+
+The log says `Running 27 tests using 2 workers`; the earlier description of
+PR #88 as a 12-worker run was incorrect. More importantly, serial execution
+did not restore the baseline. Worker count is therefore not the pixel-change
+cause. One worker remains an isolation and resource-governance rule, not the
+raster determinism fix.
+
+## Controlled raster-contract experiment
+
+The first targeted attempt (`30579253678`, artifact `8773978571`) matched no
+tests because its grep was wrong and is excluded. Valid run `30579457566`, job
+`90995779619`, artifact `8774264263`
+(`pr88-raster-experiment-30579457566`, archive SHA-256
+`ab7579267aa54a60012529c8d6e3cd2fd7d355dcadd0013221a020bf5da063dd`)
+again checked out exact PR #88 HEAD on one runner. It removed the extra
+pre-assertion capture and retained Playwright's original failing `*-actual.png`
+files. Each condition used one worker and differed only by one Chromium launch
+flag:
+
+| Launch condition | Button actuals, runs 1/2/3 | Form actuals, runs 1/2/3 | Result |
+| --- | --- | --- | --- |
+| no extra flag | `0c28…`, `1e45…`, `2552…` | `09d4…` ×3 | Button unstable |
+| `--disable-gpu` | `0c28…`, `1e45…`, `2552…` | `09d4…` ×3 | Button unstable |
+| `--disable-gpu-rasterization` | `0c28…`, `2552…`, `0c28…` | `09d4…` ×3 | Button unstable |
+| `--use-gl=swiftshader` | `0c28…`, `0c28…`, `2552…` | `09d4…` ×3 | Button unstable |
+| `--deterministic-mode` | no PNG | no PNG | browser actions timed out; invalid |
+
+This proves the three Button byte hashes are produced by Playwright's original
+screenshot assertion, not by the earlier observation instrumentation.
+
+A final single-variable run tested only
+`--disable-skia-runtime-opts`: run `30580233647`, job `90998358050`, artifact
+`8774343305` (`pr88-raster-experiment-30580233647`, archive SHA-256
+`8c66dfa524bbf78490977ce69fd454906356427606d6b7a2a898670680843fb6`).
+Across three fresh processes, both original actual files were byte-identical:
+
+| PNG | Runs 1/2/3 SHA-256 |
+| --- | --- |
+| Button | `2552da7c45f795166ef754e6fb715eade220c552d1160f74170dacdd4f56f789` ×3 |
+| Form | `09d495e4cb170d85c91bcb75f9d4771f326aa167f2094436de74c6396ccdd0a6` ×3 |
+
+The controlled evidence therefore supports disabling Skia's runtime
+CPU-specific optimizations as the minimal general raster contract. It does not
+claim that this flag makes PR #88's product output match the older snapshot:
+the stable PR #88 actuals still carry its broad 1,346/3,598 change.
 
 ## Conclusion and fix boundary
 
@@ -117,16 +181,19 @@ version checks:
 2. The checked packages, managed browser, and Playwright version were already
    identical.
 3. The broad expected-versus-actual failure was stable across all four
-   12-worker runs.
+   two-worker runs.
 4. The only cross-attempt variation was one curved-edge pixel and did not
    correlate with the two runner images.
 
-The existing baselines were not stale. PR #88's 12 parallel Playwright workers
-produced a different raster family, plus a one-pixel cross-attempt variant.
-PR #92's one-worker run returned to the existing baseline family. The minimal
-general fix keeps the already locked Playwright/managed-browser contract,
-serializes CI screenshot production, preserves both existing snapshots, and
-uses the three-run hash proof to detect future nondeterminism.
+The existing baselines were not stale, but worker count did not cause PR #88's
+different raster family. The minimal proven environment contract keeps the
+locked Playwright/managed-browser contract, fixes the Skia raster path with
+`--disable-skia-runtime-opts`, uses one worker for isolation, preserves both
+existing snapshots, and uses the three-run hash proof to detect future
+nondeterminism. The browser verifier launches that exact managed executable
+with the required flag and checks `browser.version()`; revision and browser
+version from Playwright's `browsers.json` are locked provenance metadata, not
+a substitute for runtime verification.
 
 An official Playwright Noble image was evaluated and rejected as the fix: a
 strict run changed 12 test groups, including one-pixel layout heights, so it

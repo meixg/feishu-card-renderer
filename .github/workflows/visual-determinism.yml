@@ -1,23 +1,18 @@
-name: Visual raster contract experiment
+name: Visual determinism proof
 
 on:
-  pull_request:
-    branches: ["main"]
-    types: [synchronize]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  experiment:
-    name: PR 88 raster flag experiment
+  prove:
+    name: Three strict visual runs
     runs-on: ubuntu-latest
     steps:
-      - name: Check out exact PR 88 head
+      - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: 93b49059aab5255a69846b33b46ce0fd41e8fd53
-          persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
@@ -34,81 +29,17 @@ jobs:
       - name: Install managed Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Record controlled environment
-        run: |
-          evidence="$RUNNER_TEMP/visual-raster-evidence"
-          mkdir -p "$evidence/environment"
-          git rev-parse HEAD | tee "$evidence/environment/checkout-sha.txt"
-          test "$(git rev-parse HEAD)" = "93b49059aab5255a69846b33b46ce0fd41e8fd53"
-          cp playwright.config.ts package.json pnpm-lock.yaml "$evidence/environment/"
-          {
-            printf 'runner_os=%s\nrunner_arch=%s\nimage_os=%s\nimage_version=%s\n' \
-              "$RUNNER_OS" "$RUNNER_ARCH" "${ImageOS:-}" "${ImageVersion:-}"
-            node --version
-            pnpm --version
-            pnpm exec playwright --version
-            "$HOME/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome" --version
-            fc-match sans-serif
-            fc-cache --version
-            dpkg-query -W -f='${Package}=${Version}\n' \
-              libfontconfig1 libfreetype6 fonts-liberation fonts-noto-color-emoji
-          } | tee "$evidence/environment/runtime.txt"
-          sha256sum \
-            tests/visual/card-renderer.visual.spec.ts-snapshots/button-base-nova-themes-chromium-linux.png \
-            tests/visual/card-renderer.visual.spec.ts-snapshots/card-form-controls-error-compact-chromium-linux.png \
-            > "$evidence/environment/baseline-sha256.txt"
+      - name: Verify visual environment contract
+        run: pnpm visual:environment
 
-      - name: Run single-variable raster experiments
-        run: |
-          evidence="$RUNNER_TEMP/visual-raster-evidence"
-          cp playwright.config.ts "$RUNNER_TEMP/playwright.config.original.ts"
-          for mode in disable-skia-runtime-opts; do
-            cp "$RUNNER_TEMP/playwright.config.original.ts" playwright.config.ts
-            case "$mode" in
-              disable-skia-runtime-opts) flag="--disable-skia-runtime-opts" ;;
-            esac
-            if [ -n "$flag" ]; then
-              FLAG="$flag" node <<'NODE'
-          const { readFileSync, writeFileSync } = require("node:fs");
-          const path = "playwright.config.ts";
-          const source = readFileSync(path, "utf8").replace(
-            'use: {',
-            `use: {\n    launchOptions: { args: [${JSON.stringify(process.env.FLAG)}] },`,
-          );
-          writeFileSync(path, source);
-          NODE
-            fi
-            mkdir -p "$evidence/modes/$mode"
-            cp playwright.config.ts "$evidence/modes/$mode/playwright.config.ts"
-            printf '%s\n' "$flag" > "$evidence/modes/$mode/flag.txt"
-            for repetition in 1 2 3; do
-              run_dir="$evidence/modes/$mode/run-$repetition"
-              mkdir -p "$run_dir"
-              rm -rf test-results
-              set +e
-              pnpm exec playwright test --workers=1 \
-                --grep 'Button tokens|form controls' \
-                > "$run_dir/playwright.log" 2>&1
-              status=$?
-              set -e
-              printf '%s\n' "$status" > "$run_dir/exit-code.txt"
-              find test-results -type f -name '*-actual.png' -print0 \
-                | sort -z | xargs -0 -r cp -t "$run_dir"
-              find "$run_dir" -type f -name '*-actual.png' -print0 \
-                | sort -z | xargs -0 -r sha256sum \
-                > "$run_dir/actual-sha256.txt"
-              find "$run_dir" -type f -name '*-actual.png' -print0 \
-                | sort -z | xargs -0 -r file \
-                > "$run_dir/actual-file.txt"
-            done
-          done
-          cp "$RUNNER_TEMP/playwright.config.original.ts" playwright.config.ts
+      - name: Run strict visual suite three times
+        run: pnpm visual:determinism
 
-      - name: Upload raster evidence
+      - name: Upload hash evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pr88-raster-experiment-${{ github.run_id }}
-          path: ${{ runner.temp }}/visual-raster-evidence
+          name: visual-determinism-${{ github.run_attempt }}
+          path: test-results/visual-determinism
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
