@@ -22,6 +22,8 @@ const calendarManifest =
   "docs/specs/shadcn-base-nova-calendar-baseline.json";
 const choiceManifest =
   "docs/specs/shadcn-base-nova-choice-baseline.json";
+const tablePaginationManifest =
+  "docs/specs/shadcn-base-nova-table-pagination-baseline.json";
 
 async function mutateLocalManifest(
   manifest: string,
@@ -98,6 +100,7 @@ it("pins every manifest local key set to the reviewed local registry", async () 
     overlays: "docs/specs/shadcn-base-nova-overlays-baseline.json",
     containers: "docs/specs/shadcn-base-nova-containers-baseline.json",
     calendar: calendarManifest,
+    "table pagination": tablePaginationManifest,
   };
   for (const [owner, manifest] of Object.entries(manifests)) {
     const provenance = JSON.parse(
@@ -107,6 +110,47 @@ it("pins every manifest local key set to the reviewed local registry", async () 
       Object.keys(PINNED_SHADCN_LOCAL_HASHES[owner] ?? {}).sort(),
     );
   }
+});
+
+it("rejects table pagination key deletion, valid hash drift, and manifest plus file mutation", async () => {
+  const file = "src/components/ui/pagination.tsx";
+  await expect(mutateLocalManifest(
+    tablePaginationManifest,
+    "fcr-table-pagination-delete-",
+    (provenance) => {
+      delete provenance.localFiles[file];
+    },
+  )).resolves.toEqual(expect.arrayContaining([
+    "table pagination reviewed local adaptation paths drifted",
+    `table pagination: ${file} reviewed local hash drifted`,
+  ]));
+
+  await expect(mutateLocalManifest(
+    tablePaginationManifest,
+    "fcr-table-pagination-hash-",
+    (provenance) => {
+      provenance.localFiles[file] = "d".repeat(64);
+    },
+  )).resolves.toContain(
+    `table pagination: ${file} reviewed local hash drifted`,
+  );
+
+  await expect(mutateLocalManifest(
+    tablePaginationManifest,
+    "fcr-table-pagination-both-",
+    async (provenance, temporaryRoot) => {
+      const localPath = resolve(temporaryRoot, file);
+      const changed = `${await readFile(localPath, "utf8")}\n// mutation\n`;
+      await writeFile(localPath, changed);
+      provenance.localFiles[file] = createHash("sha256")
+        .update(changed)
+        .digest("hex");
+    },
+    { copyLocalFiles: true },
+  )).resolves.toEqual(expect.arrayContaining([
+    `table pagination: ${file} reviewed local hash drifted`,
+    `${file}: local adaptation hash drifted`,
+  ]));
 });
 
 it("rejects Calendar provenance with one reviewed local key deleted", async () => {

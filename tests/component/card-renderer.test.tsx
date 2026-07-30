@@ -261,7 +261,7 @@ describe("CardRenderer", () => {
     const pagination = first.container.querySelector('[data-slot="pagination"]');
     expect(pagination).not.toBeNull();
     const nextPage = within(first.container).getByRole("button", { name: "下一页" });
-    expect(nextPage).toHaveAttribute("data-slot", "button");
+    expect(nextPage).toBeEnabled();
     fireEvent.click(nextPage);
     expect(within(first.container).getByText("项目 B")).toBeInTheDocument();
 
