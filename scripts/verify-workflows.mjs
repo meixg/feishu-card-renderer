@@ -179,12 +179,8 @@ requireContract(
   "all visual rendering must use exactly one Playwright worker",
 );
 requireContract(
-  /launchOptions:\s*\{\s*args: \["--disable-skia-runtime-opts"\],\s*\}/m.test(playwrightConfig),
-  "visual rendering must disable Skia runtime CPU optimizations",
-);
-requireContract(
-  /reducedMotion: "reduce"/.test(playwrightConfig),
-  "visual rendering must use the reduced-motion media contract",
+  /launchOptions:\s*\{\s*args: \[\s*"--disable-skia-runtime-opts",\s*"--disable-partial-raster",\s*\],\s*\}/m.test(playwrightConfig),
+  "visual rendering must lock Skia optimization and partial-raster behavior",
 );
 requireContract(
   /name: Install managed Chromium\n\s*run: pnpm exec playwright install --with-deps chromium/.test(ci)

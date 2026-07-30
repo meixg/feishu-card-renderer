@@ -1,19 +1,17 @@
-name: Visual compositor experiment
+name: Visual determinism proof
 
 on:
-  pull_request:
-    branches: ["main"]
-    types: [synchronize]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  experiment:
-    name: Incremental compositor flags
+  prove:
+    name: Three strict visual runs
     runs-on: ubuntu-latest
     steps:
-      - name: Check out PR merge
+      - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install pnpm
@@ -25,64 +23,25 @@ jobs:
           node-version: 24.18.0
           cache: pnpm
 
-      - name: Install locked environment
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm exec playwright install --with-deps chromium
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Run incremental single-variable experiments
-        run: |
-          evidence="$RUNNER_TEMP/compositor-evidence"
-          mkdir -p "$evidence"
-          cp playwright.config.ts "$RUNNER_TEMP/playwright.config.base.ts"
-          git rev-parse HEAD > "$evidence/checkout-sha.txt"
-          for mode in partial-with-reduced partial-no-reduced; do
-            cp "$RUNNER_TEMP/playwright.config.base.ts" playwright.config.ts
-            case "$mode" in
-              partial-with-reduced) flag="--disable-partial-raster" ;;
-              partial-no-reduced) flag="--disable-partial-raster" ;;
-            esac
-            if [ -n "$flag" ]; then
-              FLAG="$flag" node <<'NODE'
-          const { readFileSync, writeFileSync } = require("node:fs");
-          const path = "playwright.config.ts";
-          const source = readFileSync(path, "utf8").replace(
-            'args: ["--disable-skia-runtime-opts"]',
-            `args: ["--disable-skia-runtime-opts", ${JSON.stringify(process.env.FLAG)}]`,
-          );
-          writeFileSync(path, source);
-          NODE
-            fi
-            if [ "$mode" = "partial-no-reduced" ]; then
-              node <<'NODE'
-          const { readFileSync, writeFileSync } = require("node:fs");
-          const path = "playwright.config.ts";
-          const source = readFileSync(path, "utf8")
-            .replace('    reducedMotion: "reduce",\n', "");
-          writeFileSync(path, source);
-          NODE
-            fi
-            for repetition in 1 2 3; do
-              run_dir="$evidence/$mode/run-$repetition"
-              mkdir -p "$run_dir"
-              set +e
-              FCR_VISUAL_HASH_EVIDENCE_DIR="$run_dir" \
-                pnpm exec playwright test --workers=1 \
-                --grep 'Button tokens|form controls cover light' \
-                > "$run_dir/playwright.log" 2>&1
-              status=$?
-              set -e
-              printf '%s\n' "$status" > "$run_dir/exit-code.txt"
-              find "$run_dir" -type f -name '*.png' -print0 \
-                | sort -z | xargs -0 -r sha256sum > "$run_dir/sha256.txt"
-            done
-          done
+      - name: Install managed Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
-      - name: Upload compositor evidence
+      - name: Verify visual environment contract
+        run: pnpm visual:environment
+
+      - name: Run strict visual suite three times
+        run: pnpm visual:determinism
+        env:
+          FCR_VISUAL_DETERMINISM_DIR: ${{ runner.temp }}/visual-determinism
+
+      - name: Upload hash evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: compositor-experiment-${{ github.run_id }}
-          path: ${{ runner.temp }}/compositor-evidence
+          name: visual-determinism-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/visual-determinism
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7

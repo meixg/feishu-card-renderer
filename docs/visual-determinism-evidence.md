@@ -167,10 +167,42 @@ Across three fresh processes, both original actual files were byte-identical:
 | Button | `2552da7c45f795166ef754e6fb715eade220c552d1160f74170dacdd4f56f789` ×3 |
 | Form | `09d495e4cb170d85c91bcb75f9d4771f326aa167f2094436de74c6396ccdd0a6` ×3 |
 
-The controlled evidence therefore supports disabling Skia's runtime
-CPU-specific optimizations as the minimal general raster contract. It does not
-claim that this flag makes PR #88's product output match the older snapshot:
-the stable PR #88 actuals still carry its broad 1,346/3,598 change.
+This established the Skia runtime flag as necessary evidence on the PR #88
+tree, but a full merged-head proof later found one remaining rounded-corner
+pixel phase in its separate post-assertion evidence screenshot.
+
+## Merged-head compositor experiment
+
+Final-head proof run `30581037807` passed the complete 28-test suite three
+times, but its Button evidence hashes were `f3e3ed05…`, `f3e3ed05…`, and
+`29e76227…`; Form stayed `01112dcd…`. The only changed pixel was `(23,377)`,
+at the host-danger rounded corner (`#FEF4F5` versus `#FDF0F1`). This was a
+real pixel difference, not PNG metadata.
+
+Run `30582136811`, job `91004723596`, artifact `8775179341`
+(`compositor-experiment-30582136811`, archive SHA-256
+`5d33e7866cd3999deaf47f1dbca6f3da56f14fa6e7dd6a7b502bf4f2aa93ff30`)
+held the merged PR tree, one worker, managed browser, Skia runtime flag, and
+test selection constant. It changed one additional launch flag at a time:
+
+| Incremental flag | Button runs | Form runs | Result |
+| --- | --- | --- | --- |
+| none | `29e76227…` ×3 | `01112dcd…` ×3 | stable in this sample, but contradicted by the preceding full run |
+| `--disable-partial-raster` | `f3e3ed05…` ×3 | `01112dcd…` ×3 | stable |
+| `--disable-zero-copy` | `29e76227…`, `29e76227…`, `f3e3ed05…` | `01112dcd…` ×3 | unstable |
+| `--disable-threaded-compositing` | no PNG | no PNG | browser actions timed out; invalid |
+
+The reduction check run `30582651451`, job `91006466201`, artifact
+`8775270477` (archive SHA-256
+`810e37c047478230df74d60504c9ff1a2c43e1b43acf0e7deffeddbe3248615a`)
+then compared `--disable-partial-raster` with and without reduced-motion.
+Both conditions produced Button `f3e3ed05…` and Form `01112dcd…` in all three
+runs. Reduced-motion is therefore not part of the contract.
+
+The experimentally supported minimal raster contract is the managed Chromium
+plus `--disable-skia-runtime-opts` and `--disable-partial-raster`. These flags
+control CPU-specific Skia paths and partial tile rasterization; they do not
+change screenshot assertions or tolerated differences.
 
 ## Conclusion and fix boundary
 
@@ -187,11 +219,11 @@ version checks:
 
 The existing baselines were not stale, but worker count did not cause PR #88's
 different raster family. The minimal proven environment contract keeps the
-locked Playwright/managed-browser contract, fixes the Skia raster path with
-`--disable-skia-runtime-opts`, uses one worker for isolation, preserves both
-existing snapshots, and uses the three-run hash proof to detect future
-nondeterminism. The browser verifier launches that exact managed executable
-with the required flag and checks `browser.version()`; revision and browser
+locked Playwright/managed-browser contract, fixes the raster path with
+`--disable-skia-runtime-opts` and `--disable-partial-raster`, uses one worker
+for isolation, preserves existing snapshots, and uses the three-run hash proof
+to detect future nondeterminism. The browser verifier launches that exact
+managed executable with the required flags and checks `browser.version()`; revision and browser
 version from Playwright's `browsers.json` are locked provenance metadata, not
 a substitute for runtime verification.
 

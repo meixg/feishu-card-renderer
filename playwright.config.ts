@@ -10,9 +10,8 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4173",
     launchOptions: {
-      args: ["--disable-skia-runtime-opts"],
+      args: ["--disable-skia-runtime-opts", "--disable-partial-raster"],
     },
-    reducedMotion: "reduce",
     trace: "retain-on-failure",
   },
   projects: [

@@ -13,10 +13,11 @@ Linux visual baselines have one rendering contract:
   executable and reading `browser.version()` separately proves runtime
   identity.
 - Every visual run uses one Playwright worker and launches Chromium with
-  `--disable-skia-runtime-opts`. The worker rule isolates screenshot production
-  and resource use. It is not claimed as the pixel root cause: an exact-tree
-  experiment reproduced the same 1,346/3,598 failures at both two workers and
-  one worker. The Skia flag is the experimentally proven determinism control.
+  `--disable-skia-runtime-opts` and `--disable-partial-raster`. The worker rule
+  isolates screenshot production and resource use. It is not claimed as the
+  pixel root cause: an exact-tree experiment reproduced the same 1,346/3,598
+  failures at both two workers and one worker. The two raster flags are the
+  experimentally proven determinism controls.
 - `.github/workflows/visual-determinism.yml` runs the complete strict visual
   suite three consecutive times. It captures the Button theme and compact
   invalid Form locators after their normal snapshot assertions, then rejects
@@ -35,7 +36,12 @@ Targeted original-actual run `30579457566` showed that no flag, disabled GPU,
 disabled GPU rasterization, and SwiftShader all left the Button byte-unstable.
 Run `30580233647` changed only `--disable-skia-runtime-opts` and produced
 identical Button SHA-256 `2552da7c…` and Form SHA-256 `09d495e4…` in all three
-processes. See
+processes on the PR #88 tree. On the merged PR tree, a later full proof exposed
+one remaining rounded-corner pixel. Controlled run `30582136811` isolated
+`--disable-partial-raster` as the additional stable control, and ablation run
+`30582651451` proved reduced-motion unnecessary: with or without it, all three
+Button hashes were `f3e3ed05…` and all three Form hashes were `01112dcd…`.
+See
 [`visual-determinism-evidence.md`](./visual-determinism-evidence.md).
 
 Do not resolve environment drift by changing screenshot thresholds, pixel

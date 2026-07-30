@@ -8,7 +8,10 @@ import { chromium as playwrightChromium } from "@playwright/test";
 export const EXPECTED_PLAYWRIGHT_VERSION = "1.62.0";
 export const EXPECTED_CHROMIUM_REVISION = "1234";
 export const EXPECTED_CHROMIUM_VERSION = "151.0.7922.34";
-export const EXPECTED_CHROMIUM_ARGS = ["--disable-skia-runtime-opts"];
+export const EXPECTED_CHROMIUM_ARGS = [
+  "--disable-skia-runtime-opts",
+  "--disable-partial-raster",
+];
 
 function contractViolation(message) {
   return new Error(`Visual environment contract violation: ${message}`);
