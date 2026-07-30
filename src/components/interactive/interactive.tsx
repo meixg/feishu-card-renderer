@@ -689,7 +689,9 @@ export function Button({ element, path }: { element: ButtonElement; path: string
 }
 
 export function Overflow({ element, path }: { element: OverflowElement; path: string }) {
-  const { onAction } = useRendererContext();
+  const { locale, onAction } = useRendererContext();
+  const menuLabel = locale.toLowerCase().startsWith("zh")
+    ? "更多操作" : "More actions";
   const [open, setOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const ids = useElementIds(path);
@@ -704,7 +706,7 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
       <DropdownMenuTrigger
         ref={trigger}
         render={<UiButton variant="outline" size="icon" />}
-        aria-label="更多操作"
+        aria-label={menuLabel}
         disabled={element.disabled}
         aria-describedby={tips.describedBy}
         onKeyDown={(event) => event.stopPropagation()}
@@ -712,7 +714,7 @@ export function Overflow({ element, path }: { element: OverflowElement; path: st
       >
         <EllipsisIcon aria-hidden="true" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent aria-label="更多操作">
+      <DropdownMenuContent aria-label={menuLabel}>
         {(element.options ?? []).map((option, index) =>
           <DropdownMenuItem
             disabled={element.disabled || !onAction ||

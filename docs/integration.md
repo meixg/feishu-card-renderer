@@ -144,7 +144,8 @@ shadcn token 和 Base UI `data-*` 都不是公共接口。
 interaction view 使用独立、稳定的 `--fcr-interaction-background`,
 `-foreground`, `-primary`, `-primary-foreground`, `-secondary`,
 `-secondary-foreground`, `-muted`, `-border`, `-input`, `-focus`,
-`-danger`, `-radius`。默认值为 base-nova neutral，其中 focus ring 在 light 为
+`-danger`, `-radius`, `-popover`, `-popover-foreground`, `-accent`,
+`-accent-foreground`。默认值为 base-nova neutral，其中 focus ring 在 light 为
 `oklch(0.708 0 0)`、dark 为 `oklch(0.556 0 0)`，不会隐式跟随 primary。
 
 confirm 使用文档级单活动 modal 协调。正常用户输入只能到达当前 modal；若宿主
@@ -184,8 +185,9 @@ wrapper 只负责选择状态。原生 time/datetime 仍输出浏览器 IANA 时
 不能通过样式 token 改变协议值。
 可审计的来源与本地文件摘要分别见
 [Button provenance](specs/shadcn-base-nova-baseline.md) 和
-[form-control provenance](specs/shadcn-base-nova-form-controls-baseline.md)；
-`pnpm ui:verify` 会同时验证两份 manifest。
+[form-control provenance](specs/shadcn-base-nova-form-controls-baseline.md) 和
+[overlay provenance](specs/shadcn-base-nova-overlays-baseline.md)；
+`pnpm ui:verify` 会同时验证三份 manifest。
 
 ## Public preview 限制
 

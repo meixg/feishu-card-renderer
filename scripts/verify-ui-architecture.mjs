@@ -3,6 +3,11 @@ import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import ts from "typescript";
 
+import {
+  PINNED_SHADCN_COMMIT,
+  PINNED_SHADCN_UPSTREAM_HASHES,
+} from "./ui-provenance-expected.mjs";
+
 const root = resolve(import.meta.dirname, "..");
 
 async function sourceFiles(directory) {
@@ -108,11 +113,14 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
-export async function verifyUiProvenance() {
+export async function verifyUiProvenance({
+  manifestRoot = root,
+  localRoot = root,
+} = {}) {
   const violations = [];
   const expected = {
     reviewedAt: "2026-07-30",
-    commit: "5203f537d152844a920caa66e865bc61c6ff4860",
+    commit: PINNED_SHADCN_COMMIT,
     cli: "4.16.0",
     style: "base-nova",
     base: "base",
@@ -123,14 +131,36 @@ export async function verifyUiProvenance() {
     lucide: "0.536.0",
   };
   const manifests = [
-    ["button", "docs/specs/shadcn-base-nova-baseline.json", 3, "2026-07-30"],
-    ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", 8,
-      "2026-07-30"],
-    ["calendar", "docs/specs/shadcn-base-nova-calendar-baseline.json", 2,
-      "2026-07-31"],
+    ["button", "docs/specs/shadcn-base-nova-baseline.json", [
+      "apps/v4/registry/bases/base/ui/button.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ], "2026-07-30"],
+    ["form controls", "docs/specs/shadcn-base-nova-form-controls-baseline.json", [
+      "apps/v4/registry/bases/base/ui/input.tsx",
+      "apps/v4/registry/bases/base/ui/textarea.tsx",
+      "apps/v4/registry/bases/base/ui/field.tsx",
+      "apps/v4/registry/bases/base/ui/label.tsx",
+      "apps/v4/registry/bases/base/ui/checkbox.tsx",
+      "apps/v4/registry/bases/base/ui/radio-group.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ], "2026-07-30"],
+    ["overlays", "docs/specs/shadcn-base-nova-overlays-baseline.json", [
+      "apps/v4/registry/bases/base/ui/dropdown-menu.tsx",
+      "apps/v4/registry/bases/base/ui/alert-dialog.tsx",
+      "apps/v4/registry/styles/style-nova.css",
+      "apps/v4/registry/themes.ts",
+    ], "2026-07-30"],
+    ["calendar", "docs/specs/shadcn-base-nova-calendar-baseline.json", [
+      "apps/v4/registry/bases/base/ui/popover.tsx",
+      "apps/v4/registry/bases/base/ui/calendar.tsx",
+    ], "2026-07-31"],
   ];
-  for (const [owner, path, upstreamCount, reviewedAt] of manifests) {
-    const provenance = JSON.parse(await readFile(resolve(root, path), "utf8"));
+  for (const [owner, path, expectedPaths, reviewedAt] of manifests) {
+    const provenance = JSON.parse(
+      await readFile(resolve(manifestRoot, path), "utf8"),
+    );
     const actual = {
       reviewedAt: provenance.reviewedAt,
       commit: provenance.upstream?.commit,
@@ -143,23 +173,28 @@ export async function verifyUiProvenance() {
       baseUi: provenance.dependencies?.["@base-ui/react"],
       lucide: provenance.dependencies?.["lucide-react"],
     };
-    if (JSON.stringify(actual) !== JSON.stringify({
-      ...expected,
-      reviewedAt,
-    })) {
+    if (JSON.stringify(actual) !== JSON.stringify({ ...expected, reviewedAt })) {
       violations.push(`${owner} base-nova reviewed versions or preset drifted`);
     }
-    const upstreamHashes = Object.values(provenance.upstream?.files ?? {});
+    const upstreamFiles = provenance.upstream?.files ?? {};
     if (
-      upstreamHashes.length !== upstreamCount
-      || upstreamHashes.some((hash) => !/^[0-9a-f]{64}$/u.test(String(hash)))
+      JSON.stringify(Object.keys(upstreamFiles).sort())
+      !== JSON.stringify([...expectedPaths].sort())
     ) {
       violations.push(`${owner} reviewed upstream blob hashes are incomplete`);
+    }
+    for (const [file, actualHash] of Object.entries(upstreamFiles)) {
+      const expectedHash = PINNED_SHADCN_UPSTREAM_HASHES[file];
+      if (!expectedHash) {
+        violations.push(`${owner}: unreviewed upstream path ${file}`);
+      } else if (actualHash !== expectedHash) {
+        violations.push(`${owner}: ${file} upstream blob hash drifted`);
+      }
     }
     for (const [file, expectedHash] of Object.entries(
       provenance.localFiles ?? {},
     )) {
-      const actualHash = sha256(await readFile(resolve(root, file)));
+      const actualHash = sha256(await readFile(resolve(localRoot, file)));
       if (actualHash !== expectedHash) {
         violations.push(`${file}: local adaptation hash drifted`);
       }

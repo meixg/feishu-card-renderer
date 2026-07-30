@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -6,6 +7,8 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CardRenderer } from "../../src";
@@ -286,6 +289,100 @@ describe("Issue #80 base-nova date Popover and Calendar", () => {
       expect(screen.queryByRole("dialog", { name: "选择预约日期" })).toBeNull();
       expect(trigger).toHaveFocus();
     });
+  });
+
+  it("server-renders and hydrates a closed PC date Popover without replacing its portal host", async () => {
+    const card = {
+      schema: "2.0",
+      body: {
+        elements: [
+          {
+            tag: "date_picker",
+            name: "hydrated-date",
+            label: { tag: "plain_text", content: "Hydrated date" },
+            initial_date: "2026-07-28",
+          },
+          {
+            tag: "date_picker",
+            name: "required-date",
+            label: { tag: "plain_text", content: "Required date" },
+            required: true,
+          },
+          {
+            tag: "date_picker",
+            name: "disabled-date",
+            label: { tag: "plain_text", content: "Disabled date" },
+            disabled: true,
+          },
+        ],
+      },
+    } as const;
+    const onAction = vi.fn();
+    const renderer = <CardRenderer
+      card={card}
+      device="pc"
+      locale="en_us"
+      onAction={onAction}
+    />;
+    const firstMarkup = renderToString(renderer);
+    const secondMarkup = renderToString(renderer);
+    expect(secondMarkup).toBe(firstMarkup);
+    expect(firstMarkup).not.toContain("data-slot=\"popover-content\"");
+
+    const container = document.createElement("div");
+    container.innerHTML = firstMarkup;
+    document.body.append(container);
+    const serverHost = container.querySelector("[data-fcr-portal-host]");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    let root: Root | undefined;
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, renderer);
+      });
+
+      expect(container.querySelector("[data-fcr-portal-host]")).toBe(serverHost);
+      expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
+        /hydration|didn't match|server rendered/i,
+      );
+      const ordinary = within(container).getByRole("combobox", {
+        name: "Hydrated date: 2026-07-28",
+      });
+      expect(within(container).getByRole("combobox", {
+        name: "Required date: Choose date",
+      })).toHaveAttribute("aria-required", "true");
+      expect(within(container).getByRole("combobox", {
+        name: "Disabled date: Choose date",
+      })).toBeDisabled();
+
+      fireEvent.click(ordinary);
+      const dialog = within(container).getByRole("dialog", {
+        name: "Choose Hydrated date",
+      });
+      expect(dialog.closest("[data-fcr-portal-host]")).toBe(serverHost);
+      fireEvent.click(within(dialog).getByRole("button", {
+        name: "2026-07-29",
+      }));
+      await waitFor(() => expect(ordinary).toHaveFocus());
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+        value: "2026-07-29",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }));
+
+      fireEvent.click(ordinary);
+      fireEvent.keyDown(within(container).getByRole("dialog", {
+        name: "Choose Hydrated date",
+      }), { key: "Escape" });
+      await waitFor(() => {
+        expect(within(container).queryByRole("dialog", {
+          name: "Choose Hydrated date",
+        })).toBeNull();
+        expect(ordinary).toHaveFocus();
+      });
+    } finally {
+      await act(async () => root?.unmount());
+      consoleError.mockRestore();
+      container.remove();
+    }
   });
 
   it("localizes the PC date trigger, dialog, grid, and navigation labels", () => {
