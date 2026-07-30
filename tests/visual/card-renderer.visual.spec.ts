@@ -781,6 +781,9 @@ test("mobile text choices update exactly once for pointer, keyboard, and emulate
           type: "touchEnd",
           touchPoints: [],
         });
+        await session.send("Emulation.setTouchEmulationEnabled", {
+          enabled: false,
+        });
         await session.detach();
       }
     }
