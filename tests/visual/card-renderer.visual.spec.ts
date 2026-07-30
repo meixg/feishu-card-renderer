@@ -559,7 +559,7 @@ test("scoped Dropdown Menu and Alert Dialog match the pinned light/dark snapshot
 test("image Dialog handles arrows, trapped Tab, Escape, and outside press", async ({
   page,
 }) => {
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=media");
   const overlay = page.locator("#case-overlays");
   const trigger = overlay.getByRole("button", { name: "打开图片组预览" });
 

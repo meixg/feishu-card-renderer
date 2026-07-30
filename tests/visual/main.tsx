@@ -155,12 +155,16 @@ function SelectImageResourceCase({
   );
 }
 
-export function OverlayCases(): React.JSX.Element {
+export function OverlayCases({
+  resolveImage = (key: string) => `https://cdn.example.com/${key}.png`,
+}: {
+  resolveImage?: (key: string) => string;
+} = {}): React.JSX.Element {
   const [actions, setActions] = useState<unknown[]>([]);
   return (
     <section id="case-overlays">
       <CardRenderer
-        resolveImage={() => mediaPreviewUrl}
+        resolveImage={resolveImage}
         onAction={(action) => setActions((current) => [...current, action])}
         card={{
           schema: "2.0",
@@ -448,7 +452,9 @@ const tablePaginationVisualCard = {
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {isolatedVisualCase === "choice" || isolatedVisualCase === "choice-narrow"
+    {isolatedVisualCase === "media"
+      ? <main><OverlayCases resolveImage={() => mediaPreviewUrl} /></main>
+      : isolatedVisualCase === "choice" || isolatedVisualCase === "choice-narrow"
       ? <main>
           <section
             id="case-choices-pc"
