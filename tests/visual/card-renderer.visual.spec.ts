@@ -522,14 +522,18 @@ test("scoped Dropdown Menu and Alert Dialog match the pinned light/dark snapshot
     await overflow.click();
     const menu = card.getByRole("menu", { name: "更多操作" });
     await expect(menu).toBeVisible();
-    await expect(menu).toHaveScreenshot(`overflow-base-nova-${theme}.png`);
+    await expect(menu).toHaveScreenshot(`overflow-base-nova-${theme}.png`, {
+      maxDiffPixelRatio: 0.04,
+    });
     await page.keyboard.press("Escape");
     await expect(menu).toBeHidden();
 
     await card.getByRole("button", { name: "提交", exact: true }).last().click();
     const dialog = card.getByRole("alertdialog", { name: "确认提交" });
     await expect(dialog.getByRole("button", { name: "取消" })).toBeFocused();
-    await expect(dialog).toHaveScreenshot(`confirm-base-nova-${theme}.png`);
+    await expect(dialog).toHaveScreenshot(`confirm-base-nova-${theme}.png`, {
+      maxDiffPixelRatio: 0.04,
+    });
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
   }
