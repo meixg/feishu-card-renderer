@@ -1,0 +1,29 @@
+{
+  "reviewedAt": "2026-07-31",
+  "upstream": {
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "5203f537d152844a920caa66e865bc61c6ff4860",
+    "cli": "4.16.0",
+    "files": {
+      "apps/v4/registry/bases/base/ui/popover.tsx": "27b854b12d7c7c0d531d2ee928b0d2b882bbb2081938c510d237c22cb819d25f",
+      "apps/v4/registry/bases/base/ui/calendar.tsx": "c88319b932b378349d643ef2c452f6095d5681998acc0c1e3c2a1682500c5bc9"
+    }
+  },
+  "preset": {
+    "style": "base-nova",
+    "base": "base",
+    "baseColor": "neutral",
+    "iconLibrary": "lucide",
+    "rsc": false
+  },
+  "dependencies": {
+    "@base-ui/react": "1.6.0",
+    "lucide-react": "0.536.0",
+    "react-day-picker": "9.14.0"
+  },
+  "localFiles": {
+    "src/components/ui/popover.tsx": "93da9433883d449026ba430c42e3c2da90c147a7bfd30a6cda06b71dd03a1568",
+    "src/components/ui/calendar.tsx": "6bd902d06a1ecf6dbb99853cbc70ef8631fbca6b43f88bc6a35a38c925d71992",
+    "src/styles/calendar-nova.css": "5d2940e5a1fc6a7497fe539ff5824a5ddb85bb0d17e8f87f4fe8d559a269d5fc"
+  }
+}

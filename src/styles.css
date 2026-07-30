@@ -1,5 +1,6 @@
 @import "./styles/button-nova.css";
 @import "./styles/form-controls-nova.css";
+@import "./styles/calendar-nova.css";
 @import "./styles/choice-nova.css";
 @import "./styles/overlays-nova.css";
 @import "./styles/containers-nova.css";
@@ -458,67 +459,6 @@
     width: 32px; height: 32px; flex: 0 0 32px; border-radius: 5px;
     object-fit: cover;
   }
-  .fcr-ui-popover-positioner {
-    z-index: var(--fcr-z-index-overlay); max-width: var(--available-width);
-    outline: none;
-  }
-  .fcr-ui-popover-content {
-    max-width: var(--available-width); padding: 10px;
-    border: 1px solid var(--fcr-color-border); border-radius: 9px;
-    outline: none; background: var(--fcr-color-surface);
-    color: var(--fcr-color-text); box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
-    transform-origin: var(--transform-origin);
-    transition: opacity 120ms ease, transform 120ms ease;
-  }
-  .fcr-ui-popover-content[data-starting-style],
-  .fcr-ui-popover-content[data-ending-style] {
-    opacity: 0; transform: scale(0.98);
-  }
-  .fcr-date-icon { width: 16px; height: 16px; flex: 0 0 16px; }
-  .fcr-ui-calendar { width: 252px; font-size: 13px; }
-  .fcr-ui-calendar .rdp-months, .fcr-ui-calendar .rdp-month {
-    position: relative; width: 100%;
-  }
-  .fcr-ui-calendar .rdp-month_caption {
-    display: flex; min-height: 32px; align-items: center;
-    justify-content: center; font-weight: 600;
-  }
-  .fcr-ui-calendar .rdp-nav {
-    position: absolute; z-index: 1; inset: 0 0 auto;
-    display: flex; justify-content: space-between; pointer-events: none;
-  }
-  .fcr-ui-calendar .rdp-button_previous,
-  .fcr-ui-calendar .rdp-button_next {
-    width: 32px; height: 32px; border: 0; border-radius: 6px;
-    pointer-events: auto; background: transparent; color: inherit;
-  }
-  .fcr-ui-calendar .rdp-button_previous:focus-visible,
-  .fcr-ui-calendar .rdp-button_next:focus-visible,
-  .fcr-ui-calendar .rdp-day_button:focus-visible {
-    outline: 2px solid var(--fcr-color-primary); outline-offset: 1px;
-  }
-  .fcr-ui-calendar .rdp-month_grid {
-    width: 100%; border-collapse: collapse; table-layout: fixed;
-  }
-  .fcr-ui-calendar .rdp-weekday {
-    height: 28px; color: var(--fcr-color-text-secondary); font-weight: 400;
-  }
-  .fcr-ui-calendar .rdp-day { width: 36px; height: 34px; padding: 1px; }
-  .fcr-ui-calendar .rdp-day_button {
-    width: 32px; height: 32px; border: 0; border-radius: 6px;
-    background: transparent; color: inherit; font: inherit;
-  }
-  .fcr-ui-calendar .rdp-day_button:hover {
-    background: color-mix(in srgb, var(--fcr-color-primary), transparent 90%);
-  }
-  .fcr-ui-calendar .rdp-selected .rdp-day_button {
-    background: var(--fcr-color-primary); color: var(--fcr-color-primary-contrast);
-  }
-  .fcr-ui-calendar .rdp-today:not(.rdp-selected) .rdp-day_button {
-    color: var(--fcr-color-primary); font-weight: 700;
-  }
-  .fcr-ui-calendar .rdp-outside { opacity: 0.45; }
-  .fcr-ui-calendar .rdp-disabled { pointer-events: none; opacity: 0.35; }
   .fcr-field-tips {
     display: flex; flex-wrap: wrap; gap: 4px 8px;
     color: var(--fcr-color-text-secondary); font-size: 12px;
