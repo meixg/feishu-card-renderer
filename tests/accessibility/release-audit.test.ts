@@ -5,6 +5,7 @@ const css = readFileSync("src/styles.css", "utf8");
 const buttonCss = readFileSync("src/styles/button-nova.css", "utf8");
 const formControlCss = readFileSync("src/styles/form-controls-nova.css", "utf8");
 const overlayCss = readFileSync("src/styles/overlays-nova.css", "utf8");
+const containerCss = readFileSync("src/styles/containers-nova.css", "utf8");
 
 function token(selector: string, name: string): string {
   const block = css.match(new RegExp(
@@ -56,7 +57,7 @@ describe("1.0 accessibility release audit", () => {
 
   it("defines visible keyboard focus for every custom interactive surface", () => {
     for (const selector of [
-      ".fcr-collapsible-trigger:focus-visible",
+      ".fcr-interactive-container[role=\"button\"]:focus-visible",
       ".fcr-ui-input:focus-visible",
       ".fcr-ui-textarea:focus-visible",
       ".fcr-ui-checkbox:focus-visible",
@@ -64,9 +65,17 @@ describe("1.0 accessibility release audit", () => {
       ".fcr-ui-button:focus-visible",
       ".fcr-ui-dropdown-menu-item:is(:focus, [data-highlighted])",
     ]) {
-      expect(`${css}\n${buttonCss}\n${formControlCss}\n${overlayCss}`)
+      expect(`${css}\n${buttonCss}\n${formControlCss}\n${overlayCss}\n${containerCss}`)
         .toContain(selector);
     }
+  });
+
+  it("uses scoped shadcn ring tokens without a Card shell", () => {
+    expect(containerCss).toContain("var(--fcr-ui-ring)");
+    expect(containerCss).not.toContain(".fcr-ui-card");
+    expect(containerCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*transition: none/,
+    );
   });
 
   it("keeps pinned base-nova menu and Alert Dialog static results scoped", () => {

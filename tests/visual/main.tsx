@@ -66,7 +66,12 @@ const choiceVisualCard = {
           name: "large",
           label: { tag: "plain_text", content: "Searchable Combobox" },
           options: Array.from({ length: 12 }, (_, index) => ({
-            text: { tag: "plain_text", content: `Search option ${index + 1}` },
+            text: {
+              tag: "plain_text",
+              content: index === 9
+                ? "Search option with an intentionally long label that must wrap"
+                : `Search option ${index + 1}`,
+            },
             value: { index },
           })),
         },
@@ -423,12 +428,32 @@ export function FormControlCases({
 }
 
 const isolatedVisualCase = new URLSearchParams(window.location.search).get("case");
+const tablePaginationVisualCard = {
+  schema: "2.0" as const,
+  body: {
+    elements: [{
+      tag: "table",
+      page_size: 2,
+      columns: [
+        { name: "name", display_name: "Long project caption column", width: "240px" },
+        { name: "detail", display_name: "Detail", width: "360px" },
+      ],
+      rows: Array.from({ length: 5 }, (_, index) => ({
+        name: `Project ${index + 1}`,
+        detail: `Long cell ${index + 1} — ${"unbroken-content-".repeat(8)}`,
+      })),
+    }],
+  },
+};
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {isolatedVisualCase === "choice"
+    {isolatedVisualCase === "choice" || isolatedVisualCase === "choice-narrow"
       ? <main>
-          <section id="case-choices-pc" style={{ width: 400 }}>
+          <section
+            id="case-choices-pc"
+            style={{ width: isolatedVisualCase === "choice-narrow" ? 320 : 400 }}
+          >
             <CardRenderer
               card={choiceVisualCard}
               onAction={() => {}}
@@ -439,6 +464,29 @@ createRoot(document.getElementById("root")!).render(
             />
           </section>
         </main>
+      : isolatedVisualCase === "table-pagination"
+        ? <main style={{ display: "grid", gap: 24 }}>
+            {([
+              ["compact", 400],
+              ["default", 600],
+              ["fill", 760],
+              ["narrow", 280],
+            ] as const).map(([name, width]) => (
+              <section id={`case-table-pagination-${name}`} key={name}
+                style={{ width }}>
+                <CardRenderer
+                  colorScheme={name === "default" ? "dark" : "light"}
+                  card={{
+                    ...tablePaginationVisualCard,
+                    config: {
+                      update_multi: true,
+                      width_mode: name === "narrow" ? "compact" : name,
+                    },
+                  }}
+                />
+              </section>
+            ))}
+          </main>
       : isolatedVisualCase === "date"
         ? <main>
             <FormControlCases
@@ -472,6 +520,17 @@ createRoot(document.getElementById("root")!).render(
       ))}
       <section id="case-containers"><CardRenderer
         card={completeContainerCard} /></section>
+      <section id="case-containers-dark"><CardRenderer
+        colorScheme="dark" card={completeContainerCard} /></section>
+      <section id="case-containers-narrow" style={{ width: 320 }}>
+        <CardRenderer device="mobile" card={{
+          ...completeContainerCard,
+          config: {
+            ...completeContainerCard.config,
+            width_mode: "compact",
+          },
+        }} />
+      </section>
       {([
         ["compact", 400],
         ["default", 600],

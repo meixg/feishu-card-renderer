@@ -1,0 +1,35 @@
+@layer components {
+  .fcr-root .fcr-table-wrap {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .fcr-root .fcr-ui-table-container {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .fcr-root .fcr-table-pagination {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-end;
+    overflow-x: auto;
+    padding-top: 8px;
+    overscroll-behavior-inline: contain;
+  }
+
+  .fcr-root .fcr-ui-pagination-content {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+}

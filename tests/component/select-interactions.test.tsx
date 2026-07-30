@@ -35,7 +35,7 @@ function openChoice(name: string) {
   );
 }
 
-describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
+describe("Issue #77 PC Select and Combobox with mobile regression coverage", () => {
   it("uses Select below 8 options, Combobox at 8+, and Combobox for every multi-select", () => {
     render(<CardRenderer onAction={() => {}} card={{
       schema: "2.0",
@@ -61,7 +61,7 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
         "data-choice-kind",
         "combobox",
       );
-    expect(screen.getByRole("combobox", { name: "Multi，打开选项" })
+    expect(screen.getByRole("combobox", { name: "搜索Multi" })
       .closest("[data-choice-kind]")).toHaveAttribute(
         "data-choice-kind",
         "combobox",
@@ -189,14 +189,17 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
       }] },
     }} />);
 
-    openChoice("Tags，打开选项");
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "搜索Tags" }), {
+      key: "ArrowDown",
+    });
     activateOption("Two");
     activateOption("Three");
     activateOption("Four");
     activateOption("Five");
     expect(screen.getByText("+2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "完成" }));
-    expect(screen.queryByRole("combobox", { name: "搜索Tags" })).toBeNull();
+    expect(screen.getByRole("combobox", { name: "搜索Tags" }))
+      .toHaveAttribute("aria-expanded", "false");
     fireEvent.click(screen.getByRole("button", { name: "移除 One" }));
     fireEvent.click(screen.getByRole("button", { name: "Submit tags" }));
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
@@ -368,29 +371,147 @@ describe("Issue #27 Select, Combobox, and mobile Drawer", () => {
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ value: true }));
   });
 
-  it("server-renders and hydrates closed Select, Combobox, and Drawer trees without mismatch", async () => {
+  it("localizes PC search, empty, person resource, and chip controls without actions", async () => {
+    const onAction = vi.fn();
+    render(
+      <CardRenderer
+        locale="en_US"
+        onAction={onAction}
+        resolvePerson={() => Promise.reject(new Error("unavailable"))}
+        card={{
+          schema: "2.0",
+          body: { elements: [{
+            tag: "form",
+            name: "localized",
+            elements: [
+              {
+                tag: "select_person",
+                name: "person",
+                label: text("People"),
+                options: [{ value: "opaque-person-id" }],
+              },
+              {
+                tag: "multi_select_static",
+                name: "tags",
+                label: text("Tags"),
+                selected_values: ["one"],
+                options: [
+                  option("One", "one"),
+                  option("Disabled", "disabled", true),
+                ],
+              },
+              { tag: "button", form_action_type: "submit", text: text("Submit") },
+            ],
+          }] },
+        }}
+      />,
+    );
+
+    const status = await screen.findByRole("status", {
+      name: "People person resolution status",
+    });
+    await waitFor(() => expect(status).toHaveTextContent(
+      "1 person option failed to load",
+    ));
+    openChoice("People");
+    fireEvent.change(screen.getByRole("combobox", { name: "Search People" }), {
+      target: { value: "no match" },
+    });
+    expect(screen.getByText("No matches")).toBeInTheDocument();
+    expect(onAction).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Search People" }), {
+      key: "Escape",
+    });
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Tags" }), {
+      key: "ArrowDown",
+    });
+    expect(screen.getByRole("option", { name: "Disabled" }))
+      .toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(screen.getByRole("option", { name: "Disabled" }));
+    expect(onAction).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove One" }));
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it("server-renders and hydrates PC Select, single Combobox, and multiple Combobox", async () => {
     const card = {
       schema: "2.0",
-      body: { elements: [{
-        tag: "select_static",
-        name: "ssr",
-        label: text("SSR select"),
-        options: Array.from({ length: 8 }, (_, index) => option(`SSR ${index}`, index)),
-      }] },
+      body: { elements: [
+        { tag: "select_static", name: "small", label: text("SSR small"),
+          options: [option("Small A", "a"), option("Small B", "b")] },
+        { tag: "select_static", name: "large", label: text("SSR large"),
+          options: Array.from({ length: 8 }, (_, index) =>
+            option(`Large ${index}`, index)) },
+        { tag: "form", name: "ssr-form", elements: [
+          { tag: "multi_select_static", name: "multi", label: text("SSR multi"),
+            options: [option("Multi A", "a"), option("Multi B", "b")] },
+          { tag: "button", form_action_type: "submit", text: text("SSR submit") },
+        ] },
+      ] },
     };
-    const html = renderToString(<CardRenderer card={card} device="mobile" />);
+    const onAction = vi.fn();
+    const html = renderToString(<CardRenderer card={card} onAction={onAction} />);
     const container = document.createElement("div");
     container.innerHTML = html;
     document.body.append(container);
-    const before = container.querySelector("[data-fcr-portal-host]");
+    const server = within(container);
+    const portalHostBefore = container.querySelector("[data-fcr-portal-host]");
+    const smallBefore = server.getByRole("combobox", { name: "SSR small" });
+    const largeBefore = server.getByRole("combobox", { name: "SSR large" });
+    const multiBefore = server.getByRole("combobox", { name: "搜索SSR multi" });
+    expect(smallBefore).toHaveAttribute("aria-expanded", "false");
+    expect(largeBefore).toHaveAttribute("aria-expanded", "false");
+    expect(multiBefore).toHaveAttribute("aria-expanded", "false");
+    expect(server.queryByRole("listbox")).not.toBeInTheDocument();
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const root = hydrateRoot(container, <CardRenderer card={card} device="mobile" />);
+    const root = hydrateRoot(container, <CardRenderer card={card} onAction={onAction} />);
     await act(async () => {});
 
-    expect(container.querySelector("[data-fcr-portal-host]")).toBe(before);
+    const hydrated = within(container);
+    const small = hydrated.getByRole("combobox", { name: "SSR small" });
+    const large = hydrated.getByRole("combobox", { name: "SSR large" });
+    const multi = hydrated.getByRole("combobox", { name: "搜索SSR multi" });
+    expect(small).toBe(smallBefore);
+    expect(large).toBe(largeBefore);
+    expect(multi).toBe(multiBefore);
+    expect(container.querySelector("[data-fcr-portal-host]")).toBe(portalHostBefore);
     expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
       /hydration|didn't match|server rendered/i,
     );
+
+    small.focus();
+    fireEvent.click(small);
+    expect(small).toHaveAttribute("aria-expanded", "true");
+    activateOption("Small B");
+    expect(small).toHaveTextContent("Small B");
+    expect(small).toHaveAttribute("aria-expanded", "false");
+    expect(hydrated.queryByRole("listbox")).not.toBeInTheDocument();
+    await waitFor(() => expect(small).toHaveFocus());
+
+    large.focus();
+    fireEvent.click(large);
+    expect(large).toHaveAttribute("aria-expanded", "true");
+    activateOption("Large 7");
+    expect(large).toHaveTextContent("Large 7");
+    expect(large).toHaveAttribute("aria-expanded", "false");
+    expect(hydrated.queryByRole("combobox", { name: "搜索SSR large" }))
+      .not.toBeInTheDocument();
+    await waitFor(() => expect(large).toHaveFocus());
+
+    multi.focus();
+    fireEvent.keyDown(multi, { key: "ArrowDown" });
+    expect(multi).toHaveAttribute("aria-expanded", "true");
+    activateOption("Multi A");
+    fireEvent.click(screen.getByRole("button", { name: "完成" }));
+    expect(hydrated.getByRole("button", { name: "移除 Multi A" }))
+      .toBeInTheDocument();
+    expect(multi).toHaveAttribute("aria-expanded", "false");
+    expect(hydrated.queryByRole("button", { name: "完成" }))
+      .not.toBeInTheDocument();
+    await waitFor(() => expect(multi).toHaveFocus());
+    expect(container.querySelector("[data-fcr-portal-host]")).toBe(portalHostBefore);
     await act(async () => root.unmount());
     consoleError.mockRestore();
     container.remove();

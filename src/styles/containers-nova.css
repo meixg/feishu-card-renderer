@@ -1,0 +1,36 @@
+@layer components {
+  .fcr-collapsible-trigger {
+    width: 100%;
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+
+  .fcr-collapsible-trigger.fcr-icon-right {
+    flex-direction: row-reverse;
+    justify-content: space-between;
+  }
+
+  .fcr-collapse-icon {
+    transition: transform 160ms ease;
+  }
+
+  .fcr-collapsible-trigger[aria-expanded="true"] .fcr-collapse-icon {
+    transform: rotate(180deg);
+  }
+
+  .fcr-interactive-container[role="button"] {
+    outline: none;
+  }
+
+  .fcr-interactive-container[role="button"]:focus-visible {
+    box-shadow:
+      0 0 0 3px
+      color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fcr-collapse-icon {
+      transition: none;
+    }
+  }
+}

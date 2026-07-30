@@ -1,5 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
 import { FEISHU_CHART_TYPES } from "../../src/adapters/chart";
+
+async function captureHashEvidence(locator: Locator, name: string) {
+  const directory = process.env.FCR_VISUAL_HASH_EVIDENCE_DIR;
+  if (!directory) return;
+  await mkdir(directory, { recursive: true });
+  await locator.screenshot({
+    animations: "disabled",
+    path: resolve(directory, name),
+  });
+}
 
 async function settleVisualLayout(
   page: import("@playwright/test").Page,
@@ -41,10 +53,12 @@ test("theme, device, and width visual baselines", async ({ page }) => {
 
 test("container visual baseline", async ({ page }) => {
   await page.goto("/tests/visual/");
-  const renderer = page.locator("#case-containers");
-  await expect(renderer).toBeVisible();
-  await settleVisualLayout(page, "#case-containers");
-  await expect(renderer).toHaveScreenshot("card-renderer-containers.png");
+  for (const name of ["containers", "containers-dark", "containers-narrow"]) {
+    const renderer = page.locator(`#case-${name}`);
+    await expect(renderer).toBeVisible();
+    await settleVisualLayout(page, `#case-${name}`);
+    await expect(renderer).toHaveScreenshot(`card-renderer-${name}.png`);
+  }
 });
 
 test("Markdown code scrolls locally without widening a compact mobile card", async ({
@@ -190,6 +204,7 @@ test("every declared Feishu chart type reaches ready in the real browser runtime
 });
 
 test("covers the complete light/dark, PC/mobile, 400/600/fill release matrix", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("/tests/visual/");
 
   for (const colorScheme of ["light", "dark"]) {
@@ -332,6 +347,7 @@ test("Button tokens, sizes, and portaled confirm inherit each card theme", async
     primaryBackgrounds.get("light"),
   );
   await expect(baseline).toHaveScreenshot("button-base-nova-themes.png");
+  await captureHashEvidence(baseline, "button-base-nova-themes.png");
 });
 
 test("an open card portal tears down without disturbing another card", async ({
@@ -596,35 +612,87 @@ test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
   })));
   expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
     .toBe(true);
-  expect(await host.locator(".fcr-choice-chip").count()).toBe(3);
+  await expect(host.getByRole("button", { name: /^移除/ })).toHaveCount(3);
   await host.getByRole("combobox", { name: "Searchable Combobox" }).click();
   const popup = host.getByRole("dialog", { name: "Searchable Combobox选项" });
   await expect(popup).toBeVisible();
   await expect(host).toHaveScreenshot("card-choices-pc-compact.png");
 });
 
-test("multi-select uses the shadcn choice field height on PC and mobile", async ({
+test("PC Select and Combobox collide within a viewport narrower than 400px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/tests/visual/?case=choice-narrow");
+  const host = page.locator("#case-choices-pc");
+  const root = host.locator(".fcr-root");
+  await expect(root).toBeVisible();
+  expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+    .toBe(true);
+
+  const assertInsideViewport = async (locator: import("@playwright/test").Locator) => {
+    const bounds = await locator.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(360);
+    expect(await locator.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true);
+  };
+
+  const select = host.getByRole("combobox", { name: "Small Select" });
+  await assertInsideViewport(select);
+  await select.click();
+  const selectList = host.getByRole("listbox");
+  await expect(selectList).toBeVisible();
+  await assertInsideViewport(selectList);
+  await page.keyboard.press("Escape");
+
+  const single = host.getByRole("combobox", { name: "Searchable Combobox" });
+  await assertInsideViewport(single);
+  await single.click();
+  const singlePopup = host.getByRole("dialog", {
+    name: "Searchable Combobox选项",
+  });
+  await expect(singlePopup).toBeVisible();
+  await assertInsideViewport(singlePopup);
+  await assertInsideViewport(host.getByRole("option", {
+    name: /intentionally long label/,
+  }).first());
+  await page.keyboard.press("Escape");
+
+  const multiInput = host.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  await assertInsideViewport(multiInput);
+  for (const remove of await host.getByRole("button", { name: /^移除/ }).all()) {
+    await assertInsideViewport(remove);
+  }
+  await multiInput.click();
+  await expect(multiInput).toHaveAttribute("aria-expanded", "true");
+  const multiPopup = host.getByRole("listbox");
+  await expect(multiPopup).toBeVisible();
+  await assertInsideViewport(multiPopup);
+  expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+    .toBe(true);
+});
+
+test("PC multi-select uses the pinned shadcn choice field height", async ({
   page,
 }) => {
   await page.goto("/tests/visual/");
-  for (const device of ["pc", "mobile"]) {
-    const host = page.locator(`#case-choices-${device}`);
-    const single = host.locator(
-      ".fcr-choice-trigger, .fcr-choice-control:not([data-multiple])",
-    ).first();
-    const multiple = host.locator(
-      ".fcr-choice-control[data-multiple]",
-    ).first();
-
-    await expect(single).toBeVisible();
-    await expect(multiple).toBeVisible();
-    const [singleHeight, multipleHeight] = await Promise.all([
-      single.evaluate((node) => node.getBoundingClientRect().height),
-      multiple.evaluate((node) => node.getBoundingClientRect().height),
-    ]);
-
-    expect(multipleHeight, device).toBe(singleHeight);
-  }
+  const host = page.locator("#case-choices-pc");
+  const single = host.getByRole("combobox", { name: "Small Select" });
+  const multipleControl = host.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  await expect(single).toBeVisible();
+  await expect(multipleControl).toBeVisible();
+  const [singleHeight, multipleHeight] = await Promise.all([
+    single.evaluate((node) => node.getBoundingClientRect().height),
+    multipleControl.evaluate((node) =>
+      node.parentElement!.getBoundingClientRect().height),
+  ]);
+  expect(multipleHeight).toBe(singleHeight);
 });
 
 test("mobile choices use a keyboard-safe Drawer without horizontal overflow", async ({
@@ -773,10 +841,9 @@ test("Select and Combobox preserve real-browser keyboard selection semantics", a
     name: "Searchable Combobox选项",
   })).toBeHidden();
 
-  const multi = host.getByRole("combobox", {
-    name: "Multiple choices，打开选项",
-  });
-  await multi.click();
+  const multi = host.getByRole("combobox", { name: "搜索Multiple choices" });
+  await multi.focus();
+  await multi.press("ArrowDown");
   const multiSearch = host.getByRole("combobox", {
     name: "搜索Multiple choices",
   });
@@ -949,12 +1016,31 @@ test("PC Calendar supports focus, arrows, Escape, and timezone-preserving select
     name: /^预约日期：/,
   });
 
+  await trigger.scrollIntoViewIfNeeded();
   await trigger.focus();
   await trigger.press("Enter");
   let dialog = standalone.getByRole("dialog", { name: "选择预约日期" });
+  const previousMonth = dialog.getByRole("button", { name: "转到上个月" });
+  const nextMonth = dialog.getByRole("button", { name: "转到下个月" });
+  await expect(previousMonth).toBeEnabled();
+  await expect(nextMonth).toBeEnabled();
+  await previousMonth.click();
+  await expect(dialog.getByRole("grid", { name: "2026年6月" })).toBeVisible();
+  await nextMonth.click();
+  await expect(dialog.getByRole("grid", { name: "2026年7月" })).toBeVisible();
+  expect(await dialog.evaluate((node) =>
+    node.closest("[data-fcr-portal-host]") !== null)).toBe(true);
+  const viewport = page.viewportSize();
+  const bounds = await dialog.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.y).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height);
   const selected = dialog.getByRole("button", {
     name: "2026-07-28，已选择",
   });
+  await selected.focus();
   await expect(selected).toBeFocused();
   await selected.press("ArrowRight");
   const next = dialog.getByRole("button", { name: "2026-07-29" });
@@ -1087,6 +1173,7 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await form.getByRole("textbox", { name: "标题" }).fill("");
   await form.getByRole("button", { name: "提交" }).click();
   await expect(form).toHaveScreenshot("card-form-controls-error-compact.png");
+  await captureHashEvidence(form, "card-form-controls-error-compact.png");
 
   await expect(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");
@@ -1103,4 +1190,49 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   expect(await calendar.evaluate((node) =>
     getComputedStyle(node).transitionDuration)).toBe("0s");
   await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
+});
+
+test("table pagination keeps standard controls, keyboard behavior, and narrow overflow scoped", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/tests/visual/?case=table-pagination");
+
+  for (const name of ["compact", "default", "fill", "narrow"]) {
+    const host = page.locator(`#case-table-pagination-${name}`);
+    const root = host.locator(".fcr-root");
+    const tableContainer = root.locator('[data-slot="table-container"]');
+    const pagination = root.getByRole("navigation");
+    const next = pagination.getByRole("button", { name: "下一页" });
+    const previous = pagination.getByRole("button", { name: "上一页" });
+
+    expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true);
+    expect(await pagination.evaluate((node) =>
+      node.scrollWidth <= node.clientWidth)).toBe(true);
+    if (name === "compact" || name === "narrow") {
+      expect(await tableContainer.evaluate((node) =>
+        node.scrollWidth > node.clientWidth)).toBe(true);
+    }
+    expect(await next.evaluate((node) =>
+      node.getBoundingClientRect().width)).toBe(32);
+
+    await next.focus();
+    await next.press("Enter");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 2 页，共 3 页");
+    await next.press("Space");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 3 页，共 3 页");
+    await expect(next).toBeDisabled();
+    await next.press("Enter");
+    await expect(pagination.locator('button[aria-current="page"]'))
+      .toHaveAccessibleName("第 3 页，共 3 页");
+    await previous.focus();
+    expect(await previous.evaluate((node) =>
+      getComputedStyle(node).boxShadow)).not.toBe("none");
+  }
+
+  await expect(page.locator("main"))
+    .toHaveScreenshot("table-pagination-base-nova-widths.png");
 });

@@ -226,7 +226,7 @@ Markdown 表格保留 `table`、表头、行和单元格语义，并支持 GFM �
 
 ## 交互实现兼容性
 
-确认框、图片预览、overflow、选择器、日期选择、表单字段、图片选择和折叠面板已迁移
+确认框、图片预览、overflow、选择器、日期选择、表单字段、图片选择、折叠面板和表格分页已迁移
 到 shadcn/Base UI 交互层。飞书 JSON 2.0 输入、normalization、表单值、
 required/reset/confirm/disabled 和 `CardAction` 契约保持不变；shadcn 组件、
 provider、context 和类型不属于公共 API。
@@ -249,6 +249,14 @@ Button 与表单控件的上游输入及本地摘要分别固定在
 [form-control provenance](docs/specs/shadcn-base-nova-form-controls-baseline.md)，
 菜单与确认框见
 [overlay provenance](docs/specs/shadcn-base-nova-overlays-baseline.md)。
+折叠面板与交互容器的状态适配见
+[container interaction provenance](docs/specs/shadcn-base-nova-containers-baseline.md)；
+`collapsible_panel` 组合 scoped Collapsible、Button 与 Lucide chevron，
+`interactive_container` 只使用逐卡作用域的 focus ring token，不引入 Card 外壳。
+表格分页见
+[table pagination provenance](docs/specs/shadcn-base-nova-table-pagination-baseline.md)：
+保留本地 `page_size` 行切片与语义 table，使用 shadcn Pagination/Button composition
+和具名 Lucide chevron；表格内容可独立横向滚动，分页控件保持在卡片宽度内。
 
 Issue #75 补齐了此前 compatibility matrix 标为缺口、现已由官方资料验证的
 Button `type/size/width` 协议支持。枚举与视觉类别

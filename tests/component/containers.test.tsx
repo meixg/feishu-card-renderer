@@ -7,6 +7,8 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 
 import { CardRenderer } from "../../src";
 import {
@@ -41,6 +43,8 @@ describe("container rendering", () => {
 
     expect(controls).toMatch(/^fcr-panel-/);
     expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveClass("fcr-ui-button", "fcr-ui-button-ghost");
+    expect(trigger).toHaveAccessibleName("默认折叠");
     expect(document.getElementById(controls!)).toHaveAttribute("hidden");
 
     fireEvent.click(trigger);
@@ -54,6 +58,55 @@ describe("container rendering", () => {
     rerender(<CardRenderer card={defaultContainerCard} />);
     expect(screen.getByRole("button", { name: "默认折叠" }))
       .toHaveAttribute("aria-controls", controls);
+  });
+
+  it.each(["Enter", " "])("toggles the disclosure with %j", (key) => {
+    render(<CardRenderer card={defaultContainerCard} />);
+    const trigger = screen.getByRole("button", { name: "默认折叠" });
+
+    fireEvent.keyDown(trigger, { key });
+    fireEvent.click(trigger);
+    fireEvent.keyUp(trigger, { key });
+
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("hydrates a collapsed panel without replacing stable control nodes", async () => {
+    const serverHtml = renderToString(
+      <CardRenderer card={defaultContainerCard} colorScheme="dark" />,
+    );
+    const container = document.createElement("div");
+    container.innerHTML = serverHtml;
+    document.body.append(container);
+    const serverTrigger = within(container).getByRole(
+      "button",
+      { name: "默认折叠" },
+    );
+    const serverControls = serverTrigger.getAttribute("aria-controls");
+    const serverContent = container.querySelector(".fcr-collapsible-content");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    let root: Root | undefined;
+
+    await act(async () => {
+      root = hydrateRoot(
+        container,
+        <CardRenderer card={defaultContainerCard} colorScheme="dark" />,
+      );
+    });
+
+    expect(within(container).getByRole("button", { name: "默认折叠" }))
+      .toBe(serverTrigger);
+    expect(serverTrigger).toHaveAttribute("aria-controls", serverControls);
+    expect(container.querySelector(".fcr-collapsible-content"))
+      .toBe(serverContent);
+    expect(container.querySelector(`#${serverControls}`)).toBe(serverContent);
+    expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
+      /hydration|didn't match|server rendered/i,
+    );
+
+    await act(async () => root?.unmount());
+    consoleError.mockRestore();
+    container.remove();
   });
 
   it("uses unique disclosure control ids across card renderer instances", () => {
@@ -129,7 +182,10 @@ describe("container rendering", () => {
         }],
       },
     } as const;
-    const { container } = render(<CardRenderer card={card} />);
+    const onAction = vi.fn();
+    const { container } = render(
+      <CardRenderer card={card} onAction={onAction} />,
+    );
     const parent = container.querySelector(
       '[data-fcr-path="$.body.elements[0]"]',
     )!;
@@ -140,10 +196,51 @@ describe("container rendering", () => {
     expect(screen.getByRole("button", { name: "子按钮" }))
       .toHaveAttribute("aria-expanded", "true");
     expect(escapedClicks).toHaveBeenCalledTimes(1);
+    expect(onAction).not.toHaveBeenCalled();
+
+    const childTrigger = screen.getByRole("button", { name: "子按钮" });
+    for (const key of ["Enter", " "]) {
+      fireEvent.keyDown(childTrigger, { key });
+      fireEvent.click(childTrigger);
+      fireEvent.keyUp(childTrigger, { key });
+      expect(onAction).not.toHaveBeenCalled();
+    }
+    expect(escapedClicks).toHaveBeenCalledTimes(3);
 
     fireEvent.click(parent);
-    expect(escapedClicks).toHaveBeenCalledTimes(1);
+    expect(escapedClicks).toHaveBeenCalledTimes(3);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: "callback",
+      source: expect.objectContaining({ tag: "interactive_container" }),
+    }));
     document.removeEventListener("click", escapedClicks);
+  });
+
+  it("uses only the scoped focus ring seam for actionable containers", () => {
+    const { container } = render(<CardRenderer card={{
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "interactive_container",
+          behaviors: [{ type: "callback" }],
+          className: "injected-class",
+          style: "color:red",
+          elements: [{ tag: "div", text: {
+            tag: "plain_text",
+            content: "内容外观不变",
+          } }],
+        }],
+      },
+    }} onAction={() => {}} />);
+    const interactive = screen.getByRole("button", { name: "交互容器" });
+
+    expect(interactive).toHaveClass("fcr-interactive-container");
+    expect(interactive).not.toHaveClass("injected-class");
+    expect(interactive).not.toHaveAttribute("style", expect.stringContaining(
+      "color",
+    ));
+    expect(container.querySelector(".fcr-ui-card")).toBeNull();
   });
 
   it("does not block or double-trigger a #7 image preview child", async () => {

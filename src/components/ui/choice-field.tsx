@@ -1,10 +1,31 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer";
-import { Select as SelectPrimitive } from "@base-ui/react/select";
+import {
+  SearchIcon,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { UiPortalEventBoundary } from "@/renderer/portal";
 import { useUiPortalHost } from "@/renderer/portal-context";
+import { Button } from "./button";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "./combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
 
 export type ChoiceOption = Readonly<{
   token: string;
@@ -34,6 +55,47 @@ type ChoiceFieldProps = Readonly<{
 const DISPLAY_LIMIT = 100;
 const CHIP_LIMIT = 3;
 
+function choiceCopy(locale: string) {
+  const zh = locale.toLowerCase().startsWith("zh");
+  return zh
+    ? {
+        close: "关闭选择器",
+        done: "完成",
+        empty: "没有匹配项",
+        loading: (count: number) => `正在加载 ${count} 个人员选项`,
+        error: (count: number) => `${count} 个人员选项加载失败`,
+        options: (label: string) => `${label}选项`,
+        open: (label: string) => `${label}，打开选项`,
+        remove: (label: string) => `移除 ${label}`,
+        search: (label: string) => `搜索${label}`,
+        searchDescription: "搜索并选择已有选项",
+        searchPlaceholder: "搜索选项",
+        selectDescription: "选择已有选项",
+        status: (total: number) => total > DISPLAY_LIMIT
+          ? `显示前 ${DISPLAY_LIMIT} 项，共 ${total} 项，请继续输入以缩小范围`
+          : `${total} 个匹配项`,
+        resourceStatus: (label: string) => `${label}人员解析状态`,
+      }
+    : {
+        close: "Close selector",
+        done: "Done",
+        empty: "No matches",
+        loading: (count: number) => `Loading ${count} person option${count === 1 ? "" : "s"}`,
+        error: (count: number) => `${count} person option${count === 1 ? "" : "s"} failed to load`,
+        options: (label: string) => `${label} options`,
+        open: (label: string) => `${label}, open options`,
+        remove: (label: string) => `Remove ${label}`,
+        search: (label: string) => `Search ${label}`,
+        searchDescription: "Search and select from the available options",
+        searchPlaceholder: "Search options",
+        selectDescription: "Select from the available options",
+        status: (total: number) => total > DISPLAY_LIMIT
+          ? `Showing the first ${DISPLAY_LIMIT} of ${total} matches; refine your search`
+          : `${total} match${total === 1 ? "" : "es"}`,
+        resourceStatus: (label: string) => `${label} person resolution status`,
+      };
+}
+
 function normalizedSearch(value: string, locale: string): string {
   const compact = value.trim().replace(/\s+/g, " ");
   try {
@@ -43,7 +105,11 @@ function normalizedSearch(value: string, locale: string): string {
   }
 }
 
-function ChoiceItems({ options }: { options: readonly ChoiceOption[] }) {
+function ChoiceItems({
+  options,
+}: {
+  options: readonly ChoiceOption[];
+}) {
   return options.map((option) => (
     <ComboboxPrimitive.Item
       className="fcr-choice-option"
@@ -59,16 +125,24 @@ function ChoiceItems({ options }: { options: readonly ChoiceOption[] }) {
   ));
 }
 
-function ChoiceStatus({ total }: { total: number }) {
+function ChoiceStatus({
+  locale,
+  pc = false,
+  total,
+}: {
+  locale: string;
+  pc?: boolean;
+  total: number;
+}) {
+  const copy = choiceCopy(locale);
+  const className = pc ? "fcr-choice-pc-status" : "fcr-choice-status";
   return (
     <>
-      <ComboboxPrimitive.Empty className="fcr-choice-status">
-        没有匹配项
+      <ComboboxPrimitive.Empty className={className}>
+        {copy.empty}
       </ComboboxPrimitive.Empty>
-      <ComboboxPrimitive.Status className="fcr-choice-status">
-        {total > DISPLAY_LIMIT
-          ? `显示前 ${DISPLAY_LIMIT} 项，共 ${total} 项，请继续输入以缩小范围`
-          : `${total} 个匹配项`}
+      <ComboboxPrimitive.Status className={className}>
+        {copy.status(total)}
       </ComboboxPrimitive.Status>
     </>
   );
@@ -76,24 +150,27 @@ function ChoiceStatus({ total }: { total: number }) {
 
 function ChoiceResourceStatus({
   label,
+  locale,
   options,
 }: {
   label: string;
+  locale: string;
   options: readonly ChoiceOption[];
 }) {
   const loading = options.filter((option) =>
     option.resourceState === "loading").length;
   const errors = options.filter((option) =>
     option.resourceState === "error").length;
+  const copy = choiceCopy(locale);
   const messages = [
-    loading > 0 ? `正在加载 ${loading} 个人员选项` : "",
-    errors > 0 ? `${errors} 个人员选项加载失败` : "",
+    loading > 0 ? copy.loading(loading) : "",
+    errors > 0 ? copy.error(errors) : "",
   ].filter(Boolean);
   if (messages.length === 0) return null;
   return (
     <span
       aria-atomic="true"
-      aria-label={`${label}人员解析状态`}
+      aria-label={copy.resourceStatus(label)}
       aria-live="polite"
       className="fcr-sr-only"
       role="status"
@@ -109,6 +186,8 @@ function SelectedValue({
   onRemove,
   optionByToken,
   placeholder,
+  locale,
+  pc = false,
   value,
 }: {
   disabled: boolean;
@@ -116,12 +195,14 @@ function SelectedValue({
   onRemove: (token: string) => void;
   optionByToken: ReadonlyMap<string, ChoiceOption>;
   placeholder: string;
+  locale: string;
+  pc?: boolean;
   value: string | readonly string[];
 }) {
   if (!multiple) {
     const token = typeof value === "string" ? value : "";
     return (
-      <span className="fcr-choice-value">
+      <span className={pc ? "fcr-choice-pc-value" : "fcr-choice-value"}>
         {optionByToken.get(token)?.label || placeholder}
       </span>
     );
@@ -137,7 +218,9 @@ function SelectedValue({
         <span className="fcr-choice-chip" key={token}>
           <span>{optionByToken.get(token)?.label || token}</span>
           <button
-            aria-label={`移除 ${optionByToken.get(token)?.label || token}`}
+            aria-label={choiceCopy(locale).remove(
+              optionByToken.get(token)?.label || token,
+            )}
             disabled={disabled}
             onClick={(event) => {
               event.preventDefault();
@@ -166,7 +249,7 @@ function SelectField(props: ChoiceFieldProps) {
     [props.options],
   );
   return (
-    <SelectPrimitive.Root
+    <Select
       disabled={props.disabled}
       items={items}
       onValueChange={(token) => {
@@ -175,56 +258,38 @@ function SelectField(props: ChoiceFieldProps) {
       required={props.required}
       value={selected || null}
     >
-      <SelectPrimitive.Trigger
+      <SelectTrigger
         ref={props.controlRef}
         aria-describedby={props.describedBy}
         aria-invalid={props.invalid || undefined}
         aria-label={props.label}
         aria-required={props.required}
-        className="fcr-choice-trigger"
+        className="fcr-choice-pc-trigger"
+        data-slot="select-trigger"
         data-choice-kind="select"
         data-option-count={props.options.length}
         data-placeholder-text={props.placeholder}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        <SelectPrimitive.Value placeholder={props.placeholder} />
-        <SelectPrimitive.Icon aria-hidden="true">⌄</SelectPrimitive.Icon>
-      </SelectPrimitive.Trigger>
+        <SelectValue placeholder={props.placeholder} />
+      </SelectTrigger>
       {portalHost && (
-        <SelectPrimitive.Portal container={portalHost}>
-          <UiPortalEventBoundary>
-            <SelectPrimitive.Positioner
-              align="start"
-              alignItemWithTrigger={false}
-              className="fcr-choice-positioner"
-              sideOffset={4}
+        <SelectContent container={portalHost}>
+          {props.options.map((option) => (
+            <SelectItem
+              className="fcr-choice-pc-option"
+              disabled={option.disabled}
+              key={option.token}
+              label={option.label}
+              value={option.token}
             >
-              <SelectPrimitive.Popup className="fcr-choice-popup">
-                <SelectPrimitive.List>
-                  {props.options.map((option) => (
-                    <SelectPrimitive.Item
-                      className="fcr-choice-option"
-                      disabled={option.disabled}
-                      key={option.token}
-                      label={option.label}
-                      value={option.token}
-                    >
-                      <SelectPrimitive.ItemIndicator
-                        className="fcr-choice-indicator"
-                      >
-                        ✓
-                      </SelectPrimitive.ItemIndicator>
-                      <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-                    </SelectPrimitive.Item>
-                  ))}
-                </SelectPrimitive.List>
-              </SelectPrimitive.Popup>
-            </SelectPrimitive.Positioner>
-          </UiPortalEventBoundary>
-        </SelectPrimitive.Portal>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       )}
-    </SelectPrimitive.Root>
+    </Select>
   );
 }
 
@@ -246,6 +311,8 @@ function useFilteredOptions(
 function PopupCombobox(props: ChoiceFieldProps) {
   const portalHost = useUiPortalHost();
   const anchorRef = useRef<HTMLDivElement>(null);
+  const doneRef = useRef<HTMLButtonElement>(null);
+  const multiInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useFilteredOptions(props.options, query, props.locale);
@@ -261,40 +328,37 @@ function PopupCombobox(props: ChoiceFieldProps) {
     () => filtered.visible.map((option) => option.token),
     [filtered.visible],
   );
-  const remove = (token: string) => {
-    if (!Array.isArray(props.value)) return;
-    props.onValueChange(props.value.filter((item) => item !== token));
-  };
-  const control = (
+  const singleControl = (
     <div
       ref={anchorRef}
-      className="fcr-choice-control"
+      className="fcr-choice-pc-anchor"
       data-choice-kind="combobox"
-      data-multiple={props.multiple || undefined}
+      data-multiple={undefined}
       data-option-count={props.options.length}
       data-placeholder-text={props.placeholder}
     >
-      <SelectedValue
-        disabled={props.disabled}
-        multiple={props.multiple}
-        onRemove={remove}
-        optionByToken={optionByToken}
-        placeholder={props.placeholder}
-        value={props.value}
-      />
-      <ComboboxPrimitive.Trigger
+      <ComboboxTrigger
         ref={props.controlRef}
         aria-describedby={props.describedBy}
         aria-invalid={props.invalid || undefined}
-        aria-label={props.multiple ? `${props.label}，打开选项` : props.label}
+        aria-label={props.label}
         aria-required={props.required}
-        className="fcr-choice-open"
+        className="fcr-choice-pc-trigger"
         disabled={props.disabled}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        ⌄
-      </ComboboxPrimitive.Trigger>
+        <SelectedValue
+          disabled={props.disabled}
+          multiple={false}
+          onRemove={() => {}}
+          optionByToken={optionByToken}
+          placeholder={props.placeholder}
+          locale={props.locale}
+          pc
+          value={props.value}
+        />
+      </ComboboxTrigger>
     </div>
   );
   const shared = {
@@ -311,68 +375,123 @@ function PopupCombobox(props: ChoiceFieldProps) {
     },
     open,
   } as const;
-  const content = (
-    <>
+  const search = (
+    <div className="fcr-choice-pc-search-group" data-slot="combobox-input">
+      <SearchIcon aria-hidden="true" />
       <ComboboxPrimitive.Input
         aria-expanded={open}
-        aria-label={`搜索${props.label}`}
+        aria-label={choiceCopy(props.locale).search(props.label)}
         autoComplete="off"
-        className="fcr-choice-search"
-        placeholder="搜索选项"
+          className="fcr-choice-pc-search"
+        placeholder={choiceCopy(props.locale).searchPlaceholder}
       />
-      <ComboboxPrimitive.List className="fcr-choice-list">
-        <ChoiceItems options={filtered.visible} />
-      </ComboboxPrimitive.List>
-      <ChoiceStatus total={filtered.total} />
+    </div>
+  );
+  const content = (
+    <>
+      {!props.multiple && search}
+      <ComboboxList className="fcr-choice-pc-list">
+        {filtered.visible.map((option) => (
+          <ComboboxItem
+            className="fcr-choice-pc-option"
+            disabled={option.disabled}
+            key={option.token}
+            value={option.token}
+          >
+            <span>{option.label}</span>
+          </ComboboxItem>
+        ))}
+      </ComboboxList>
+      <ChoiceStatus locale={props.locale} pc total={filtered.total} />
       {props.multiple && (
-        <button
-          className="fcr-choice-done"
+        <Button
+          ref={doneRef}
+          className="fcr-choice-pc-done"
           onClick={(event) => {
             event.stopPropagation();
             setOpen(false);
           }}
+          onKeyDown={(event) => {
+            if (event.key !== "Tab" || !event.shiftKey) return;
+            event.preventDefault();
+            multiInputRef.current?.focus();
+          }}
           type="button"
         >
-          完成
-        </button>
+          {choiceCopy(props.locale).done}
+        </Button>
       )}
     </>
   );
   if (props.multiple) {
     const value = Array.isArray(props.value) ? [...props.value] : [];
     return (
-      <ComboboxPrimitive.Root
+      <Combobox
         {...shared}
         multiple
         onValueChange={(tokens) => props.onValueChange(tokens)}
         value={value}
       >
-        {control}
-        {portalHost && (
-          <ComboboxPrimitive.Portal container={portalHost}>
-            <UiPortalEventBoundary>
-              <ComboboxPrimitive.Positioner
-                align="start"
-                anchor={anchorRef}
-                className="fcr-choice-positioner"
-                sideOffset={4}
-              >
-                <ComboboxPrimitive.Popup
-                  aria-label={`${props.label}选项`}
-                  className="fcr-choice-popup"
+        <ComboboxChips
+          ref={anchorRef}
+          className="fcr-choice-pc-chips"
+          data-choice-kind="combobox"
+          data-multiple=""
+          data-option-count={props.options.length}
+          data-placeholder-text={props.placeholder}
+        >
+          <ComboboxValue>
+            {(tokens: string[]) => <>
+              {tokens.slice(0, CHIP_LIMIT).map((token) => {
+                const label = optionByToken.get(token)?.label || token;
+                return <ComboboxChip
+                  key={token}
+                  removeLabel={choiceCopy(props.locale).remove(label)}
                 >
-                  {content}
-                </ComboboxPrimitive.Popup>
-              </ComboboxPrimitive.Positioner>
-            </UiPortalEventBoundary>
-          </ComboboxPrimitive.Portal>
+                  <span>{label}</span>
+                </ComboboxChip>;
+              })}
+              {tokens.length > CHIP_LIMIT && (
+                <span className="fcr-choice-pc-chip-count">
+                  +{tokens.length - CHIP_LIMIT}
+                </span>
+              )}
+              <ComboboxChipsInput
+                ref={(node) => {
+                  multiInputRef.current = node;
+                  props.controlRef?.(node);
+                }}
+                aria-describedby={props.describedBy}
+                aria-invalid={props.invalid || undefined}
+                aria-label={choiceCopy(props.locale).search(props.label)}
+                aria-required={props.required}
+                autoComplete="off"
+                disabled={props.disabled}
+                onKeyDown={(event) => {
+                  if (event.key !== "Tab" || event.shiftKey || !open) return;
+                  event.preventDefault();
+                  doneRef.current?.focus();
+                }}
+                placeholder={tokens.length === 0 ? props.placeholder : ""}
+              />
+            </>}
+          </ComboboxValue>
+        </ComboboxChips>
+        {portalHost && (
+          <ComboboxContent
+            anchor={anchorRef}
+            container={portalHost}
+            label={choiceCopy(props.locale).options(props.label)}
+          >
+            {content}
+          </ComboboxContent>
         )}
-      </ComboboxPrimitive.Root>
+      </Combobox>
     );
   }
   const value = typeof props.value === "string" ? props.value : "";
   return (
-    <ComboboxPrimitive.Root
+    <Combobox
       {...shared}
       onValueChange={(token) => {
         if (typeof token !== "string") return;
@@ -381,27 +500,17 @@ function PopupCombobox(props: ChoiceFieldProps) {
       }}
       value={value || null}
     >
-      {control}
+      {singleControl}
       {portalHost && (
-        <ComboboxPrimitive.Portal container={portalHost}>
-          <UiPortalEventBoundary>
-            <ComboboxPrimitive.Positioner
-              align="start"
-              anchor={anchorRef}
-              className="fcr-choice-positioner"
-              sideOffset={4}
-            >
-              <ComboboxPrimitive.Popup
-                aria-label={`${props.label}选项`}
-                className="fcr-choice-popup"
-              >
-                {content}
-              </ComboboxPrimitive.Popup>
-            </ComboboxPrimitive.Positioner>
-          </UiPortalEventBoundary>
-        </ComboboxPrimitive.Portal>
+        <ComboboxContent
+          anchor={anchorRef}
+          container={portalHost}
+          label={choiceCopy(props.locale).options(props.label)}
+        >
+          {content}
+        </ComboboxContent>
       )}
-    </ComboboxPrimitive.Root>
+    </Combobox>
   );
 }
 
@@ -433,17 +542,17 @@ function MobileDrawer(props: ChoiceFieldProps) {
       {props.searchable && (
         <ComboboxPrimitive.Input
           aria-expanded={open}
-          aria-label={`搜索${props.label}`}
+          aria-label={choiceCopy(props.locale).search(props.label)}
           autoComplete="off"
           className="fcr-choice-search"
-          placeholder="搜索选项"
+          placeholder={choiceCopy(props.locale).searchPlaceholder}
           ref={inputRef}
         />
       )}
       <ComboboxPrimitive.List className="fcr-choice-list">
         <ChoiceItems options={filtered.visible} />
       </ComboboxPrimitive.List>
-      <ChoiceStatus total={filtered.total} />
+      <ChoiceStatus locale={props.locale} total={filtered.total} />
     </>
   );
   const shared = {
@@ -479,13 +588,14 @@ function MobileDrawer(props: ChoiceFieldProps) {
           onRemove={remove}
           optionByToken={optionByToken}
           placeholder={props.placeholder}
+          locale={props.locale}
           value={props.value}
         />
         <DrawerPrimitive.Trigger
           ref={props.controlRef}
           aria-describedby={props.describedBy}
           aria-invalid={props.invalid || undefined}
-          aria-label={`${props.label}，打开选项`}
+          aria-label={choiceCopy(props.locale).open(props.label)}
           aria-required={props.required}
           className="fcr-choice-open"
           disabled={props.disabled}
@@ -510,11 +620,13 @@ function MobileDrawer(props: ChoiceFieldProps) {
                     <div className="fcr-drawer-header">
                       <DrawerPrimitive.Title>{props.label}</DrawerPrimitive.Title>
                       <DrawerPrimitive.Description className="fcr-sr-only">
-                        {props.searchable ? "搜索并选择已有选项" : "选择已有选项"}
+                        {props.searchable
+                          ? choiceCopy(props.locale).searchDescription
+                          : choiceCopy(props.locale).selectDescription}
                       </DrawerPrimitive.Description>
                       <DrawerPrimitive.Close
                         ref={closeRef}
-                        aria-label="关闭选择器"
+                        aria-label={choiceCopy(props.locale).close}
                       >
                         ×
                       </DrawerPrimitive.Close>
@@ -549,7 +661,7 @@ function MobileDrawer(props: ChoiceFieldProps) {
                         onClick={() => setOpen(false)}
                         type="button"
                       >
-                        完成
+                        {choiceCopy(props.locale).done}
                       </button>
                     )}
                   </DrawerPrimitive.Content>
@@ -572,7 +684,11 @@ export function ChoiceField(props: ChoiceFieldProps) {
   return (
     <>
       {field}
-      <ChoiceResourceStatus label={props.label} options={props.options} />
+      <ChoiceResourceStatus
+        label={props.label}
+        locale={props.locale}
+        options={props.options}
+      />
     </>
   );
 }

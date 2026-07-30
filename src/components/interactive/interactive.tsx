@@ -34,7 +34,7 @@ import { Input as UiInput } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Textarea } from "../ui/textarea";
-import { EllipsisIcon } from "lucide-react";
+import { CalendarIcon, EllipsisIcon } from "lucide-react";
 import { BUTTON_VARIANT_BY_TYPE } from "./button-semantics";
 
 type InteractiveElement = InputElement | SelectStaticElement |
@@ -240,6 +240,7 @@ function PersonNameProbe({ id, token, onResolution }: {
 function useChoiceOptions(
   element: Single | Multi,
   path: string,
+  locale: string,
 ): {
   choices: readonly ChoiceOption[];
   probes: React.ReactNode;
@@ -266,11 +267,12 @@ function useChoiceOptions(
     const supplied = isPerson ? option.text?.content ?? "" : optionText(option);
     const resolution = personResolutions[token];
     const resolved = resolution?.name;
+    const zh = locale.toLowerCase().startsWith("zh");
     const fallback = resolution?.status === "loading"
-      ? "人员信息加载中"
+      ? (zh ? "人员信息加载中" : "Loading person")
       : resolution?.status === "error"
-        ? "人员信息不可用"
-        : "未命名选项";
+        ? (zh ? "人员信息不可用" : "Person unavailable")
+        : (zh ? "未命名选项" : "Unnamed option");
     const label = option.text?.content ?? resolved ?? (supplied || fallback);
     return {
       token,
@@ -281,7 +283,7 @@ function useChoiceOptions(
         ? { resourceState: resolution.status }
         : {}),
     };
-  }), [element.options, isPerson, path, personResolutions]);
+  }), [element.options, isPerson, locale, path, personResolutions]);
   const probes = isPerson
     ? (element.options ?? []).map((option, index) => {
         const value = rawOptionValue(option);
@@ -307,7 +309,7 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
   const ids = useElementIds(path);
   const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
-  const { choices, probes } = useChoiceOptions(element, path);
+  const { choices, probes } = useChoiceOptions(element, path, locale);
   const selectedIndex = (element.options ?? []).findIndex((option) =>
     sameOptionValue(rawOptionValue(option), field.value));
   const label = element.label?.content ?? element.placeholder?.content ??
@@ -350,7 +352,7 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
   const ids = useElementIds(path);
   const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
-  const { choices, probes } = useChoiceOptions(element, path);
+  const { choices, probes } = useChoiceOptions(element, path, locale);
   const selectedTokens = (element.options ?? []).flatMap((option, index) => {
     const value = rawOptionValue(option);
     return value !== undefined && includesOption(field.value, value)
@@ -424,7 +426,9 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
   const ids = useElementIds(path);
   const tips = useTips(element, ids.description);
   const { device, locale } = useRendererContext();
+  const chinese = locale.toLowerCase().startsWith("zh");
   const [open, setOpen] = useState(false);
+  const dateTriggerRef = useRef<HTMLButtonElement>(null);
   const type = tag === "date_picker" ? "date" : tag === "picker_time" ? "time" :
     "datetime-local";
   const label = element.label?.content ?? element.name ?? "日期时间";
@@ -438,29 +442,29 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
       ? <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             render={<UiButton
-              ref={(node) => field.controlRef(node)}
+              ref={(node) => {
+                dateTriggerRef.current = node;
+                field.controlRef(node);
+              }}
               id={id}
               type="button"
               variant="outline"
             />}
             aria-describedby={feedback.describedBy}
             aria-invalid={field.invalid || undefined}
-            aria-label={`${label}：${value || "请选择"}`}
+            aria-label={`${label}${chinese ? "：" : ": "}${
+              value || (chinese ? "请选择" : "Choose date")}`}
             aria-required={element.required || undefined}
             role="combobox"
             disabled={field.disabled}
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
           >
-            <span>{value || "请选择"}</span>
-            <svg aria-hidden="true" className="fcr-date-icon"
-              viewBox="0 0 16 16">
-              <path d="M4 1.5v2M12 1.5v2M2.5 6h11M3 3h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
-                fill="none" stroke="currentColor" strokeWidth="1.25" />
-            </svg>
+            <span>{value || (chinese ? "请选择" : "Choose date")}</span>
+            <CalendarIcon aria-hidden="true" />
           </PopoverTrigger>
           <PopoverContent
-            aria-label={`选择${label}`}
+            aria-label={chinese ? `选择${label}` : `Choose ${label}`}
             initialFocus
             role="dialog"
           >
@@ -470,6 +474,7 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
               mode="single"
               onSelect={(date) => {
                 if (!date) return;
+                dateTriggerRef.current?.focus();
                 field.set(formatDateValue(date), path, true);
                 setOpen(false);
               }}
