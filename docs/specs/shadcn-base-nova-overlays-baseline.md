@@ -8,8 +8,13 @@ Issue #79 沿用 Issue #75 固定的 shadcn-ui/ui commit
 Nova style 与 neutral theme。
 
 机器可读的上游和本地 SHA-256 位于
-[`shadcn-base-nova-overlays-baseline.json`](./shadcn-base-nova-overlays-baseline.json)，
-并由 `pnpm ui:verify` 强制核对。wrapper 保留官方 Base UI composition、slot、
+[`shadcn-base-nova-overlays-baseline.json`](./shadcn-base-nova-overlays-baseline.json)。
+`pnpm ui:verify` 会按 commit、provenance path 精确对照独立的
+[`ui-provenance-expected.mjs`](../../scripts/ui-provenance-expected.mjs) 可信 registry，
+而非仅校验 hash 格式或以 manifest 自身作为 expected source。该共享 registry
+覆盖当前 Button、form controls 和 overlays，后续组件 provenance 也加入同一门禁。
+unit architecture test 会临时替换为另一个合法 SHA-256 并确认校验失败。
+wrapper 保留官方 Base UI composition、slot、
 `data-size`、Button variant 和默认尺寸。`overlays-nova.css` 是 pinned utility
 组合的机械静态展开，不是 renderer 重新设计的主题：
 
