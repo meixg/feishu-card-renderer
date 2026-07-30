@@ -699,7 +699,7 @@ test("mobile choices use a keyboard-safe Drawer without horizontal overflow", as
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=mobile-choice");
   const host = page.locator("#case-choices-mobile");
   const root = host.locator(".fcr-root");
   expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
@@ -722,7 +722,7 @@ test("mobile Drawer disables its motion under reduced-motion preference", async 
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=mobile-choice");
   const host = page.locator("#case-choices-mobile");
   await host.getByRole("button", {
     name: "Multiple choices，打开选项",
@@ -745,7 +745,7 @@ test("mobile text choices update exactly once for pointer, keyboard, and emulate
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const input of ["pointer", "keyboard", "touch"] as const) {
-    await page.goto("/tests/visual/");
+    await page.goto("/tests/visual/?case=mobile-choice");
     const host = page.locator("#case-choices-mobile");
     const trigger = host.getByRole("button", {
       name: "Searchable Combobox，打开选项",
@@ -807,7 +807,7 @@ test("400px dark mobile Drawer covers long searchable and resolved person option
   page,
 }) => {
   await page.setViewportSize({ width: 400, height: 844 });
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=mobile-choice");
   const host = page.locator("#case-choices-mobile-dark");
   const root = host.locator(".fcr-root");
   await host.getByRole("button", {
@@ -842,7 +842,7 @@ test("390px mobile person Drawer shows ready, loading, and error placeholders sa
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=mobile-choice");
   const host = page.locator("#case-choices-mobile-person-resources");
   await host.getByRole("button", {
     name: "Person resources，打开选项",
@@ -896,7 +896,7 @@ test("mobile Drawer follows a simulated soft-keyboard visual viewport", async ({
       },
     });
   });
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=mobile-choice");
   const host = page.locator("#case-choices-mobile");
   const root = host.locator(".fcr-root");
   const trigger = host.getByRole("button", {
@@ -1008,7 +1008,7 @@ test("mobile Drawer closes by Esc, close button, and downward swipe with focus r
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/tests/visual/");
+  await page.goto("/tests/visual/?case=mobile-choice");
   const host = page.locator("#case-choices-mobile");
   const trigger = host.getByRole("button", {
     name: "Multiple choices，打开选项",

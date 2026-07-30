@@ -514,6 +514,32 @@ createRoot(document.getElementById("root")!).render(
             />
           </section>
         </main>
+      : isolatedVisualCase === "mobile-choice"
+        ? <main style={{ display: "grid", gap: 24 }}>
+            <ChoiceVisualCase id="case-choices-mobile" width={390} />
+            <ChoiceVisualCase
+              colorScheme="dark"
+              id="case-choices-mobile-dark"
+              width={400}
+            />
+            <section
+              id="case-choices-mobile-person-resources"
+              style={{ width: 390 }}
+            >
+              <CardRenderer
+                card={personResourceChoiceCard}
+                device="mobile"
+                onAction={() => {}}
+                resolvePerson={(personId) => {
+                  if (personId === "opaque-loading") return pendingPerson;
+                  if (personId === "opaque-error") {
+                    return Promise.reject(new Error("private resolver failure"));
+                  }
+                  return { id: personId, name: "Resolved person" };
+                }}
+              />
+            </section>
+          </main>
       : isolatedVisualCase === "table-pagination"
         ? <main style={{ display: "grid", gap: 24 }}>
             {([
@@ -631,6 +657,17 @@ createRoot(document.getElementById("root")!).render(
           })}
         />
       </section>
+      <section id="case-choices-mobile" style={{ width: 390 }}>
+        <CardRenderer
+          card={choiceVisualCard}
+          device="mobile"
+          onAction={() => {}}
+          resolvePerson={(id) => ({
+            id,
+            name: id === "ou_ada" ? "Ada Lovelace" : "Grace Hopper",
+          })}
+        />
+      </section>
       <SelectImageResourceCase
         id="case-select-image-ready"
         resolveImage={() => selectImageResourceUrl}
@@ -659,26 +696,6 @@ createRoot(document.getElementById("root")!).render(
           widthMode="fill"
         />
       </div>
-      <ChoiceVisualCase id="case-choices-mobile" width={390} />
-      <ChoiceVisualCase
-        colorScheme="dark"
-        id="case-choices-mobile-dark"
-        width={400}
-      />
-      <section id="case-choices-mobile-person-resources" style={{ width: 390 }}>
-        <CardRenderer
-          card={personResourceChoiceCard}
-          device="mobile"
-          onAction={() => {}}
-          resolvePerson={(personId) => {
-            if (personId === "opaque-loading") return pendingPerson;
-            if (personId === "opaque-error") {
-              return Promise.reject(new Error("private resolver failure"));
-            }
-            return { id: personId, name: "Resolved person" };
-          }}
-        />
-      </section>
     </main>}
   </React.StrictMode>,
 );
