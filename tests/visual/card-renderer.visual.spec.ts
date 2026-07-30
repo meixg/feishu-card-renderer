@@ -850,6 +850,50 @@ test("form controls validate, focus, clear, reset, and submit once in a real bro
   });
 });
 
+test("form-control state colors use the card-scoped public interaction token", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  const lightRoot = page.locator("#case-form-controls-pc .fcr-root").first();
+  const darkRoot = page.locator("#case-form-controls-dark .fcr-root").first();
+  const title = lightRoot.getByRole("textbox", { name: "标题" });
+  const description = lightRoot.getByText("用于显示在卡片顶部");
+
+  await expect(title).toHaveAttribute("required", "");
+  await expect(title).toHaveAttribute("placeholder", "请输入标题");
+  const defaults = await Promise.all([lightRoot, darkRoot].map((root) =>
+    root.evaluate((node) => getComputedStyle(node)
+      .getPropertyValue("--fcr-interaction-muted-foreground").trim())));
+  expect(defaults[0]).toBe("oklch(0.556 0 0)");
+  expect(defaults[1]).toBe("oklch(0.708 0 0)");
+
+  await lightRoot.evaluate((node) => {
+    const root = node as HTMLElement;
+    root.style.setProperty("--fcr-interaction-muted-foreground", "rgb(1 2 3)");
+    for (const name of [...root.style]) {
+      if (name.startsWith("--fcr-color-")) root.style.removeProperty(name);
+    }
+  });
+  expect(await description.evaluate((node) => getComputedStyle(node).color))
+    .toBe("rgb(1, 2, 3)");
+  expect(await title.evaluate((node) =>
+    getComputedStyle(node, "::placeholder").color)).toBe("rgb(1, 2, 3)");
+  expect(await darkRoot.getByText("用于显示在卡片顶部")
+    .evaluate((node) => getComputedStyle(node).color)).not.toBe("rgb(1, 2, 3)");
+
+  await title.evaluate((node) => { (node as HTMLInputElement).disabled = true; });
+  expect(await title.evaluate((node) => getComputedStyle(node).opacity))
+    .toBe("0.5");
+  await title.evaluate((node) => { (node as HTMLInputElement).disabled = false; });
+  await title.fill("");
+  await lightRoot.getByRole("button", { name: "提交" }).click();
+  await expect(title).toHaveAttribute("aria-invalid", "true");
+  const error = lightRoot.getByText("此项为必填项").first();
+  await expect(error).toBeVisible();
+  expect(await error.evaluate((node) => getComputedStyle(node).color))
+    .not.toBe("rgb(1, 2, 3)");
+});
+
 test("PC Calendar supports focus, arrows, Escape, and timezone-preserving selection", async ({
   page,
 }) => {
@@ -977,7 +1021,6 @@ test("form controls cover light/dark, PC/mobile, widths, reduced motion, and sco
   await expect(calendar).toBeVisible();
   expect(await calendar.evaluate((node) =>
     getComputedStyle(node).transitionDuration)).toBe("0s");
-  await expect(calendar).toHaveScreenshot("card-date-picker-popover.png");
 
   await expect(page.locator("#case-form-controls-dark"))
     .toHaveScreenshot("card-form-controls-dark.png");

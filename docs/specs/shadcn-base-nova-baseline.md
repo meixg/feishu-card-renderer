@@ -49,5 +49,8 @@ RadioGroup 的 scoped adaptation。React 18 ref 转发、每卡
 `--fcr-interaction-*` 映射和 `.fcr-*` 命名空间属于打包适配；协议 Field 组合、
 错误关联、图片与文字排列、表单状态和动作仍由 renderer 拥有。固定快照的标准
 32px Input、64px 最小 Textarea、16px Checkbox/Radio、focus/invalid/disabled
-状态集中在 `src/styles/form-controls-nova.css`。`select_img` 不使用 shadcn
-Card shell，也不保留旧选中边框主题。
+状态集中在 `src/styles/form-controls-nova.css`。该文件还公开
+`--fcr-interaction-muted-foreground`，其 neutral light/dark 默认值映射到私有
+`--fcr-ui-muted-foreground`；宿主可在单张 `.fcr-root` 上覆盖公开变量，且该映射
+不依赖任何 `--fcr-color-*` 内容 token。`select_img` 不使用 shadcn Card shell，
+也不保留旧选中边框主题。

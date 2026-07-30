@@ -175,7 +175,10 @@ schema 子路径、协议值和 `CardAction` 才是集成兼容边界。
 
 Input、Textarea、Field、Label、Checkbox、RadioGroup、Checker、原生
 time/datetime 与 `select_img` 的视觉来自固定 `base-nova` 适配。宿主不应覆盖这些
-内部 wrapper class；品牌色只通过 `--fcr-interaction-*` 调整。图片选择中的图片、
+内部 wrapper class；品牌色只通过 `--fcr-interaction-*` 调整。表单说明和
+placeholder 的次要前景色可在目标 `.fcr-root` 上覆盖
+`--fcr-interaction-muted-foreground`，覆盖只作用于该卡且不需要定义任何
+`--fcr-color-*` 内容 token。图片选择中的图片、
 文字、resolver loading/error 占位和卡片宽度布局仍由 renderer 管理，shadcn
 wrapper 只负责选择状态。原生 time/datetime 仍输出浏览器 IANA 时区，宿主无需也
 不能通过样式 token 改变协议值。

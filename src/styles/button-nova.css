@@ -22,7 +22,6 @@
     --fcr-ui-secondary: var(--fcr-interaction-secondary);
     --fcr-ui-secondary-foreground: var(--fcr-interaction-secondary-foreground);
     --fcr-ui-muted: var(--fcr-interaction-muted);
-    --fcr-ui-muted-foreground: var(--fcr-color-text-secondary);
     --fcr-ui-border: var(--fcr-interaction-border);
     --fcr-ui-input: var(--fcr-interaction-input);
     --fcr-ui-ring: var(--fcr-interaction-focus);

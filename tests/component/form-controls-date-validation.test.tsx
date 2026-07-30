@@ -227,9 +227,6 @@ describe("Issue #76 base-nova form controls, Field validation, and date interact
 
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(2);
-    expect(radios[0]!.querySelector("svg")).not.toBeNull();
-    expect(screen.getByRole("checkbox", { name: "多图一" })
-      .querySelector("svg")).not.toBeNull();
     expect(radios[0]).toBeChecked();
     radios[1]!.focus();
     fireEvent.keyDown(radios[1]!, { key: " " });

@@ -1,4 +1,11 @@
 @layer components {
+  .fcr-root {
+    --fcr-interaction-muted-foreground: oklch(0.556 0 0);
+    --fcr-ui-muted-foreground: var(--fcr-interaction-muted-foreground);
+  }
+  .fcr-theme-dark {
+    --fcr-interaction-muted-foreground: oklch(0.708 0 0);
+  }
   .fcr-ui-field {
     display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 8px;
   }
@@ -7,6 +14,9 @@
   }
   .fcr-ui-field-description {
     margin: 0; color: var(--fcr-ui-muted-foreground); font-size: 12px;
+  }
+  .fcr-ui-field > .fcr-field-tips {
+    color: var(--fcr-ui-muted-foreground);
   }
   .fcr-ui-field-error {
     margin: 0; color: var(--fcr-ui-destructive); font-size: 12px;

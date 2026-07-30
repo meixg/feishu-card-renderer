@@ -286,6 +286,54 @@ describe("interactive components and CardAction", () => {
     }));
   });
 
+  it("keeps Checker immediate actions behind confirm and form reset behind submit", async () => {
+    const onAction = vi.fn();
+    render(<CardRenderer onAction={onAction} card={{ schema: "2.0", body: {
+      elements: [
+        { tag: "checker", name: "notify", text: {
+          tag: "plain_text", content: "启用通知",
+        }, confirm: {
+          title: { tag: "plain_text", content: "确认通知" },
+          text: { tag: "plain_text", content: "继续？" },
+        }, behaviors: [{ type: "callback" }] },
+        { tag: "form", name: "preferences", elements: [
+          { tag: "checker", name: "saved", checked: true, text: {
+            tag: "plain_text", content: "保存设置",
+          } },
+          { tag: "button", form_action_type: "reset", text: {
+            tag: "plain_text", content: "重置设置",
+          } },
+          { tag: "button", form_action_type: "submit", text: {
+            tag: "plain_text", content: "提交设置",
+          } },
+        ] },
+      ],
+    } }} />);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "启用通知" }));
+    expect(onAction).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole("alertdialog", {
+      name: "确认通知",
+    })).getByRole("button", { name: "确认" }));
+    await waitFor(() => {
+      expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+        source: expect.objectContaining({ tag: "checker", name: "notify" }),
+        value: true,
+      }));
+    });
+
+    const saved = screen.getByRole("checkbox", { name: "保存设置" });
+    fireEvent.click(saved);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "重置设置" }));
+    expect(saved).toBeChecked();
+    expect(onAction).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "提交设置" }));
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      formValue: { saved: true },
+    }));
+  });
+
   it.each([
     ["PC prohibition", "lark://msgcard/unsupported_action", "https://default.example", undefined],
     ["missing PC fallback", undefined, "https://default.example", "https://default.example/"],
