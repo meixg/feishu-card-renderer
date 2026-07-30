@@ -631,26 +631,6 @@ createRoot(document.getElementById("root")!).render(
           })}
         />
       </section>
-      <ChoiceVisualCase id="case-choices-mobile" width={390} />
-      <ChoiceVisualCase
-        colorScheme="dark"
-        id="case-choices-mobile-dark"
-        width={400}
-      />
-      <section id="case-choices-mobile-person-resources" style={{ width: 390 }}>
-        <CardRenderer
-          card={personResourceChoiceCard}
-          device="mobile"
-          onAction={() => {}}
-          resolvePerson={(personId) => {
-            if (personId === "opaque-loading") return pendingPerson;
-            if (personId === "opaque-error") {
-              return Promise.reject(new Error("private resolver failure"));
-            }
-            return { id: personId, name: "Resolved person" };
-          }}
-        />
-      </section>
       <SelectImageResourceCase
         id="case-select-image-ready"
         resolveImage={() => selectImageResourceUrl}
@@ -679,6 +659,26 @@ createRoot(document.getElementById("root")!).render(
           widthMode="fill"
         />
       </div>
+      <ChoiceVisualCase id="case-choices-mobile" width={390} />
+      <ChoiceVisualCase
+        colorScheme="dark"
+        id="case-choices-mobile-dark"
+        width={400}
+      />
+      <section id="case-choices-mobile-person-resources" style={{ width: 390 }}>
+        <CardRenderer
+          card={personResourceChoiceCard}
+          device="mobile"
+          onAction={() => {}}
+          resolvePerson={(personId) => {
+            if (personId === "opaque-loading") return pendingPerson;
+            if (personId === "opaque-error") {
+              return Promise.reject(new Error("private resolver failure"));
+            }
+            return { id: personId, name: "Resolved person" };
+          }}
+        />
+      </section>
     </main>}
   </React.StrictMode>,
 );
