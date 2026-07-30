@@ -91,7 +91,7 @@ jobs:
               rm -rf test-results
               set +e
               pnpm exec playwright test --workers=1 \
-                --grep 'Button tokens and confirm inherit each card theme|form controls cover validation' \
+                --grep 'Button tokens|form controls' \
                 > "$run_dir/playwright.log" 2>&1
               status=$?
               set -e
