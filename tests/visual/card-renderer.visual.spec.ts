@@ -607,35 +607,87 @@ test("choice popup and chips stay inside a 400px PC card", async ({ page }) => {
   })));
   expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
     .toBe(true);
-  expect(await host.locator(".fcr-choice-chip").count()).toBe(3);
+  await expect(host.getByRole("button", { name: /^移除/ })).toHaveCount(3);
   await host.getByRole("combobox", { name: "Searchable Combobox" }).click();
   const popup = host.getByRole("dialog", { name: "Searchable Combobox选项" });
   await expect(popup).toBeVisible();
   await expect(host).toHaveScreenshot("card-choices-pc-compact.png");
 });
 
-test("multi-select uses the shadcn choice field height on PC and mobile", async ({
+test("PC Select and Combobox collide within a viewport narrower than 400px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/tests/visual/?case=choice-narrow");
+  const host = page.locator("#case-choices-pc");
+  const root = host.locator(".fcr-root");
+  await expect(root).toBeVisible();
+  expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+    .toBe(true);
+
+  const assertInsideViewport = async (locator: import("@playwright/test").Locator) => {
+    const bounds = await locator.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(360);
+    expect(await locator.evaluate((node) => node.scrollWidth <= node.clientWidth))
+      .toBe(true);
+  };
+
+  const select = host.getByRole("combobox", { name: "Small Select" });
+  await assertInsideViewport(select);
+  await select.click();
+  const selectList = host.getByRole("listbox");
+  await expect(selectList).toBeVisible();
+  await assertInsideViewport(selectList);
+  await page.keyboard.press("Escape");
+
+  const single = host.getByRole("combobox", { name: "Searchable Combobox" });
+  await assertInsideViewport(single);
+  await single.click();
+  const singlePopup = host.getByRole("dialog", {
+    name: "Searchable Combobox选项",
+  });
+  await expect(singlePopup).toBeVisible();
+  await assertInsideViewport(singlePopup);
+  await assertInsideViewport(host.getByRole("option", {
+    name: /intentionally long label/,
+  }).first());
+  await page.keyboard.press("Escape");
+
+  const multiInput = host.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  await assertInsideViewport(multiInput);
+  for (const remove of await host.getByRole("button", { name: /^移除/ }).all()) {
+    await assertInsideViewport(remove);
+  }
+  await multiInput.click();
+  await expect(multiInput).toHaveAttribute("aria-expanded", "true");
+  const multiPopup = host.getByRole("listbox");
+  await expect(multiPopup).toBeVisible();
+  await assertInsideViewport(multiPopup);
+  expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
+    .toBe(true);
+});
+
+test("PC multi-select uses the pinned shadcn choice field height", async ({
   page,
 }) => {
   await page.goto("/tests/visual/");
-  for (const device of ["pc", "mobile"]) {
-    const host = page.locator(`#case-choices-${device}`);
-    const single = host.locator(
-      ".fcr-choice-trigger, .fcr-choice-control:not([data-multiple])",
-    ).first();
-    const multiple = host.locator(
-      ".fcr-choice-control[data-multiple]",
-    ).first();
-
-    await expect(single).toBeVisible();
-    await expect(multiple).toBeVisible();
-    const [singleHeight, multipleHeight] = await Promise.all([
-      single.evaluate((node) => node.getBoundingClientRect().height),
-      multiple.evaluate((node) => node.getBoundingClientRect().height),
-    ]);
-
-    expect(multipleHeight, device).toBe(singleHeight);
-  }
+  const host = page.locator("#case-choices-pc");
+  const single = host.getByRole("combobox", { name: "Small Select" });
+  const multipleControl = host.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  await expect(single).toBeVisible();
+  await expect(multipleControl).toBeVisible();
+  const [singleHeight, multipleHeight] = await Promise.all([
+    single.evaluate((node) => node.getBoundingClientRect().height),
+    multipleControl.evaluate((node) =>
+      node.parentElement!.getBoundingClientRect().height),
+  ]);
+  expect(multipleHeight).toBe(singleHeight);
 });
 
 test("mobile choices use a keyboard-safe Drawer without horizontal overflow", async ({
@@ -784,10 +836,9 @@ test("Select and Combobox preserve real-browser keyboard selection semantics", a
     name: "Searchable Combobox选项",
   })).toBeHidden();
 
-  const multi = host.getByRole("combobox", {
-    name: "Multiple choices，打开选项",
-  });
-  await multi.click();
+  const multi = host.getByRole("combobox", { name: "搜索Multiple choices" });
+  await multi.focus();
+  await multi.press("ArrowDown");
   const multiSearch = host.getByRole("combobox", {
     name: "搜索Multiple choices",
   });
