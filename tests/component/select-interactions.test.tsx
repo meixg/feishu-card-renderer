@@ -456,27 +456,62 @@ describe("Issue #77 PC Select and Combobox with mobile regression coverage", () 
     const container = document.createElement("div");
     container.innerHTML = html;
     document.body.append(container);
-    const before = container.querySelector("[data-fcr-portal-host]");
+    const server = within(container);
+    const portalHostBefore = container.querySelector("[data-fcr-portal-host]");
+    const smallBefore = server.getByRole("combobox", { name: "SSR small" });
+    const largeBefore = server.getByRole("combobox", { name: "SSR large" });
+    const multiBefore = server.getByRole("combobox", { name: "搜索SSR multi" });
+    expect(smallBefore).toHaveAttribute("aria-expanded", "false");
+    expect(largeBefore).toHaveAttribute("aria-expanded", "false");
+    expect(multiBefore).toHaveAttribute("aria-expanded", "false");
+    expect(server.queryByRole("listbox")).not.toBeInTheDocument();
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const root = hydrateRoot(container, <CardRenderer card={card} onAction={onAction} />);
     await act(async () => {});
 
-    expect(container.querySelector("[data-fcr-portal-host]")).toBe(before);
+    const hydrated = within(container);
+    const small = hydrated.getByRole("combobox", { name: "SSR small" });
+    const large = hydrated.getByRole("combobox", { name: "SSR large" });
+    const multi = hydrated.getByRole("combobox", { name: "搜索SSR multi" });
+    expect(small).toBe(smallBefore);
+    expect(large).toBe(largeBefore);
+    expect(multi).toBe(multiBefore);
+    expect(container.querySelector("[data-fcr-portal-host]")).toBe(portalHostBefore);
     expect(consoleError.mock.calls.flat().join(" ")).not.toMatch(
       /hydration|didn't match|server rendered/i,
     );
-    fireEvent.click(screen.getByRole("combobox", { name: "SSR small" }));
+
+    small.focus();
+    fireEvent.click(small);
+    expect(small).toHaveAttribute("aria-expanded", "true");
     activateOption("Small B");
-    fireEvent.click(screen.getByRole("combobox", { name: "SSR large" }));
+    expect(small).toHaveTextContent("Small B");
+    expect(small).toHaveAttribute("aria-expanded", "false");
+    expect(hydrated.queryByRole("listbox")).not.toBeInTheDocument();
+    await waitFor(() => expect(small).toHaveFocus());
+
+    large.focus();
+    fireEvent.click(large);
+    expect(large).toHaveAttribute("aria-expanded", "true");
     activateOption("Large 7");
-    fireEvent.keyDown(screen.getByRole("combobox", { name: "搜索SSR multi" }), {
-      key: "ArrowDown",
-    });
+    expect(large).toHaveTextContent("Large 7");
+    expect(large).toHaveAttribute("aria-expanded", "false");
+    expect(hydrated.queryByRole("combobox", { name: "搜索SSR large" }))
+      .not.toBeInTheDocument();
+    await waitFor(() => expect(large).toHaveFocus());
+
+    multi.focus();
+    fireEvent.keyDown(multi, { key: "ArrowDown" });
+    expect(multi).toHaveAttribute("aria-expanded", "true");
     activateOption("Multi A");
     fireEvent.click(screen.getByRole("button", { name: "完成" }));
-    expect(screen.getByRole("combobox", { name: "搜索SSR multi" }))
-      .toHaveAttribute("aria-expanded", "false");
-    expect(container.querySelector("[data-fcr-portal-host]")).toBe(before);
+    expect(hydrated.getByRole("button", { name: "移除 Multi A" }))
+      .toBeInTheDocument();
+    expect(multi).toHaveAttribute("aria-expanded", "false");
+    expect(hydrated.queryByRole("button", { name: "完成" }))
+      .not.toBeInTheDocument();
+    await waitFor(() => expect(multi).toHaveFocus());
+    expect(container.querySelector("[data-fcr-portal-host]")).toBe(portalHostBefore);
     await act(async () => root.unmount());
     consoleError.mockRestore();
     container.remove();
