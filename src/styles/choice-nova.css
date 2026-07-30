@@ -8,7 +8,7 @@
   [data-slot="combobox-trigger"],
   [data-slot="combobox-chips"] {
     box-sizing: border-box; display: flex; width: 100%; min-width: 0;
-    min-height: 32px; align-items: center; gap: 6px;
+    height: 32px; align-items: center; gap: 6px;
     border: 1px solid var(--fcr-ui-input);
     border-radius: calc(var(--fcr-ui-radius) - 2px);
     outline: none; background: var(--fcr-ui-background);

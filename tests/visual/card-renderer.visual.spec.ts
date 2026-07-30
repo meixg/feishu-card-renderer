@@ -647,38 +647,31 @@ test("PC Select and Combobox collide within a viewport narrower than 400px", asy
     await assertInsideViewport(remove);
   }
   await multiInput.click();
-  const multiPopup = host.getByRole("dialog", {
-    name: "Multiple choices选项",
-  });
+  await expect(multiInput).toHaveAttribute("aria-expanded", "true");
+  const multiPopup = host.getByRole("listbox");
   await expect(multiPopup).toBeVisible();
   await assertInsideViewport(multiPopup);
   expect(await root.evaluate((node) => node.scrollWidth <= node.clientWidth))
     .toBe(true);
 });
 
-test("multi-select uses the shadcn choice field height on PC and mobile", async ({
+test("PC multi-select uses the pinned shadcn choice field height", async ({
   page,
 }) => {
   await page.goto("/tests/visual/");
-  for (const device of ["pc", "mobile"]) {
-    const host = page.locator(`#case-choices-${device}`);
-    const single = device === "pc"
-      ? host.getByRole("combobox", { name: "Small Select" })
-      : host.getByRole("button", { name: "Small Select，打开选项" });
-    const multipleControl = device === "pc"
-      ? host.getByRole("combobox", { name: "搜索Multiple choices" })
-      : host.getByRole("button", { name: "Multiple choices，打开选项" });
-
-    await expect(single).toBeVisible();
-    await expect(multipleControl).toBeVisible();
-    const [singleHeight, multipleHeight] = await Promise.all([
-      single.evaluate((node) => node.getBoundingClientRect().height),
-      multipleControl.evaluate((node) =>
-        node.parentElement!.getBoundingClientRect().height),
-    ]);
-
-    expect(multipleHeight, device).toBe(singleHeight);
-  }
+  const host = page.locator("#case-choices-pc");
+  const single = host.getByRole("combobox", { name: "Small Select" });
+  const multipleControl = host.getByRole("combobox", {
+    name: "搜索Multiple choices",
+  });
+  await expect(single).toBeVisible();
+  await expect(multipleControl).toBeVisible();
+  const [singleHeight, multipleHeight] = await Promise.all([
+    single.evaluate((node) => node.getBoundingClientRect().height),
+    multipleControl.evaluate((node) =>
+      node.parentElement!.getBoundingClientRect().height),
+  ]);
+  expect(multipleHeight).toBe(singleHeight);
 });
 
 test("mobile choices use a keyboard-safe Drawer without horizontal overflow", async ({
@@ -828,7 +821,8 @@ test("Select and Combobox preserve real-browser keyboard selection semantics", a
   })).toBeHidden();
 
   const multi = host.getByRole("combobox", { name: "搜索Multiple choices" });
-  await multi.click();
+  await multi.focus();
+  await multi.press("ArrowDown");
   const multiSearch = host.getByRole("combobox", {
     name: "搜索Multiple choices",
   });

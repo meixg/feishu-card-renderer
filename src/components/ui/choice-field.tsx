@@ -311,6 +311,8 @@ function useFilteredOptions(
 function PopupCombobox(props: ChoiceFieldProps) {
   const portalHost = useUiPortalHost();
   const anchorRef = useRef<HTMLDivElement>(null);
+  const doneRef = useRef<HTMLButtonElement>(null);
+  const multiInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useFilteredOptions(props.options, query, props.locale);
@@ -403,10 +405,16 @@ function PopupCombobox(props: ChoiceFieldProps) {
       <ChoiceStatus locale={props.locale} pc total={filtered.total} />
       {props.multiple && (
         <Button
+          ref={doneRef}
           className="fcr-choice-pc-done"
           onClick={(event) => {
             event.stopPropagation();
             setOpen(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Tab" || !event.shiftKey) return;
+            event.preventDefault();
+            multiInputRef.current?.focus();
           }}
           type="button"
         >
@@ -449,13 +457,21 @@ function PopupCombobox(props: ChoiceFieldProps) {
                 </span>
               )}
               <ComboboxChipsInput
-                ref={props.controlRef as (node: HTMLInputElement | null) => void}
+                ref={(node) => {
+                  multiInputRef.current = node;
+                  props.controlRef?.(node);
+                }}
                 aria-describedby={props.describedBy}
                 aria-invalid={props.invalid || undefined}
                 aria-label={choiceCopy(props.locale).search(props.label)}
                 aria-required={props.required}
                 autoComplete="off"
                 disabled={props.disabled}
+                onKeyDown={(event) => {
+                  if (event.key !== "Tab" || event.shiftKey || !open) return;
+                  event.preventDefault();
+                  doneRef.current?.focus();
+                }}
                 placeholder={tokens.length === 0 ? props.placeholder : ""}
               />
             </>}
