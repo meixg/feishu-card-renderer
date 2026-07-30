@@ -278,7 +278,7 @@ describe("Issue #80 base-nova date Popover and Calendar", () => {
     fireEvent.click(nextMonth);
     expect(within(dialog).getByRole("grid", { name: "2026年7月" }))
       .toBeInTheDocument();
-    expect(trigger.querySelector(".lucide-calendar")).not.toBeNull();
+    expect(trigger).toHaveAccessibleName("预约日期：2026-07-28");
     const selected = within(dialog).getByRole("button", {
       name: "2026-07-28，已选择",
     });
