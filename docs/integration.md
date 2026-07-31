@@ -187,7 +187,16 @@ wrapper 只负责选择状态。原生 time/datetime 仍输出浏览器 IANA 时
 [Button provenance](specs/shadcn-base-nova-baseline.md) 和
 [form-control provenance](specs/shadcn-base-nova-form-controls-baseline.md) 和
 [overlay provenance](specs/shadcn-base-nova-overlays-baseline.md)；
-`pnpm ui:verify` 会同时验证三份 manifest。
+`pnpm ui:verify` 会验证全部交互家族 manifest 与精确本地 owner 集合。
+
+升级固定快照时，维护者必须在独立变更中记录新的上游 commit、CLI/preset 与每个
+reviewed upstream blob，逐个审查本地 wrapper/style adaptation，更新对应 manifest
+和只读 expected registry，再运行 mutation tests 与完整视觉矩阵。不要从 mutable
+shadcn 网站复制当前输出，也不要自动覆盖 renderer 的 portal、locale、安全或协议
+owner。最终 legacy inventory 位于
+[`docs/specs/legacy-interaction-inventory.json`](specs/legacy-interaction-inventory.json)；
+它与 `styles.css` 的实际 import owner 由 CSS AST 对照。消费者始终只需引入
+`feishu-card-renderer/styles.css`，无需 Tailwind、shadcn CLI/config 或 raw token。
 
 ## Public preview 限制
 

@@ -11,6 +11,7 @@ import { resolve } from "node:path";
 import { expect, it } from "vitest";
 
 import {
+  verifyLegacyInteractionInventory,
   verifyUiArchitecture,
   verifyUiProvenance,
 } from "../../scripts/verify-ui-architecture.mjs";
@@ -26,6 +27,8 @@ const mobileDrawerManifest =
   "docs/specs/shadcn-base-nova-mobile-drawer-baseline.json";
 const tablePaginationManifest =
   "docs/specs/shadcn-base-nova-table-pagination-baseline.json";
+const legacyInventory =
+  "docs/specs/legacy-interaction-inventory.json";
 
 async function mutateLocalManifest(
   manifest: string,
@@ -521,4 +524,67 @@ it("rejects a self-approved Issue #82 Collapsible upstream mutation", async () =
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+it("keeps the final legacy inventory synchronized with CSS owners", async () => {
+  expect(await verifyLegacyInteractionInventory()).toEqual([]);
+});
+
+it("rejects a legacy interaction selector returning to shared styles", async () => {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-legacy-css-"));
+  try {
+    await cp(resolve(root, "docs"), resolve(temporaryRoot, "docs"), {
+      recursive: true,
+    });
+    await cp(resolve(root, "src"), resolve(temporaryRoot, "src"), {
+      recursive: true,
+    });
+    await writeFile(
+      resolve(temporaryRoot, "src/styles.css"),
+      `${await readFile(resolve(root, "src/styles.css"), "utf8")}
+@layer components { .fcr-choice-popup { border: 1px solid red; } }
+`,
+    );
+    expect(await verifyLegacyInteractionInventory({
+      manifestRoot: temporaryRoot,
+      localRoot: temporaryRoot,
+    })).toContain(
+      ".fcr-choice-popup: removed legacy selector returned to shared styles",
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+it("rejects legacy inventory owner mutation", async () => {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-legacy-owner-"));
+  try {
+    await cp(resolve(root, "docs"), resolve(temporaryRoot, "docs"), {
+      recursive: true,
+    });
+    const path = resolve(temporaryRoot, legacyInventory);
+    const inventory = JSON.parse(await readFile(path, "utf8")) as {
+      visualOwners: string[];
+    };
+    inventory.visualOwners.pop();
+    await writeFile(path, `${JSON.stringify(inventory, null, 2)}\n`);
+    expect(await verifyLegacyInteractionInventory({
+      manifestRoot: temporaryRoot,
+      localRoot: root,
+    })).toContain(
+      "legacy inventory visualOwners must exactly match stylesheet imports",
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+it("rejects hashing the shared stylesheet as wrapper provenance", async () => {
+  const violations = await mutateChoiceManifest((provenance) => {
+    provenance.localFiles["src/styles.css"] = "a".repeat(64);
+  });
+  expect(violations).toEqual(expect.arrayContaining([
+    "PC choice fields: shared styles.css must not be provenance-hashed",
+    "PC choice fields reviewed local adaptation paths drifted",
+  ]));
 });

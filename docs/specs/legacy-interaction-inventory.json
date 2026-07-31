@@ -1,0 +1,41 @@
+{
+  "reviewedAt": "2026-07-31",
+  "scope": "Final #74 interaction-theme contraction",
+  "visualOwners": [
+    "src/styles/button-nova.css",
+    "src/styles/form-controls-nova.css",
+    "src/styles/calendar-nova.css",
+    "src/styles/table-pagination-nova.css",
+    "src/styles/choice-nova.css",
+    "src/styles/drawer-nova.css",
+    "src/styles/overlays-nova.css",
+    "src/styles/media-dialog-nova.css",
+    "src/styles/containers-nova.css"
+  ],
+  "removedLegacySelectors": [
+    ".fcr-choice-trigger",
+    ".fcr-choice-positioner",
+    ".fcr-choice-popup",
+    ".fcr-choice-done"
+  ],
+  "movedToPinnedOwnerSelectors": [
+    ".fcr-choice-control",
+    ".fcr-choice-open",
+    ".fcr-choice-search",
+    ".fcr-choice-option",
+    ".fcr-choice-indicator",
+    ".fcr-choice-status",
+    ".fcr-choice-chips",
+    ".fcr-choice-chip",
+    ".fcr-choice-chip-count"
+  ],
+  "contentOwnersExcludedFromContraction": [
+    "card shell and header",
+    "Markdown and rich-text content",
+    "protocol table cells and row density",
+    "images, media content and chart canvases",
+    "person content",
+    "column/form/container protocol layout",
+    "protocol custom colors and validated inline lengths"
+  ]
+}

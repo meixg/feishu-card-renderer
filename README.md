@@ -262,6 +262,16 @@ Base UI 提供无样式 primitive 与虚拟键盘行为，固定 shadcn wrapper/
 保留本地 `page_size` 行切片与语义 table，使用 shadcn Pagination/Button composition
 和具名 Lucide chevron；表格内容可独立横向滚动，分页控件保持在卡片宽度内。
 
+最终收缩以可执行的
+[legacy interaction inventory](docs/specs/legacy-interaction-inventory.json)
+为准：共享 `styles.css` 不再拥有选择控件的颜色、边框、圆角、阴影、字体、
+focus、selected 或旧 34px 密度；这些视觉只存在于固定快照的内部 Nova owner。
+共享样式继续负责卡片/Markdown/table/media 等协议内容，以及宽度、overflow、
+truncation、portal 层级、碰撞和响应式 placement 等集成布局。`pnpm ui:verify`
+通过 TypeScript AST、CSS AST 和精确 provenance key/hash 检查阻止旧 selector、
+第二套 wrapper、Base UI 越界 import 与 owner 漂移；共享 `styles.css` 本身不作为
+wrapper provenance 哈希，避免把无关内容样式变化绑进交互快照。
+
 Issue #75 补齐了此前 compatibility matrix 标为缺口、现已由官方资料验证的
 Button `type/size/width` 协议支持。枚举与视觉类别
 依据[飞书新版卡片按钮说明](https://open.feishu.cn/document/feishu-cards/feishu-card-cardkit/configure-card-variables?lang=zh-CN)，

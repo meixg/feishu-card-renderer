@@ -79,7 +79,7 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/interactive/interactive.tsx":
       "8521d64fe6eb046e8f0379fb6e2c6f1b6a4d4ffb02104ea4cf7f7ff52adb6230",
     "src/styles/choice-nova.css":
-      "ad543220c8a6022733cfe874d9640101d6d2f4941c9c0061328360941a13e0ff",
+      "ac4e78be862fd406ef2d1e1cff07309b93fd603ef24d4c44ca9c1abc23f2746e",
   }),
   "mobile choice Drawer": Object.freeze({
     "src/components/ui/drawer.tsx":
@@ -89,7 +89,7 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/styles/drawer-nova.css":
       "5c22078c4287c50eea9d3461b8f7457e3d5aeacf2851261c801008b11a8477cf",
     "src/styles/choice-nova.css":
-      "ad543220c8a6022733cfe874d9640101d6d2f4941c9c0061328360941a13e0ff",
+      "ac4e78be862fd406ef2d1e1cff07309b93fd603ef24d4c44ca9c1abc23f2746e",
   }),
   overlays: Object.freeze({
     "src/components/ui/dropdown-menu.tsx":

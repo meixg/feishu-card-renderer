@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import postcss from "postcss";
 import ts from "typescript";
 
 import {
@@ -119,6 +120,55 @@ export async function verifyUiArchitecture() {
   return violations.sort();
 }
 
+export async function verifyLegacyInteractionInventory({
+  manifestRoot = root,
+  localRoot = root,
+} = {}) {
+  const violations = [];
+  const inventory = JSON.parse(await readFile(resolve(
+    manifestRoot,
+    "docs/specs/legacy-interaction-inventory.json",
+  ), "utf8"));
+  const entryCss = await readFile(resolve(localRoot, "src/styles.css"), "utf8");
+  const cssRoot = postcss.parse(entryCss, { from: "src/styles.css" });
+  const imports = [];
+  cssRoot.walkAtRules("import", (rule) => {
+    const match = rule.params.match(/^["'](.+)["']$/u);
+    if (match) imports.push(`src/${match[1].replace(/^\.\//u, "")}`);
+  });
+  if (JSON.stringify(imports) !== JSON.stringify(inventory.visualOwners)) {
+    violations.push("legacy inventory visualOwners must exactly match stylesheet imports");
+  }
+
+  const sharedSelectors = [];
+  cssRoot.walkRules((rule) => sharedSelectors.push(rule.selector));
+  for (const forbidden of inventory.removedLegacySelectors) {
+    if (sharedSelectors.some((selector) => selector.split(",").some(
+      (part) => part.trim().startsWith(forbidden),
+    ))) {
+      violations.push(`${forbidden}: removed legacy selector returned to shared styles`);
+    }
+  }
+
+  const ownerSelectors = [];
+  for (const owner of inventory.visualOwners) {
+    const ownerRoot = postcss.parse(
+      await readFile(resolve(localRoot, owner), "utf8"),
+      { from: owner },
+    );
+    ownerRoot.walkRules((rule) => ownerSelectors.push(rule.selector));
+  }
+  for (const moved of inventory.movedToPinnedOwnerSelectors) {
+    if (sharedSelectors.some((selector) => selector.includes(moved))) {
+      violations.push(`${moved}: visual selector must not return to shared styles`);
+    }
+    if (!ownerSelectors.some((selector) => selector.includes(moved))) {
+      violations.push(`${moved}: reviewed pinned visual owner is missing`);
+    }
+  }
+  return violations.sort();
+}
+
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -196,6 +246,7 @@ export async function verifyUiProvenance({
         "apps/v4/registry/themes.ts",
        ], "2026-07-31"],
   ];
+  const allReviewedLocalFiles = new Set();
   for (const [owner, path, expectedPaths, reviewedAt] of manifests) {
     const provenance = JSON.parse(
       await readFile(resolve(manifestRoot, path), "utf8"),
@@ -231,6 +282,12 @@ export async function verifyUiProvenance({
       }
     }
     const localFiles = provenance.localFiles ?? {};
+    for (const file of Object.keys(localFiles)) {
+      allReviewedLocalFiles.add(file);
+      if (file === "src/styles.css") {
+        violations.push(`${owner}: shared styles.css must not be provenance-hashed`);
+      }
+    }
     const reviewedLocalFiles = PINNED_SHADCN_LOCAL_HASHES[owner] ?? {};
     if (
       JSON.stringify(Object.keys(localFiles).sort())
@@ -252,6 +309,15 @@ export async function verifyUiProvenance({
       }
     }
   }
+  const uiFiles = (await sourceFiles(resolve(localRoot, "src/components/ui")))
+    .map((file) => file.slice(resolve(localRoot).length + 1))
+    .sort();
+  const reviewedUiFiles = [...allReviewedLocalFiles]
+    .filter((file) => file.startsWith("src/components/ui/"))
+    .sort();
+  if (JSON.stringify(uiFiles) !== JSON.stringify(reviewedUiFiles)) {
+    violations.push("pinned provenance must cover every and only internal UI source file");
+  }
   return violations.sort();
 }
 
@@ -259,6 +325,7 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename
   const violations = [
     ...await verifyUiArchitecture(),
     ...await verifyUiProvenance(),
+    ...await verifyLegacyInteractionInventory(),
   ];
   if (violations.length > 0) {
     throw new Error(`UI architecture verification failed:\n${violations.join("\n")}`);

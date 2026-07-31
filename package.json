@@ -60,6 +60,7 @@
     "visual:update": "playwright test --update-snapshots",
     "build": "node scripts/verify-ui-architecture.mjs && vite build && node scripts/verify-build.mjs",
     "package:verify": "node scripts/verify-package.mjs",
+    "bundle:measure": "node scripts/measure-bundle-dirs.mjs",
     "workflows:verify": "node scripts/verify-workflows.mjs",
     "governance:verify": "node scripts/verify-governance.mjs",
     "ui:verify": "node scripts/verify-ui-architecture.mjs",
