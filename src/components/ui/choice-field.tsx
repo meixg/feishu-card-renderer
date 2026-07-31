@@ -1,5 +1,6 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import {
+  CheckIcon,
   ChevronDownIcon,
   SearchIcon,
   XIcon,
@@ -128,7 +129,7 @@ function ChoiceItems({
       value={option.token}
     >
       <ComboboxPrimitive.ItemIndicator className="fcr-choice-indicator">
-        ✓
+        <CheckIcon aria-hidden="true" />
       </ComboboxPrimitive.ItemIndicator>
       <span>{option.label}</span>
     </ComboboxPrimitive.Item>
@@ -211,9 +212,15 @@ function SelectedValue({
 }) {
   if (!multiple) {
     const token = typeof value === "string" ? value : "";
+    const selected = optionByToken.get(token)?.label;
     return (
-      <span className={pc ? "fcr-choice-pc-value" : "fcr-choice-value"}>
-        {optionByToken.get(token)?.label || placeholder}
+      <span className={pc
+        ? "fcr-choice-pc-value"
+        : selected
+          ? "fcr-choice-value"
+          : "fcr-choice-placeholder"}
+      >
+        {selected || placeholder}
       </span>
     );
   }
@@ -240,7 +247,7 @@ function SelectedValue({
             onKeyDown={(event) => event.stopPropagation()}
             type="button"
           >
-            ×
+            <XIcon aria-hidden="true" />
           </button>
         </span>
       ))}

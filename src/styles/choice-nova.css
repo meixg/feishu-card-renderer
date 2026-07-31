@@ -4,6 +4,18 @@
    * Theme values come exclusively from the existing scoped --fcr-ui-* mapping.
    */
   .fcr-root {
+  .fcr-ui-field.fcr-choice-field {
+    display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 4px;
+  }
+  .fcr-choice-field > :is(.fcr-ui-label, .fcr-ui-field-label) {
+    font-size: 14px; font-weight: 500; line-height: 1;
+  }
+  .fcr-choice-field > .fcr-ui-field-description {
+    margin: 0; color: var(--fcr-ui-muted-foreground); font-size: 12px;
+  }
+  .fcr-choice-field > .fcr-ui-field-error {
+    margin: 0; color: var(--fcr-ui-destructive); font-size: 12px;
+  }
   [data-slot="select-trigger"],
   [data-slot="combobox-trigger"],
   [data-slot="combobox-chips"] {
@@ -61,6 +73,93 @@
   }
 
   .fcr-choice-drawer { width: 100%; }
+  .fcr-choice-control {
+    box-sizing: border-box; display: flex; width: 100%; min-width: 0;
+    height: 32px; align-items: center; justify-content: space-between; gap: 6px;
+    border: 1px solid var(--fcr-ui-input);
+    border-radius: calc(var(--fcr-ui-radius) - 2px);
+    padding: 3px 6px 3px 10px; outline: none;
+    background: var(--fcr-ui-background); color: var(--fcr-ui-foreground);
+    font: inherit; transition: color 120ms ease, box-shadow 120ms ease;
+  }
+  .fcr-choice-control:focus-within {
+    border-color: var(--fcr-ui-ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+  .fcr-choice-field[data-invalid] .fcr-choice-control {
+    border-color: var(--fcr-ui-destructive);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--fcr-ui-destructive) 20%, transparent);
+  }
+  .fcr-choice-control:has(.fcr-choice-open:disabled) {
+    pointer-events: none; cursor: not-allowed; opacity: 0.5;
+  }
+  .fcr-choice-open {
+    display: inline-flex; width: 24px; height: 24px; flex: 0 0 24px;
+    align-items: center; justify-content: center; border: 0;
+    border-radius: calc(var(--fcr-ui-radius) - 4px);
+    padding: 0; outline: none; background: transparent; color: inherit;
+  }
+  .fcr-choice-open:focus-visible,
+  .fcr-choice-chip button:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+  .fcr-choice-value,
+  .fcr-choice-placeholder {
+    min-width: 0; flex: 1 1 auto; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fcr-choice-placeholder { color: var(--fcr-ui-muted-foreground); }
+  .fcr-choice-search {
+    width: 100%; min-width: 0; height: 32px; padding: 4px 10px;
+    border: 1px solid var(--fcr-ui-input);
+    border-radius: calc(var(--fcr-ui-radius) - 2px);
+    outline: none; background: transparent; color: var(--fcr-ui-foreground);
+    font: inherit;
+  }
+  .fcr-choice-search:focus-visible {
+    border-color: var(--fcr-ui-ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
+  }
+  .fcr-choice-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .fcr-choice-option {
+    position: relative; display: flex; width: 100%; min-height: 32px;
+    align-items: center; justify-content: space-between; gap: 7px;
+    border-radius: calc(var(--fcr-ui-radius) - 4px); padding: 6px 8px;
+    cursor: default; outline: none; overflow-wrap: anywhere; user-select: none;
+  }
+  .fcr-choice-option[data-highlighted] {
+    background: var(--fcr-ui-muted); color: var(--fcr-ui-foreground);
+  }
+  .fcr-choice-option[data-disabled] { pointer-events: none; opacity: 0.5; }
+  .fcr-choice-indicator {
+    width: 16px; height: 16px; flex: 0 0 16px; color: var(--fcr-ui-foreground);
+  }
+  .fcr-choice-status {
+    padding: 4px 8px; color: var(--fcr-ui-muted-foreground); font-size: 12px;
+  }
+  .fcr-choice-chips {
+    display: flex; min-width: 0; flex: 1 1 auto; align-items: center;
+    gap: 4px; overflow: hidden;
+  }
+  .fcr-choice-chip {
+    display: inline-flex; min-width: 0; max-width: 110px; align-items: center;
+    gap: 2px; border-radius: calc(var(--fcr-ui-radius) - 4px);
+    padding: 2px 3px 2px 7px; background: var(--fcr-ui-muted);
+    color: var(--fcr-ui-foreground);
+  }
+  .fcr-choice-chip > span {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fcr-choice-chip button {
+    display: inline-flex; width: 20px; height: 20px; flex: 0 0 20px;
+    align-items: center; justify-content: center; border: 0;
+    border-radius: calc(var(--fcr-ui-radius) - 4px);
+    padding: 0; background: transparent; color: inherit; line-height: 1;
+  }
+  .fcr-choice-chip-count {
+    flex: 0 0 auto; color: var(--fcr-ui-muted-foreground); font-size: 12px;
+  }
   .fcr-choice-drawer-header {
     position: relative; min-width: 0; padding-right: 56px; text-align: left;
   }

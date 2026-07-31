@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import postcss from "postcss";
 import ts from "typescript";
 
 import {
@@ -8,6 +9,9 @@ import {
   PINNED_SHADCN_LOCAL_HASHES,
   PINNED_SHADCN_UPSTREAM_HASHES,
 } from "./ui-provenance-expected.mjs";
+import {
+  EXPECTED_LEGACY_CHOICE_SELECTORS,
+} from "./legacy-interaction-expected.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -31,7 +35,7 @@ export async function verifyUiArchitecture() {
       "ChevronDownIcon", "ChevronLeftIcon", "ChevronRightIcon",
     ])],
     ["src/components/ui/choice-field.tsx", new Set([
-      "ChevronDownIcon", "SearchIcon", "XIcon",
+      "CheckIcon", "ChevronDownIcon", "SearchIcon", "XIcon",
     ])],
     ["src/components/ui/pagination.tsx", new Set([
       "ChevronLeft", "ChevronRight",
@@ -110,10 +114,119 @@ export async function verifyUiArchitecture() {
       ts.forEachChild(node, visit);
     }
     visit(ast);
+    if (
+      relative === "src/components/ui/choice-field.tsx"
+      && /[✓×]/u.test(source)
+    ) {
+      violations.push(
+        `${relative}: text glyph icons are forbidden; use reviewed Lucide composition`,
+      );
+    }
     for (const icon of requiredLucideImports.get(relative) ?? []) {
       if (!foundLucideImports.has(icon)) {
         violations.push(`${relative}: reviewed named Lucide import ${icon} is required`);
       }
+    }
+  }
+  return violations.sort();
+}
+
+export async function verifyLegacyInteractionInventory({
+  manifestRoot = root,
+  localRoot = root,
+} = {}) {
+  const violations = [];
+  const inventory = JSON.parse(await readFile(resolve(
+    manifestRoot,
+    "docs/specs/legacy-interaction-inventory.json",
+  ), "utf8"));
+  const normalizeSelector = (selector) => selector
+    .replace(/\s+/gu, " ")
+    .replace(/\s*([>+~])\s*/gu, "$1")
+    .trim();
+  const selectorSet = (rootNode) => {
+    const selectors = new Set();
+    rootNode.walkRules((rule) => {
+      for (const selector of rule.selectors) {
+        selectors.add(normalizeSelector(selector));
+      }
+    });
+    return selectors;
+  };
+  const sorted = (values) => [...values].sort();
+  const manifestMoved = new Set(
+    inventory.movedToPinnedOwnerSelectors.map(normalizeSelector),
+  );
+  const manifestRemoved = new Set(
+    inventory.removedLegacySelectors.map(normalizeSelector),
+  );
+  const expectedMoved = new Set(EXPECTED_LEGACY_CHOICE_SELECTORS.moved);
+  const expectedRemoved = new Set(EXPECTED_LEGACY_CHOICE_SELECTORS.removed);
+  if (
+    JSON.stringify(sorted(manifestMoved))
+    !== JSON.stringify(sorted(expectedMoved))
+  ) {
+    violations.push(
+      "legacy inventory moved selector classification drifted from immutable registry",
+    );
+  }
+  if (
+    JSON.stringify(sorted(manifestRemoved))
+    !== JSON.stringify(sorted(expectedRemoved))
+  ) {
+    violations.push(
+      "legacy inventory removed selector classification drifted from immutable registry",
+    );
+  }
+  const manifestUniverse = new Set([...manifestMoved, ...manifestRemoved]);
+  const expectedUniverse = new Set([...expectedMoved, ...expectedRemoved]);
+  if (
+    manifestUniverse.size !== inventory.movedToPinnedOwnerSelectors.length
+      + inventory.removedLegacySelectors.length
+    || JSON.stringify(sorted(manifestUniverse))
+      !== JSON.stringify(sorted(expectedUniverse))
+  ) {
+    violations.push(
+      "legacy inventory selector universe must exactly match immutable registry",
+    );
+  }
+  const entryCss = await readFile(resolve(localRoot, "src/styles.css"), "utf8");
+  const cssRoot = postcss.parse(entryCss, { from: "src/styles.css" });
+  const imports = [];
+  cssRoot.walkAtRules("import", (rule) => {
+    const match = rule.params.match(/^["'](.+)["']$/u);
+    if (match) imports.push(`src/${match[1].replace(/^\.\//u, "")}`);
+  });
+  if (JSON.stringify(imports) !== JSON.stringify(inventory.visualOwners)) {
+    violations.push("legacy inventory visualOwners must exactly match stylesheet imports");
+  }
+
+  const sharedSelectors = selectorSet(cssRoot);
+  for (const forbidden of expectedRemoved) {
+    if (sharedSelectors.has(forbidden)) {
+      violations.push(`${forbidden}: removed legacy selector returned to shared styles`);
+    }
+  }
+
+  const ownerSelectors = new Set();
+  for (const owner of inventory.visualOwners) {
+    const ownerRoot = postcss.parse(
+      await readFile(resolve(localRoot, owner), "utf8"),
+      { from: owner },
+    );
+    for (const selector of selectorSet(ownerRoot)) ownerSelectors.add(selector);
+  }
+  for (const moved of expectedMoved) {
+    if (sharedSelectors.has(moved)) {
+      violations.push(`${moved}: visual selector must not return to shared styles`);
+    }
+    if (!ownerSelectors.has(moved)) {
+      violations.push(`${moved}: reviewed pinned visual owner is missing`);
+    }
+  }
+  for (const removed of expectedRemoved) {
+    if (ownerSelectors.has(removed)) {
+      violations.push(`${removed}: removed legacy selector returned to a visual owner`);
     }
   }
   return violations.sort();
@@ -196,6 +309,7 @@ export async function verifyUiProvenance({
         "apps/v4/registry/themes.ts",
        ], "2026-07-31"],
   ];
+  const allReviewedLocalFiles = new Set();
   for (const [owner, path, expectedPaths, reviewedAt] of manifests) {
     const provenance = JSON.parse(
       await readFile(resolve(manifestRoot, path), "utf8"),
@@ -231,6 +345,12 @@ export async function verifyUiProvenance({
       }
     }
     const localFiles = provenance.localFiles ?? {};
+    for (const file of Object.keys(localFiles)) {
+      allReviewedLocalFiles.add(file);
+      if (file === "src/styles.css") {
+        violations.push(`${owner}: shared styles.css must not be provenance-hashed`);
+      }
+    }
     const reviewedLocalFiles = PINNED_SHADCN_LOCAL_HASHES[owner] ?? {};
     if (
       JSON.stringify(Object.keys(localFiles).sort())
@@ -252,6 +372,15 @@ export async function verifyUiProvenance({
       }
     }
   }
+  const uiFiles = (await sourceFiles(resolve(localRoot, "src/components/ui")))
+    .map((file) => file.slice(resolve(localRoot).length + 1))
+    .sort();
+  const reviewedUiFiles = [...allReviewedLocalFiles]
+    .filter((file) => file.startsWith("src/components/ui/"))
+    .sort();
+  if (JSON.stringify(uiFiles) !== JSON.stringify(reviewedUiFiles)) {
+    violations.push("pinned provenance must cover every and only internal UI source file");
+  }
   return violations.sort();
 }
 
@@ -259,6 +388,7 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename
   const violations = [
     ...await verifyUiArchitecture(),
     ...await verifyUiProvenance(),
+    ...await verifyLegacyInteractionInventory(),
   ];
   if (violations.length > 0) {
     throw new Error(`UI architecture verification failed:\n${violations.join("\n")}`);

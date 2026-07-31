@@ -30,6 +30,35 @@ if (css.includes("--tw-")) {
 }
 
 const stylesheet = postcss.parse(css);
+const forbiddenRawThemeTokens = new Set([
+  "--background",
+  "--foreground",
+  "--primary",
+  "--primary-foreground",
+  "--secondary",
+  "--secondary-foreground",
+  "--muted",
+  "--muted-foreground",
+  "--accent",
+  "--accent-foreground",
+  "--destructive",
+  "--border",
+  "--input",
+  "--ring",
+  "--radius",
+  "--popover",
+  "--popover-foreground",
+]);
+stylesheet.walkDecls((declaration) => {
+  if (forbiddenRawThemeTokens.has(declaration.prop)) {
+    throw new Error(`Raw shadcn token leaked into dist/styles.css: ${declaration.prop}`);
+  }
+  for (const token of forbiddenRawThemeTokens) {
+    if (declaration.value.includes(`var(${token})`)) {
+      throw new Error(`Unresolved shadcn token leaked into dist/styles.css: ${token}`);
+    }
+  }
+});
 for (const rule of stylesheet.nodes.flatMap(function walk(node) {
   if (node.type === "rule") return [node];
   if ("nodes" in node && Array.isArray(node.nodes)) {
@@ -47,6 +76,12 @@ for (const rule of stylesheet.nodes.flatMap(function walk(node) {
   if (inKeyframes) continue;
   if (!rule.selectors.every((selector) => selector.includes(".fcr"))) {
     throw new Error(`Unscoped selector leaked into dist/styles.css: ${rule.selector}`);
+  }
+  if (rule.selectors.some((selector) =>
+    /^(?::root|html(?:\W|$)|body(?:\W|$)|\*(?:\W|$)|\.dark(?:\W|$))/u
+      .test(selector.trim())
+  )) {
+    throw new Error(`Global theme/reset selector leaked into dist/styles.css: ${rule.selector}`);
   }
 }
 

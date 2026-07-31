@@ -11,6 +11,7 @@ import { resolve } from "node:path";
 import { expect, it } from "vitest";
 
 import {
+  verifyLegacyInteractionInventory,
   verifyUiArchitecture,
   verifyUiProvenance,
 } from "../../scripts/verify-ui-architecture.mjs";
@@ -26,6 +27,43 @@ const mobileDrawerManifest =
   "docs/specs/shadcn-base-nova-mobile-drawer-baseline.json";
 const tablePaginationManifest =
   "docs/specs/shadcn-base-nova-table-pagination-baseline.json";
+const legacyInventory =
+  "docs/specs/legacy-interaction-inventory.json";
+
+async function mutateLegacyInventory(
+  mutation: (inventory: {
+    movedToPinnedOwnerSelectors: string[];
+    removedLegacySelectors: string[];
+    visualOwners: string[];
+  }, temporaryRoot: string) => Promise<void> | void,
+  { copySource = false } = {},
+) {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-legacy-manifest-"));
+  try {
+    await cp(resolve(root, "docs"), resolve(temporaryRoot, "docs"), {
+      recursive: true,
+    });
+    if (copySource) {
+      await cp(resolve(root, "src"), resolve(temporaryRoot, "src"), {
+        recursive: true,
+      });
+    }
+    const path = resolve(temporaryRoot, legacyInventory);
+    const inventory = JSON.parse(await readFile(path, "utf8")) as {
+      movedToPinnedOwnerSelectors: string[];
+      removedLegacySelectors: string[];
+      visualOwners: string[];
+    };
+    await mutation(inventory, temporaryRoot);
+    await writeFile(path, `${JSON.stringify(inventory, null, 2)}\n`);
+    return await verifyLegacyInteractionInventory({
+      manifestRoot: temporaryRoot,
+      localRoot: copySource ? temporaryRoot : root,
+    });
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+}
 
 async function mutateLocalManifest(
   manifest: string,
@@ -521,4 +559,148 @@ it("rejects a self-approved Issue #82 Collapsible upstream mutation", async () =
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+it("keeps the final legacy inventory synchronized with CSS owners", async () => {
+  expect(await verifyLegacyInteractionInventory()).toEqual([]);
+});
+
+it("rejects a legacy interaction selector returning to shared styles", async () => {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-legacy-css-"));
+  try {
+    await cp(resolve(root, "docs"), resolve(temporaryRoot, "docs"), {
+      recursive: true,
+    });
+    await cp(resolve(root, "src"), resolve(temporaryRoot, "src"), {
+      recursive: true,
+    });
+    await writeFile(
+      resolve(temporaryRoot, "src/styles.css"),
+      `${await readFile(resolve(root, "src/styles.css"), "utf8")}
+@layer components { .fcr-choice-popup { border: 1px solid red; } }
+`,
+    );
+    expect(await verifyLegacyInteractionInventory({
+      manifestRoot: temporaryRoot,
+      localRoot: temporaryRoot,
+    })).toContain(
+      ".fcr-choice-popup: removed legacy selector returned to shared styles",
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+it("rejects legacy inventory owner mutation", async () => {
+  const temporaryRoot = await mkdtemp(resolve(tmpdir(), "fcr-legacy-owner-"));
+  try {
+    await cp(resolve(root, "docs"), resolve(temporaryRoot, "docs"), {
+      recursive: true,
+    });
+    const path = resolve(temporaryRoot, legacyInventory);
+    const inventory = JSON.parse(await readFile(path, "utf8")) as {
+      visualOwners: string[];
+    };
+    inventory.visualOwners.pop();
+    await writeFile(path, `${JSON.stringify(inventory, null, 2)}\n`);
+    expect(await verifyLegacyInteractionInventory({
+      manifestRoot: temporaryRoot,
+      localRoot: root,
+    })).toContain(
+      "legacy inventory visualOwners must exactly match stylesheet imports",
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+it("rejects missing, extra, and approximately matching inventory selectors", async () => {
+  await expect(mutateLegacyInventory((inventory) => {
+    inventory.movedToPinnedOwnerSelectors =
+      inventory.movedToPinnedOwnerSelectors.filter(
+        (selector) => selector !== ".fcr-choice-list",
+      );
+  })).resolves.toEqual(expect.arrayContaining([
+    "legacy inventory moved selector classification drifted from immutable registry",
+    "legacy inventory selector universe must exactly match immutable registry",
+  ]));
+
+  await expect(mutateLegacyInventory((inventory) => {
+    inventory.movedToPinnedOwnerSelectors.push(".fcr-choice-invented");
+  })).resolves.toEqual(expect.arrayContaining([
+    "legacy inventory moved selector classification drifted from immutable registry",
+    "legacy inventory selector universe must exactly match immutable registry",
+  ]));
+
+  await expect(mutateLegacyInventory((inventory) => {
+    const index = inventory.movedToPinnedOwnerSelectors.indexOf(
+      ".fcr-choice-value",
+    );
+    inventory.movedToPinnedOwnerSelectors[index] = ".fcr-choice-value-near";
+  })).resolves.toEqual(expect.arrayContaining([
+    "legacy inventory moved selector classification drifted from immutable registry",
+    "legacy inventory selector universe must exactly match immutable registry",
+  ]));
+});
+
+it("rejects moved/removed reclassification including a complex selector", async () => {
+  await expect(mutateLegacyInventory((inventory) => {
+    const selector = ".fcr-choice-field[data-invalid] .fcr-choice-trigger";
+    inventory.removedLegacySelectors =
+      inventory.removedLegacySelectors.filter((entry) => entry !== selector);
+    inventory.movedToPinnedOwnerSelectors.push(selector);
+  })).resolves.toEqual(expect.arrayContaining([
+    "legacy inventory moved selector classification drifted from immutable registry",
+    "legacy inventory removed selector classification drifted from immutable registry",
+  ]));
+});
+
+it("rejects an exact moved selector missing from its pinned owner", async () => {
+  await expect(mutateLegacyInventory(async (_inventory, temporaryRoot) => {
+    const path = resolve(temporaryRoot, "src/styles/choice-nova.css");
+    const source = await readFile(path, "utf8");
+    await writeFile(path, source.replace(
+      ".fcr-choice-list {",
+      ".fcr-choice-list-missing {",
+    ));
+  }, { copySource: true })).resolves.toContain(
+    ".fcr-choice-list: reviewed pinned visual owner is missing",
+  );
+});
+
+it("uses exact selector equality rather than substring matching", async () => {
+  await expect(mutateLegacyInventory(async (_inventory, temporaryRoot) => {
+    const path = resolve(temporaryRoot, "src/styles/choice-nova.css");
+    const source = await readFile(path, "utf8");
+    await writeFile(path, source.replace(
+      ".fcr-choice-value,",
+      ".fcr-choice-value-suffix,",
+    ));
+  }, { copySource: true })).resolves.toContain(
+    ".fcr-choice-value: reviewed pinned visual owner is missing",
+  );
+});
+
+it("rejects a removed selector returning to a pinned owner", async () => {
+  await expect(mutateLegacyInventory(async (_inventory, temporaryRoot) => {
+    const path = resolve(temporaryRoot, "src/styles/choice-nova.css");
+    await writeFile(
+      path,
+      `${await readFile(path, "utf8")}
+@layer components { .fcr-choice-trigger { color: red; } }
+`,
+    );
+  }, { copySource: true })).resolves.toContain(
+    ".fcr-choice-trigger: removed legacy selector returned to a visual owner",
+  );
+});
+
+it("rejects hashing the shared stylesheet as wrapper provenance", async () => {
+  const violations = await mutateChoiceManifest((provenance) => {
+    provenance.localFiles["src/styles.css"] = "a".repeat(64);
+  });
+  expect(violations).toEqual(expect.arrayContaining([
+    "PC choice fields: shared styles.css must not be provenance-hashed",
+    "PC choice fields reviewed local adaptation paths drifted",
+  ]));
 });

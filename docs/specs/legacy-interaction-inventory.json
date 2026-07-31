@@ -1,0 +1,63 @@
+{
+  "reviewedAt": "2026-07-31",
+  "scope": "Final #74 interaction-theme contraction",
+  "visualOwners": [
+    "src/styles/button-nova.css",
+    "src/styles/form-controls-nova.css",
+    "src/styles/calendar-nova.css",
+    "src/styles/table-pagination-nova.css",
+    "src/styles/choice-nova.css",
+    "src/styles/drawer-nova.css",
+    "src/styles/overlays-nova.css",
+    "src/styles/media-dialog-nova.css",
+    "src/styles/containers-nova.css"
+  ],
+  "removedLegacySelectors": [
+    ".fcr-choice-control:has(button:disabled)",
+    ".fcr-choice-done",
+    ".fcr-choice-done:focus-visible",
+    ".fcr-choice-field[data-invalid] .fcr-choice-trigger",
+    ".fcr-choice-option[data-selected]",
+    ".fcr-choice-popup",
+    ".fcr-choice-positioner",
+    ".fcr-choice-trigger",
+    ".fcr-choice-trigger:disabled",
+    ".fcr-choice-trigger:focus-visible"
+  ],
+  "movedToPinnedOwnerSelectors": [
+    ".fcr-choice-chip",
+    ".fcr-choice-chip button",
+    ".fcr-choice-chip button:focus-visible",
+    ".fcr-choice-chip-count",
+    ".fcr-choice-chip>span",
+    ".fcr-choice-chips",
+    ".fcr-choice-control",
+    ".fcr-choice-control:focus-within",
+    ".fcr-choice-field>.fcr-ui-field-description",
+    ".fcr-choice-field>.fcr-ui-field-error",
+    ".fcr-choice-field>:is(.fcr-ui-label, .fcr-ui-field-label)",
+    ".fcr-choice-field[data-invalid] .fcr-choice-control",
+    ".fcr-choice-indicator",
+    ".fcr-choice-list",
+    ".fcr-choice-open",
+    ".fcr-choice-option",
+    ".fcr-choice-option[data-disabled]",
+    ".fcr-choice-option[data-highlighted]",
+    ".fcr-choice-open:focus-visible",
+    ".fcr-choice-placeholder",
+    ".fcr-choice-search",
+    ".fcr-choice-search:focus-visible",
+    ".fcr-choice-status",
+    ".fcr-choice-value",
+    ".fcr-ui-field.fcr-choice-field"
+  ],
+  "contentOwnersExcludedFromContraction": [
+    "card shell and header",
+    "Markdown and rich-text content",
+    "protocol table cells and row density",
+    "images, media content and chart canvases",
+    "person content",
+    "column/form/container protocol layout",
+    "protocol custom colors and validated inline lengths"
+  ]
+}

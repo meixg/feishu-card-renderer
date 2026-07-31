@@ -77,6 +77,10 @@ compact 400px/default 600px/fill。另有容器、图表 light/dark/mobile 和�
 稳定，不宣称逐像素复制飞书私有客户端；Base UI 升级后的内部 DOM 和视觉不兼容
 旧快照。
 
+这 12 个组合以仓库固定的 shadcn `base-nova` snapshot 为视觉事实来源；不得使用
+mutable shadcn 网站或飞书客户端截图作为第二基线。最终收缩未批量重录内容 PNG，
+只有确有 CSS owner 变化的图片才可在严格阈值不变的前提下逐图更新并记录因果。
+
 Markdown 完整卡在同一 12 组合中逐项测量：卡片 `scrollWidth` 等于
 `clientWidth`，代码块与表格容器保持自身 `overflow-x: auto` 且不宽于外层卡片。
 compact 夹具另证明宽内容确实只在代码块/表格内部产生横向滚动。
@@ -119,5 +123,7 @@ Playwright 在真实 Chrome 中使用正式懒加载 VChart runtime 实例化，
   overflow；它不冒充真实 iOS/Android OS 键盘或 Safari 验证。
 - shadcn/Base UI wrapper、provider、context 和类型保持私有；兼容矩阵只承诺协议、
   公共类型、DOM 语义角色和 `CardAction`，不承诺内部 DOM/class/视觉兼容。
+- `laser` 降级为 outline、link 类协议动作映射到语义 button、图片/文字/表格单元格
+  仍由 renderer 内容层拥有；这些是明确 adaptation，不表示与飞书控件像素等价。
 
 明确协议冲突和实现限制见 [集成指南](integration.md#public-preview-限制)。

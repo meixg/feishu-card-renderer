@@ -101,6 +101,41 @@ const choiceVisualCard = {
   },
 };
 
+const closedLongChoiceCard = {
+  schema: "2.0" as const,
+  config: { update_multi: true, width_mode: "fill" as const },
+  body: {
+    elements: [
+      {
+        tag: "select_static",
+        name: "long-selected",
+        label: { tag: "plain_text", content: "Long selected value" },
+        initial_option: "selected",
+        options: [{
+          text: {
+            tag: "plain_text",
+            content: "Selected value that is intentionally far too long for a closed mobile choice trigger",
+          },
+          value: "selected",
+        }],
+      },
+      {
+        tag: "select_static",
+        name: "long-placeholder",
+        label: { tag: "plain_text", content: "Long placeholder" },
+        placeholder: {
+          tag: "plain_text",
+          content: "Placeholder that is intentionally far too long for a closed mobile choice trigger",
+        },
+        options: [{
+          text: { tag: "plain_text", content: "Available option" },
+          value: "available",
+        }],
+      },
+    ],
+  },
+};
+
 function ChoiceVisualCase({
   colorScheme = "light",
   id,
@@ -522,6 +557,19 @@ createRoot(document.getElementById("root")!).render(
               id="case-choices-mobile-dark"
               width={400}
             />
+            {[390, 400].map((width) => (
+              <section
+                id={`case-closed-long-choice-${width}`}
+                key={width}
+                style={{ width }}
+              >
+                <CardRenderer
+                  card={closedLongChoiceCard}
+                  device="mobile"
+                  onAction={() => {}}
+                />
+              </section>
+            ))}
             <section
               id="case-choices-mobile-person-resources"
               style={{ width: 390 }}

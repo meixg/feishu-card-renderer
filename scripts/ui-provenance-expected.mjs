@@ -75,21 +75,21 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/ui/combobox.tsx":
       "05d81e0b360522b6df9423777b80bce9fab35f088b3382bdd4f4ba16df924748",
     "src/components/ui/choice-field.tsx":
-      "5c1652dc1457b0a1af6fe4653a4f5fed007731f005a9110df91214c868aca3b1",
+      "f211e7a5d0052f5aba84801907c964649b922568fa27f94a837748b27172ced2",
     "src/components/interactive/interactive.tsx":
       "8521d64fe6eb046e8f0379fb6e2c6f1b6a4d4ffb02104ea4cf7f7ff52adb6230",
     "src/styles/choice-nova.css":
-      "ad543220c8a6022733cfe874d9640101d6d2f4941c9c0061328360941a13e0ff",
+      "811aa260ba6463ed1679e5b448c788c89c8d0678881585dd4f40c71f556292f6",
   }),
   "mobile choice Drawer": Object.freeze({
     "src/components/ui/drawer.tsx":
       "0331e1597f2a63c2b8a7e4a46172729e8b6dc5d23a8e2b8304c5c8d3a557ead3",
     "src/components/ui/choice-field.tsx":
-      "5c1652dc1457b0a1af6fe4653a4f5fed007731f005a9110df91214c868aca3b1",
+      "f211e7a5d0052f5aba84801907c964649b922568fa27f94a837748b27172ced2",
     "src/styles/drawer-nova.css":
       "5c22078c4287c50eea9d3461b8f7457e3d5aeacf2851261c801008b11a8477cf",
     "src/styles/choice-nova.css":
-      "ad543220c8a6022733cfe874d9640101d6d2f4941c9c0061328360941a13e0ff",
+      "811aa260ba6463ed1679e5b448c788c89c8d0678881585dd4f40c71f556292f6",
   }),
   overlays: Object.freeze({
     "src/components/ui/dropdown-menu.tsx":
