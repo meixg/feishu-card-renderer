@@ -738,6 +738,50 @@ test("mobile choices use a keyboard-safe Drawer without horizontal overflow", as
   await expect(drawer).toHaveScreenshot("card-choices-mobile-drawer.png");
 });
 
+test("390/400px closed mobile choices truncate long values and placeholders without hiding the opener", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 420, height: 844 });
+  await page.goto("/tests/visual/?case=mobile-choice");
+  for (const width of [390, 400]) {
+    const host = page.locator(`#case-closed-long-choice-${width}`);
+    const root = host.locator(".fcr-root");
+    expect(await root.evaluate((node) => node.scrollWidth === node.clientWidth))
+      .toBe(true);
+    for (const label of ["Long selected value", "Long placeholder"]) {
+      const trigger = host.getByRole("button", {
+        name: `${label}，打开选项`,
+      });
+      const control = trigger.locator("..");
+      const text = control.locator(
+        ".fcr-choice-value, .fcr-choice-placeholder",
+      );
+      const bounds = await Promise.all([
+        control.boundingBox(),
+        text.boundingBox(),
+        trigger.boundingBox(),
+      ]);
+      expect(bounds.every(Boolean)).toBe(true);
+      expect(bounds[1]!.x + bounds[1]!.width)
+        .toBeLessThanOrEqual(bounds[2]!.x);
+      expect(bounds[2]!.x + bounds[2]!.width)
+        .toBeLessThanOrEqual(bounds[0]!.x + bounds[0]!.width);
+      expect(await text.evaluate((node) => ({
+        overflow: getComputedStyle(node).overflow,
+        textOverflow: getComputedStyle(node).textOverflow,
+        whiteSpace: getComputedStyle(node).whiteSpace,
+      }))).toEqual({
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      });
+      await trigger.click();
+      await expect(host.getByRole("dialog", { name: label })).toBeVisible();
+      await host.getByRole("button", { name: "关闭选择器" }).click();
+    }
+  }
+});
+
 test("mobile Drawer disables its motion under reduced-motion preference", async ({
   page,
 }) => {

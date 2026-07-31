@@ -104,6 +104,12 @@
   .fcr-choice-chip button:focus-visible {
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--fcr-ui-ring) 50%, transparent);
   }
+  .fcr-choice-value,
+  .fcr-choice-placeholder {
+    min-width: 0; flex: 1 1 auto; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fcr-choice-placeholder { color: var(--fcr-ui-muted-foreground); }
   .fcr-choice-search {
     width: 100%; min-width: 0; height: 32px; padding: 4px 10px;
     border: 1px solid var(--fcr-ui-input);

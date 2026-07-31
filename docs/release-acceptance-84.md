@@ -15,16 +15,17 @@ node scripts/measure-bundle-dirs.mjs /path/to/4a1c370/dist dist
 ```
 
 脚本对 `index.js`、共享 renderer/schema chunk、唯一 `styles.css` 和 lazy VChart
-chunk 读取精确字节，并使用 Node `zlib.gzipSync(..., { level: 9 })`。输出 JSON 可
-直接保存为 CI artifact；不使用 Vite 两位小数展示值。
+chunk 读取精确字节，并使用 Node `zlib.gzipSync(..., { level: 9 })`。每类 hashed
+chunk 必须精确匹配一个文件，零个或多个都会明确失败，禁止依赖 `readdir()` 顺序。
+输出 JSON 可直接保存为 CI artifact；不使用 Vite 两位小数展示值。
 
 本次使用 Node 24.18.1、Vite 7.3.6 和上述 level-9 gzip 方法实测：
 
 | 产物 | pre-#74 raw / gzip | #84 raw / gzip | 变化 raw / gzip |
 | --- | ---: | ---: | ---: |
-| eager renderer `index.js` | 228,472 / 58,337 B | 246,887 / 62,742 B | +18,415 / +4,405 B |
+| eager renderer `index.js` | 228,472 / 58,337 B | 247,052 / 62,749 B | +18,580 / +4,412 B |
 | shared renderer/schema | 28,000 / 7,343 B | 28,968 / 7,539 B | +968 / +196 B |
-| 唯一 `styles.css` | 23,908 / 4,818 B | 41,468 / 7,104 B | +17,560 / +2,286 B |
+| 唯一 `styles.css` | 23,908 / 4,818 B | 41,685 / 7,127 B | +17,777 / +2,309 B |
 | lazy VChart | 2,810,352 / 643,635 B | 2,810,352 / 643,635 B | 0 / 0 B |
 
 增长可由固定 Select/Combobox/Drawer/Dialog/Menu/Calendar/Field wrapper、可访问状态和
@@ -36,10 +37,18 @@ VChart lazy chunk 精确不变，因此接受这组变化。
 
 [`legacy-interaction-inventory.json`](specs/legacy-interaction-inventory.json) 记录
 共享样式中删除的旧 selector、迁入固定 Nova owner 的仍在用 selector，以及明确排除
-的内容 owner。`pnpm ui:verify` 使用 CSS AST 对照真实 import/rule，而不是全文字符串
-搜索；TypeScript AST 同时禁止 `src/components/ui/**` 外的 Base UI
+的内容 owner。独立 immutable registry 固定 baseline 的 35 个规范化 choice
+selector 及 moved/removed 分类；`pnpm ui:verify` 使用 PostCSS AST 做
+manifest ↔ registry ↔ actual owner 三向精确集合比较，不接受 substring 或清单自报
+闭环。TypeScript AST 同时禁止 `src/components/ui/**` 外的 Base UI
 import/re-export/dynamic import/require。所有内部 UI 源文件必须被精确 provenance
 registry 覆盖，共享 `styles.css` 明确不得进入 wrapper hash。
+
+closed mobile trigger 的 selected value 与 placeholder 保留 `min-width: 0`、
+ellipsis 和 nowrap 集成布局，placeholder 使用 Nova private muted token；390/400px
+真实浏览器测试同时断言无横向 overflow、文本不挤占 opener 且 opener 仍可操作。
+choice indicator/chip remove 均为 UI module 中的 named Lucide `CheckIcon`/`XIcon`，
+不再输出字体字形。
 
 ## 视觉与浏览器纪律
 
