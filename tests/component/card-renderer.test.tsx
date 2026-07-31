@@ -13,6 +13,31 @@ import { CardRenderer } from "../../src";
 import { completeComplexContentCard } from "../../src/fixtures/complex-content";
 
 describe("CardRenderer", () => {
+  it("renders omitted body element-flow spacing between siblings", () => {
+    const { container, unmount } = render(<CardRenderer card={{
+      schema: "2.0",
+      body: { elements: [{ tag: "hr" }, { tag: "hr" }] },
+    }} />);
+    const body = container.querySelector(".fcr-body");
+
+    expect(body).toHaveStyle({ gap: "8px" });
+    expect(body?.children).toHaveLength(2);
+    unmount();
+  });
+
+  it("does not apply the vertical default as a horizontal body gap", () => {
+    const { container, unmount } = render(<CardRenderer card={{
+      schema: "2.0",
+      body: {
+        direction: "horizontal",
+        elements: [{ tag: "hr" }, { tag: "hr" }],
+      },
+    }} />);
+
+    expect(container.querySelector(".fcr-body")).not.toHaveStyle({ gap: "8px" });
+    unmount();
+  });
+
   it("renders header and supported body without mutating frozen input", () => {
     const card = Object.freeze({
       schema: "2.0",

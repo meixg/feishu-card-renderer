@@ -219,6 +219,7 @@ export function CollapsiblePanel({ element, path }: {
       <CollapsibleContent
         id={contentId}
         className="fcr-collapsible-content"
+        style={{ gap: safeSpacing(element.vertical_spacing) }}
         keepMounted>
         <Children elements={element.elements} path={path} />
       </CollapsibleContent>

@@ -196,6 +196,13 @@ import type {
 
 为了避免异常输入拖垮页面，渲染器还会执行 JSON 2.0 的主要边界检查，包括 200 个元素上限、五层容器上限、`element_id` 唯一性和组件嵌套限制。未知字段会被忽略，未知组件会稳定降级，不会让整张卡片白屏。
 
+纵向 `body`、`column`、`form`、`interactive_container` 和
+`collapsible_panel` 采用父容器拥有的元素流间距。省略或错误声明
+`vertical_spacing` 时 normalization 统一回退 `medium`（8px），错误值同时产生
+recoverable diagnostic；`small`、`large`、`extra_large`、合法 px 与 `0px`
+继续按协议生效。间距只位于相邻兄弟之间，嵌套流各自计算，已有元素 `margin`
+作为额外偏移相加；header、横向布局、分栏列序列和控件内部反馈不使用该纵向默认值。
+
 独立 `markdown` 使用有界 CommonMark 白名单，当前基础语义包括标题、段落、强调、
 粗体、删除线、安全链接、嵌套列表、引用和分隔线。它与有限语法 `lark_md`
 保持隔离。原始 HTML 和尚未实现的飞书扩展标签显示为可见原文；Markdown 图片

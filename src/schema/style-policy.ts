@@ -23,6 +23,9 @@ const STYLE_FIELDS_BY_TAG: Readonly<
     padding: (value) => safeBox(value, false),
     corner_radius: safePx,
   },
+  collapsible_panel: {
+    vertical_spacing: safeSpacing,
+  },
   div: {
     margin: (value) => safeBox(value, true),
   },

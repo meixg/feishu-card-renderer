@@ -13,6 +13,19 @@ defaults/invalid 卡、完整字段清单、具体 normalization 默认值、非
 | 复杂展示 | `img_combination`, `person`, `person_list`, `chart`, `table` | 资源缺失/成功/失败、VChart 纯数据、语义表格、根级限制 |
 | 交互 | `input`, `button`, `overflow`, `select_static`, `multi_select_static`, `select_person`, `multi_select_person`, `date_picker`, `picker_time`, `picker_datetime`, `select_img`, `checker` | Base UI/原生混合语义、Button `type/size/width`、键盘/触控、disabled、confirm、表单初始值与 reset |
 
+容器兼容性包括父级拥有的纵向元素流：`body`、`column`、`form`、
+`interactive_container` 与 `collapsible_panel` 缺省或非法
+`vertical_spacing` 均规范化为 `medium`（8px），非法值在字段的精确路径保留
+recoverable `invalid_style` 诊断。公共 `normalizeCard` 表驱动测试逐个覆盖每个嵌套
+owner 的全部显式枚举、合法 px、`0px`、非法枚举与越界 px；公共
+`CardRenderer` 测试覆盖全部 owner 的空/单元素边界、嵌套流、未知占位与默认 gap；
+body 流另覆盖当前支持 margin 的元素在正/负/零值下与父级 gap 的独立叠加。此外覆盖 horizontal column、horizontal
+`interactive_container` 和仅由 `horizontal_spacing` 控制的
+`column_set.columns`。Workspace Form 的原样 test-only JSON 共同用于行为、
+可访问性和 light/dark、PC/mobile 视觉验收；空值键盘提交证明两项 required error
+及其 ARIA 关联且不发 action，补全后键盘提交证明恰好一次 callback、原始 value 和
+`{ note, choice }` formValue。
+
 `header` 是顶层结构而非 `body.elements` tag，由 renderer fixture、schema 测试和
 light/dark 视觉用例独立覆盖。
 

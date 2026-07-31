@@ -249,7 +249,10 @@
     overflow: hidden;
     border: 1px solid var(--fcr-color-border);
   }
-  .fcr-collapsible-content { padding: 0 12px 12px; }
+  .fcr-collapsible-content {
+    display: flex; flex-direction: column; padding: 0 12px 12px;
+  }
+  .fcr-collapsible-content[hidden] { display: none; }
   .fcr-image-placeholder, .fcr-unsupported {
     min-height: 72px; display: grid; place-items: center;
     border: 1px dashed var(--fcr-color-border); color: var(--fcr-color-text-secondary);

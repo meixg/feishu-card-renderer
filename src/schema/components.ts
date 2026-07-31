@@ -107,6 +107,7 @@ export type InteractiveContainerElement =
   };
 export type CollapsiblePanelElement = BaseElement<"collapsible_panel"> & {
   elements: CardElement[];
+  vertical_spacing?: string;
   expanded?: boolean;
   header?: {
     title?: TextElement;

@@ -124,6 +124,7 @@ export const containerFixtureMatrix = {
     complete: cardWith({
       tag: "collapsible_panel",
       element_id: "complete_panel",
+      vertical_spacing: "large",
       expanded: true,
       header: {
         title: { tag: "plain_text", content: "完整面板" },
@@ -139,6 +140,7 @@ export const containerFixtureMatrix = {
     }),
     invalid: cardWith({
       tag: "collapsible_panel",
+      vertical_spacing: "100px",
       header: {
         title: { tag: "plain_text", content: "非法面板" },
         position: "sideways",

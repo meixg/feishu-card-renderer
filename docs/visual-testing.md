@@ -59,3 +59,22 @@ Do not resolve environment drift by changing screenshot thresholds, pixel
 budgets, masks, crops, retries, or parallel baselines. Change this contract
 deliberately and obtain a fresh three-run determinism proof. Refresh snapshots
 only when fixed-environment evidence attributes a genuine baseline change.
+
+Issue #97 baseline audit keeps spacing-driven changes only where the captured
+tree contains a multi-child body or affected container flow: the complete
+renderer, closed choice/form-control cards, container cards, the all-tags
+matrix, and the four new Workspace Form variants. Single-child Markdown,
+chart, and table cards plus portal-only Button, choice Drawer, calendar, chart
+preview, and image-preview captures cannot contain an affected sibling flow.
+The retained
+[three-run evidence](./visual-evidence/issue-97-unaffected-refresh.md) links
+three independent [manifests](./visual-evidence/issue-97-unaffected-run-1.sha256)
+([run 2](./visual-evidence/issue-97-unaffected-run-2.sha256),
+[run 3](./visual-evidence/issue-97-unaffected-run-3.sha256)) and their
+[per-run status records](./visual-evidence/issue-97-unaffected-run-1.status)
+([run 2](./visual-evidence/issue-97-unaffected-run-2.status),
+[run 3](./visual-evidence/issue-97-unaffected-run-3.status)). The manifests
+cover the exact same 24 files, are byte-identical, and pass `sha256sum -c`
+against the current files. Those focused runs are not Issue #97 spacing
+evidence; the four Workspace snapshots are this issue's dedicated visual
+acceptance evidence.

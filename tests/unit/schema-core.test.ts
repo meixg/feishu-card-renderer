@@ -13,12 +13,165 @@ import {
   cardWithEveryComponent,
   minimalCardsByTag,
 } from "../../src/fixtures/schema-cards";
+import workspaceForm from "../fixtures/workspace-form.json";
 
 function codes(result: ReturnType<typeof validateCard>): string[] {
   return result.diagnostics.map(({ code }) => code);
 }
 
 describe("JSON 2.0 schema core", () => {
+  it("normalizes omitted body element-flow spacing without mutating input", () => {
+    const input = {
+      schema: "2.0",
+      body: { elements: [{ tag: "hr" }, { tag: "hr" }] },
+    } as const;
+    const before = structuredClone(input);
+
+    const result = normalizeCard(input);
+
+    expect(result.card?.body.vertical_spacing).toBe("medium");
+    expect(result.diagnostics).toEqual([]);
+    expect(input).toEqual(before);
+  });
+
+  it.each([
+    ["small", "small"],
+    ["medium", "medium"],
+    ["large", "large"],
+    ["extra_large", "extra_large"],
+    ["12px", "12px"],
+    ["0px", "0px"],
+    ["100px", "medium"],
+    ["dense", "medium"],
+  ])("normalizes body vertical_spacing %j to %j", (value, expected) => {
+    const result = normalizeCard({
+      schema: "2.0",
+      body: { vertical_spacing: value, elements: [] },
+    });
+
+    expect(result.card?.body.vertical_spacing).toBe(expected);
+    expect(result.diagnostics).toEqual(
+      expected === "medium" && value !== "medium"
+        ? [{
+            code: "invalid_style",
+            path: "$.body.vertical_spacing",
+            message:
+              "vertical_spacing contains an invalid or out-of-range length.",
+            classification: "recoverable",
+            severity: "error",
+          }]
+        : [],
+    );
+  });
+
+  it("normalizes the Workspace fixture without changing its exact input", () => {
+    const input = structuredClone(workspaceForm);
+    const normalized = normalizeCard(input).card;
+    const form = normalized?.body.elements[1];
+
+    expect(normalized?.body.vertical_spacing).toBe("medium");
+    expect(form).toMatchObject({ tag: "form", vertical_spacing: "medium" });
+    expect(input).toEqual(workspaceForm);
+
+  });
+
+  const nestedFlowOwners = [
+    {
+      owner: "column",
+      path: "$.body.elements[0].columns[0].vertical_spacing",
+      card: (vertical_spacing?: string) => ({ schema: "2.0", body: {
+        elements: [{ tag: "column_set", columns: [{
+          tag: "column", ...(vertical_spacing === undefined
+            ? {} : { vertical_spacing }), elements: [],
+        }] }],
+      } }),
+      spacing: (card: ReturnType<typeof normalizeCard>["card"]) =>
+        card?.body.elements[0]?.tag === "column_set"
+          ? card.body.elements[0].columns[0]?.vertical_spacing : undefined,
+    },
+    {
+      owner: "form",
+      path: "$.body.elements[0].vertical_spacing",
+      card: (vertical_spacing?: string) => ({ schema: "2.0", body: {
+        elements: [{ tag: "form", name: "form",
+          ...(vertical_spacing === undefined ? {} : { vertical_spacing }), elements: [{
+          tag: "button", name: "submit", form_action_type: "submit",
+        }] }],
+      } }),
+      spacing: (card: ReturnType<typeof normalizeCard>["card"]) =>
+        card?.body.elements[0]?.tag === "form"
+          ? card.body.elements[0].vertical_spacing : undefined,
+    },
+    {
+      owner: "interactive_container",
+      path: "$.body.elements[0].vertical_spacing",
+      card: (vertical_spacing?: string) => ({ schema: "2.0", body: {
+        elements: [{ tag: "interactive_container",
+          ...(vertical_spacing === undefined ? {} : { vertical_spacing }),
+          elements: [] }],
+      } }),
+      spacing: (card: ReturnType<typeof normalizeCard>["card"]) =>
+        card?.body.elements[0]?.tag === "interactive_container"
+          ? card.body.elements[0].vertical_spacing : undefined,
+    },
+    {
+      owner: "collapsible_panel",
+      path: "$.body.elements[0].vertical_spacing",
+      card: (vertical_spacing?: string) => ({ schema: "2.0", body: {
+        elements: [{ tag: "collapsible_panel",
+          ...(vertical_spacing === undefined ? {} : { vertical_spacing }),
+          expanded: true, elements: [] }],
+      } }),
+      spacing: (card: ReturnType<typeof normalizeCard>["card"]) =>
+        card?.body.elements[0]?.tag === "collapsible_panel"
+          ? card.body.elements[0].vertical_spacing : undefined,
+    },
+  ];
+
+  it.each(nestedFlowOwners)(
+    "defaults omitted nested $owner spacing without diagnostics or mutation",
+    ({ card, spacing }) => {
+      const input = card();
+      const before = structuredClone(input);
+      const result = normalizeCard(input);
+
+      expect(spacing(result.card)).toBe("medium");
+      expect(result.diagnostics).toEqual([]);
+      expect(input).toEqual(before);
+    },
+  );
+
+  it.each(nestedFlowOwners)(
+    "normalizes every supported spacing form for nested $owner flows",
+    ({ card, spacing }) => {
+      for (const value of [
+        "small", "medium", "large", "extra_large", "13px", "0px",
+      ]) {
+        const result = normalizeCard(card(value));
+        expect(spacing(result.card), value).toBe(value);
+        expect(result.diagnostics, value).toEqual([]);
+      }
+    },
+  );
+
+  it.each(nestedFlowOwners)(
+    "falls back and diagnoses invalid nested $owner spacing at its exact path",
+    ({ card, spacing, path }) => {
+      for (const value of ["dense", "100px"]) {
+        const result = normalizeCard(card(value));
+        expect(spacing(result.card), value).toBe("medium");
+        expect(result.diagnostics, value).toEqual([{
+          code: "invalid_style",
+          path,
+          message:
+            "vertical_spacing contains an invalid or out-of-range length.",
+          classification: "recoverable",
+          severity: "error",
+        }]);
+      }
+    },
+  );
+
   it("defines a discriminated runtime and TypeScript schema for every required tag", () => {
     expect(Object.keys(minimalCardsByTag).sort()).toEqual(
       [...CARD_COMPONENT_TAGS].sort(),

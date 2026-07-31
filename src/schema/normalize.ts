@@ -12,7 +12,7 @@ import {
   type ProtocolChildSlot,
 } from "./traversal-policy";
 import { validateCard } from "./validate";
-import { safePx } from "../styles/safe";
+import { safePx, safeSpacing } from "../styles/safe";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -200,6 +200,10 @@ function cloneAndNormalizeComponent(
   for (const field of invalidStyleFields(tag, output)) {
     delete output[field];
   }
+  if (["column", "form", "interactive_container", "collapsible_panel"]
+    .includes(String(tag))) {
+    output.vertical_spacing ??= "medium";
+  }
   if (tag === "collapsible_panel" && isRecord(output.border) &&
     output.border.corner_radius !== undefined &&
     safePx(output.border.corner_radius) === undefined) {
@@ -326,6 +330,9 @@ export function normalizeCard(
     )
       ? rawBody.vertical_align
       : "top",
+    vertical_spacing: safeSpacing(rawBody.vertical_spacing) === undefined
+      ? "medium"
+      : rawBody.vertical_spacing,
     elements: normalizedElements,
   };
 

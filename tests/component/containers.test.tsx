@@ -46,6 +46,7 @@ describe("container rendering", () => {
     expect(trigger).toHaveClass("fcr-ui-button", "fcr-ui-button-ghost");
     expect(trigger).toHaveAccessibleName("默认折叠");
     expect(document.getElementById(controls!)).toHaveAttribute("hidden");
+    expect(document.getElementById(controls!)).not.toBeVisible();
 
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
