@@ -60,21 +60,16 @@ budgets, masks, crops, retries, or parallel baselines. Change this contract
 deliberately and obtain a fresh three-run determinism proof. Refresh snapshots
 only when fixed-environment evidence attributes a genuine baseline change.
 
-Issue #97 baseline audit keeps spacing-driven changes only where the captured
+Issue #97 baseline audit identifies spacing-driven captures by whether the
 tree contains a multi-child body or affected container flow: the complete
 renderer, closed choice/form-control cards, container cards, the all-tags
 matrix, and the four new Workspace Form variants. Single-child Markdown,
 chart, and table cards plus portal-only Button, choice Drawer, calendar, chart
 preview, and image-preview captures cannot contain an affected sibling flow.
-The retained
-[three-run evidence](./visual-evidence/issue-97-unaffected-refresh.md) links
-three independent [manifests](./visual-evidence/issue-97-unaffected-run-1.sha256)
-([run 2](./visual-evidence/issue-97-unaffected-run-2.sha256),
-[run 3](./visual-evidence/issue-97-unaffected-run-3.sha256)) and their
-[per-run status records](./visual-evidence/issue-97-unaffected-run-1.status)
-([run 2](./visual-evidence/issue-97-unaffected-run-2.status),
-[run 3](./visual-evidence/issue-97-unaffected-run-3.status)). The manifests
-cover the exact same 24 files, are byte-identical, and pass `sha256sum -c`
-against the current files. Those focused runs are not Issue #97 spacing
-evidence; the four Workspace snapshots are this issue's dedicated visual
-acceptance evidence.
+The retained [local diagnostic evidence](./visual-evidence/issue-97-unaffected-refresh.md)
+links three independent manifests and status records, but those workstation
+bytes are not the committed baseline authority. The PR's Linux baselines come
+from successful GitHub Actions refresh run `30641180751`, artifact
+`8797583994`; its unaffected Markdown and table output exactly reproduced
+`origin/main`. The four Workspace snapshots remain this issue's dedicated
+visual acceptance evidence.
