@@ -17,7 +17,7 @@ import {
   headerChildSlots,
   type ProtocolChildSlot,
 } from "./traversal-policy";
-import { safePx, safeRgba } from "../styles/safe";
+import { safePx, safeRgba, safeSpacing } from "../styles/safe";
 
 const FORM_INTERACTIVE_TAGS = new Set([
   "input",
@@ -665,6 +665,14 @@ export function validateCard(input: unknown): ValidationResult<Card> {
       "horizontal_align",
       "vertical_align",
     ]);
+    if (input.body.vertical_spacing !== undefined &&
+      safeSpacing(input.body.vertical_spacing) === undefined) {
+      state.diagnostics.push(diagnostic(
+        "invalid_style",
+        "$.body.vertical_spacing",
+        "vertical_spacing contains an invalid or out-of-range length.",
+      ));
+    }
     if (Array.isArray(input.body.elements)) {
       validateProtocolSlots(
         input.body.elements.map((value, index) => ({

@@ -87,6 +87,7 @@ const completePatchByTag: Record<CardComponentTag, Record<string, unknown>> = {
     behaviors: [{ type: "callback", value: { complete: true } }],
   },
   collapsible_panel: {
+    vertical_spacing: "4px",
     element_id: "complete_panel", expanded: true,
     header: {
       title: plain("Complete panel"), position: "bottom",
@@ -230,7 +231,7 @@ export const completeFieldEvidenceByTag = {
   column: evidenced(["tag", "element_id", "elements", "width", "weight", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding"]),
   form: evidenced(["tag", "element_id", "name", "elements", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align"], [], ["name"]),
   interactive_container: evidenced(["tag", "element_id", "elements", "direction", "horizontal_spacing", "vertical_spacing", "horizontal_align", "vertical_align", "padding", "has_border", "corner_radius", "behaviors"]),
-  collapsible_panel: evidenced(["tag", "element_id", "elements", "expanded", "header", "border"]),
+  collapsible_panel: evidenced(["tag", "element_id", "elements", "vertical_spacing", "expanded", "header", "border"]),
   div: evidenced(["tag", "element_id", "margin", "text"]),
   markdown: evidenced(["tag", "element_id", "content", "text_size", "text_align", "icon", "margin"]),
   img: evidenced(["tag", "element_id", "img_key", "alt", "title", "margin", "corner_radius"]),

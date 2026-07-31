@@ -82,6 +82,20 @@ test("container visual baseline", async ({ page }) => {
   }
 });
 
+test("Workspace form element flow is stable across themes and devices", async ({
+  page,
+}) => {
+  await page.goto("/tests/visual/");
+  for (const colorScheme of ["light", "dark"]) {
+    for (const device of ["pc", "mobile"]) {
+      const name = `${colorScheme}-${device}`;
+      const renderer = page.locator(`#case-workspace-form-${name}`);
+      await expect(renderer.locator(".fcr-root")).toBeVisible();
+      await expect(renderer).toHaveScreenshot(`workspace-form-${name}.png`);
+    }
+  }
+});
+
 test("Markdown code scrolls locally without widening a compact mobile card", async ({
   page,
 }) => {

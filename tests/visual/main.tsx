@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { CardRenderer } from "../../src";
+import workspaceForm from "../fixtures/workspace-form.json";
 import {
   chartRendererCard,
   completeMarkdownCodeTasksCard,
@@ -655,6 +656,15 @@ createRoot(document.getElementById("root")!).render(
           },
         }} />
       </section>
+      {(["light", "dark"] as const).flatMap((colorScheme) =>
+        (["pc", "mobile"] as const).map((device) => (
+          <section id={`case-workspace-form-${colorScheme}-${device}`}
+            key={`workspace-form-${colorScheme}-${device}`}
+            style={{ width: device === "mobile" ? 390 : 600 }}>
+            <CardRenderer card={workspaceForm} onAction={() => {}}
+              colorScheme={colorScheme} device={device} />
+          </section>
+        ))) }
       {([
         ["compact", 400],
         ["default", 600],

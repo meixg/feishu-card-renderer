@@ -1,0 +1,104 @@
+{
+  "body": {
+    "elements": [
+      {
+        "tag": "markdown",
+        "content": "Form controls are display-only in Workspace."
+      },
+      {
+        "tag": "form",
+        "name": "fixture_form",
+        "elements": [
+          {
+            "tag": "input",
+            "name": "note",
+            "label": {
+              "tag": "plain_text",
+              "content": "Fixture note"
+            },
+            "required": true,
+            "placeholder": {
+              "tag": "plain_text",
+              "content": "Enter test text"
+            },
+            "label_position": "top"
+          },
+          {
+            "tag": "select_static",
+            "name": "choice",
+            "type": "default",
+            "width": "fill",
+            "options": [
+              {
+                "text": {
+                  "tag": "plain_text",
+                  "content": "Option A"
+                },
+                "value": "a"
+              },
+              {
+                "text": {
+                  "tag": "plain_text",
+                  "content": "Option B"
+                },
+                "value": "b"
+              }
+            ],
+            "required": true,
+            "placeholder": {
+              "tag": "plain_text",
+              "content": "Fixture choice"
+            }
+          },
+          {
+            "tag": "button",
+            "name": "submit_btn",
+            "text": {
+              "tag": "plain_text",
+              "content": "Submit fixture"
+            },
+            "type": "primary",
+            "behaviors": [
+              {
+                "type": "callback",
+                "value": {
+                  "intent": "fixture_submit",
+                  "source": "workspace-card-fixture",
+                  "version": 1,
+                  "ackSnapshot": {
+                    "title": "Workspace Form Fixture",
+                    "actionLabel": "Submit fixture",
+                    "fieldLabels": {
+                      "note": "Fixture note",
+                      "choice": "Fixture choice"
+                    },
+                    "bodyMarkdown": "Form controls are display-only in Workspace.",
+                    "optionLabels": {
+                      "choice": {
+                        "a": "Option A",
+                        "b": "Option B"
+                      }
+                    }
+                  },
+                  "commandTemplate": "WORKSPACE_CARD_FIXTURE_FORM note={{note}} choice={{choice}}"
+                }
+              }
+            ],
+            "form_action_type": "submit"
+          }
+        ]
+      }
+    ]
+  },
+  "config": {
+    "width_mode": "fill"
+  },
+  "header": {
+    "title": {
+      "tag": "plain_text",
+      "content": "Workspace Form Fixture"
+    },
+    "template": "blue"
+  },
+  "schema": "2.0"
+}
