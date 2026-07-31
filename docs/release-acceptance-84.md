@@ -51,7 +51,7 @@ registry 覆盖，共享 `styles.css` 明确不得进入 wrapper hash。
 若本次 owner 收缩产生 snapshot diff，只更新直接受影响的选择控件图片并在 PR 审计
 中逐图说明；Markdown、table、media 与其它内容 PNG 不批量重录。
 
-最终基线差异共 17 张 Linux PNG，阈值与截图范围均未改变：
+最终基线差异共 18 张 Linux PNG，阈值与截图范围均未改变：
 
 - 12 张完整 release matrix：每张都包含选择字段，因旧 choice typography/34px
   密度 owner 被移除，统一采用 Nova field typography 与 32px control。
@@ -61,7 +61,12 @@ registry 覆盖，共享 `styles.css` 明确不得进入 wrapper hash。
   artifact-only refresh 得到同一 SHA-256
   `a3b4247e641b66a0d62c90129bb412ffd3ce4a3009b975f14bd8e3e22d520090`；
   相对旧图只有 288 个精确 RGB 像素（42 个 Playwright significant pixels）变化，
-  因此只更新这一张稳定暗色光栅，不更新同组 mobile 或其它内容图。
+  因此更新这一张稳定暗色光栅。
+- `card-form-controls-mobile`：同一精确 HEAD 的 artifact-only refresh 与后续标准
+  Ubuntu strict run 得到逐字节相同 SHA-256
+  `1754f49d44b537f2b891efa03656d06a7f545752149f8f0296be672f3fb72cec`；
+  CI 报告 922 个 significant pixels，来自同组 mobile choice 密度 owner 收缩，
+  因此只追加这一张已被 CI 证明稳定的 mobile 光栅，不更新其它内容图。
 
 ## 已知限制
 
