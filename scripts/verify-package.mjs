@@ -15,6 +15,10 @@ const repositoryRoot = resolve(import.meta.dirname, "..");
 const temporaryRoot = await mkdtemp(join(tmpdir(), "feishu-card-renderer-consumer-"));
 const packDirectory = join(temporaryRoot, "pack");
 const consumerDirectory = join(temporaryRoot, "consumer");
+const sourceManifest = JSON.parse(await readFile(
+  join(repositoryRoot, "package.json"),
+  "utf8",
+));
 
 const requiredFiles = new Set([
   "package/package.json",
@@ -38,7 +42,6 @@ const forbiddenPathSegments = [
 ];
 const expectedManifest = {
   name: "feishu-card-renderer",
-  version: "0.0.1",
   license: "MIT",
   author: "Xuguang Mei",
   homepage: "https://meixg.github.io/feishu-card-renderer/",
@@ -100,17 +103,15 @@ try {
       "The packed README must use the repository security policy URL, not unpacked SECURITY.md.",
     );
   }
-  const sourceManifest = JSON.parse(await readFile(
-    join(repositoryRoot, "package.json"),
-    "utf8",
-  ));
   for (const [field, expected] of Object.entries(expectedManifest)) {
     if (sourceManifest[field] !== expected) {
       throw new Error(`package.json ${field} must be ${JSON.stringify(expected)}.`);
     }
   }
   if (
-    sourceManifest.repository?.url
+    typeof sourceManifest.version !== "string"
+    || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(sourceManifest.version)
+    || sourceManifest.repository?.url
       !== "git+https://github.com/meixg/feishu-card-renderer.git"
     || sourceManifest.bugs?.url
       !== "https://github.com/meixg/feishu-card-renderer/issues"
@@ -214,8 +215,14 @@ if (!html.includes('data-fcr-card-renderer="ready"')) {
     join(consumerDirectory, "node_modules", "feishu-card-renderer", "package.json"),
     "utf8",
   ));
-  if (installedManifest.name !== "feishu-card-renderer" || installedManifest.version !== "0.0.1") {
-    throw new Error("The installed package identity does not match feishu-card-renderer@0.0.1.");
+  if (
+    installedManifest.name !== "feishu-card-renderer"
+    || installedManifest.version !== sourceManifest.version
+  ) {
+    throw new Error(
+      `The installed package identity does not match `
+      + `feishu-card-renderer@${sourceManifest.version}.`,
+    );
   }
 
   console.log(
