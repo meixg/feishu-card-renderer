@@ -383,6 +383,10 @@ requireContract(
 
 const releaseState = await readFile(resolve(root, "scripts/release-state.mjs"), "utf8");
 const releaseReconcile = await readFile(resolve(root, "scripts/reconcile-release.mjs"), "utf8");
+const releaseProvenance = await readFile(
+  resolve(root, "scripts/release-provenance.mjs"),
+  "utf8",
+);
 requireContract(
   /state: "npm-unpublished"/.test(releaseState)
     && /"npm-published-metadata-missing" : "consistent"/.test(releaseState)
@@ -394,7 +398,7 @@ requireContract(
     && /version === BOOTSTRAP_VERSION\n {4}&& sourcePolicy === "existing-release"/.test(releaseState)
     && /!manualBootstrap && tag\.kind !== "lightweight"/.test(releaseState)
     && /!manualBootstrap && !npm\.provenance/.test(releaseState),
-  "release state must bind new versions to the trigger and existing versions to npm gitHead",
+  "release state must bind new versions to the trigger and existing versions to the verified npm source",
 );
 requireContract(
   /if \(plan\.state === "npm-unpublished"/.test(releaseReconcile)
@@ -403,6 +407,9 @@ requireContract(
     && /if \(plan\.repairTag\)/.test(releaseReconcile)
     && /if \(plan\.repairRelease\)/.test(releaseReconcile)
     && /process\.env\.RELEASE_READ_ONLY === "1"/.test(releaseReconcile)
+    && /PUBLISH_OUTCOME/.test(releaseReconcile)
+    && /RELEASE_REGISTRY_RETRY_DELAY_MS/.test(releaseReconcile)
+    && /verifiedProvenanceSource/.test(releaseReconcile)
     && /source_policy=\$\{current\.sourcePolicy\}/.test(releaseReconcile)
     && /repos\/\$\{repository\}\/commits\/\$\{sourceCommit\}/.test(releaseReconcile)
     && /verification\?\.verified === true/.test(releaseReconcile)
@@ -411,6 +418,17 @@ requireContract(
     && !/--method",\n {4}"POST",\n {4}`repos\/\$\{repository\}\/git\/tags/.test(releaseReconcile)
     && !/\bnpm\s+(?:publish|unpublish|deprecate|dist-tag)\b/.test(releaseReconcile),
   "reconciliation must repair only missing GitHub metadata and never mutate npm",
+);
+requireContract(
+  /import \{ verify \} from "sigstore"/.test(releaseProvenance)
+    && /certificateIssuer: GITHUB_OIDC_ISSUER/.test(releaseProvenance)
+    && /certificateIdentityURI/.test(releaseProvenance)
+    && /pkg:npm\/\$\{packageName\}@\$\{version\}/.test(releaseProvenance)
+    && /subject\[0\]\?\.digest\?\.sha512 !== integrityDigest\(integrity\)/.test(releaseProvenance)
+    && /workflow\?\.path !== RELEASE_WORKFLOW/.test(releaseProvenance)
+    && /workflow\?\.ref !== RELEASE_REF/.test(releaseProvenance)
+    && /digest\?\.gitCommit/.test(releaseProvenance),
+  "provenance recovery must verify Sigstore identity, artifact, workflow, ref and source commit",
 );
 
 requireContract(
