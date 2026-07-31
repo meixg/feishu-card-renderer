@@ -14,6 +14,11 @@ import { afterEach, describe, expect, it } from "vitest";
 const runFile = promisify(execFile);
 const temporaryDirectories: string[] = [];
 const releaseSource = resolve(import.meta.dirname, "../../scripts/reconcile-release.mjs");
+const manifest = JSON.parse(
+  await readFile(resolve(import.meta.dirname, "../../package.json"), "utf8"),
+) as { version: string };
+const releaseVersion = manifest.version;
+const releaseTag = `feishu-card-renderer@${releaseVersion}`;
 const publishedCommit = "2c266266a8e0164ddc711d116c5844848eef3660";
 const laterMainCommit = "5dcc12a5f26819241ee1ebda8fb9824421fc021a";
 
@@ -32,9 +37,10 @@ async function fakeReleaseCommands(
 ) {
   await command(directory, "npm", `
 process.stdout.write(JSON.stringify({
-  version: "0.0.1",
-  "dist-tags.latest": "0.0.1",
-  gitHead: "${gitHead}"
+  version: "${releaseVersion}",
+  "dist-tags.latest": "${releaseVersion}",
+  gitHead: "${gitHead}",
+  "dist.attestations": { provenance: { predicateType: "https://slsa.dev/provenance/v1" } }
 }));
 `);
   await command(directory, "gh", `
@@ -45,12 +51,10 @@ if (args.includes("/commits/")) {
     commit: { verification: { verified: ${verified}, reason: "${verified ? "valid" : "unsigned"}" } }
   }));
 } else if (args.includes("git/ref/tags/")) {
-  process.stdout.write(JSON.stringify({ object: { type: "tag", sha: "b".repeat(40) } }));
-} else if (args.includes("git/tags/")) {
   process.stdout.write(JSON.stringify({ object: { type: "commit", sha: "${gitHead}" } }));
 } else {
   process.stdout.write(JSON.stringify({
-    tagName: "feishu-card-renderer@0.0.1",
+    tagName: "${releaseTag}",
     isDraft: false,
     isPrerelease: false,
     assets: []
@@ -65,7 +69,7 @@ afterEach(async () => {
 });
 
 describe("release reconciliation adapter", () => {
-  it("no-ops for 0.0.1 on a later main SHA by following npm gitHead", async () => {
+  it("no-ops for the current version on a later main SHA by following npm gitHead", async () => {
     const directory = await mkdtemp(join(tmpdir(), "release-reconcile-"));
     temporaryDirectories.push(directory);
     const output = join(directory, "github-output");
@@ -84,7 +88,7 @@ describe("release reconciliation adapter", () => {
       },
     });
 
-    expect(stdout).toContain(`feishu-card-renderer@0.0.1 -> ${publishedCommit}`);
+    expect(stdout).toContain(`${releaseTag} -> ${publishedCommit}`);
     expect(await readFile(output, "utf8")).toBe(
       "should-publish=false\nsource_policy=existing-release\n",
     );
@@ -138,8 +142,8 @@ describe("release reconciliation adapter", () => {
 const fs = require("node:fs");
 fs.appendFileSync(process.env.FAKE_NPM_CALLS, process.argv.slice(2).join(" ") + "\\n");
 process.stdout.write(JSON.stringify({
-  version: "0.0.1",
-  "dist-tags.latest": "0.0.1",
+  version: "${releaseVersion}",
+  "dist-tags.latest": "${releaseVersion}",
   gitHead: "${laterMainCommit}",
   "dist.attestations": { provenance: { predicateType: "https://slsa.dev/provenance/v1" } }
 }));
@@ -173,7 +177,7 @@ if (args.includes("/commits/")) {
     process.exit(1);
   }
   process.stdout.write(JSON.stringify({
-    tagName: "feishu-card-renderer@0.0.1",
+    tagName: "${releaseTag}",
     isDraft: false,
     isPrerelease: false,
     assets: []
@@ -193,7 +197,7 @@ if (args.includes("/commits/")) {
       },
     });
 
-    expect(stdout).toContain(`feishu-card-renderer@0.0.1 -> ${laterMainCommit}`);
+    expect(stdout).toContain(`${releaseTag} -> ${laterMainCommit}`);
     expect(await readFile(join(directory, "tag-created"), "utf8")).toBe("lightweight");
     expect(await readFile(join(directory, "release-created"), "utf8")).toBe("release");
     expect(await readFile(npmCalls, "utf8")).toMatch(/^view /);
