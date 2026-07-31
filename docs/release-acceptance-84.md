@@ -51,6 +51,18 @@ registry 覆盖，共享 `styles.css` 明确不得进入 wrapper hash。
 若本次 owner 收缩产生 snapshot diff，只更新直接受影响的选择控件图片并在 PR 审计
 中逐图说明；Markdown、table、media 与其它内容 PNG 不批量重录。
 
+最终基线差异共 17 张 Linux PNG，阈值与截图范围均未改变：
+
+- 12 张完整 release matrix：每张都包含选择字段，因旧 choice typography/34px
+  密度 owner 被移除，统一采用 Nova field typography 与 32px control。
+- 4 张 choice 专项：PC compact popup，以及 mobile Drawer、dark long option 和
+  person resource，直接反映相同 owner 收缩。
+- `card-form-controls-dark`：标准 Ubuntu runner 连续两次 strict run 与一次
+  artifact-only refresh 得到同一 SHA-256
+  `a3b4247e641b66a0d62c90129bb412ffd3ce4a3009b975f14bd8e3e22d520090`；
+  相对旧图只有 288 个精确 RGB 像素（42 个 Playwright significant pixels）变化，
+  因此只更新这一张稳定暗色光栅，不更新同组 mobile 或其它内容图。
+
 ## 已知限制
 
 - mobile virtual keyboard 自动化仍是 Chromium visual viewport 模拟，不代替真实
