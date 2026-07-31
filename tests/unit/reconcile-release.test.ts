@@ -17,6 +17,7 @@ const releaseSource = resolve(import.meta.dirname, "../../scripts/reconcile-rele
 const manifest = JSON.parse(
   await readFile(resolve(import.meta.dirname, "../../package.json"), "utf8"),
 ) as { version: string };
+const repository = "meixg/feishu-card-renderer";
 const releaseVersion = manifest.version;
 const releaseTag = `feishu-card-renderer@${releaseVersion}`;
 const publishedCommit = "2c266266a8e0164ddc711d116c5844848eef3660";
@@ -69,6 +70,65 @@ afterEach(async () => {
 });
 
 describe("release reconciliation adapter", () => {
+  it("retries registry propagation after a publish attempt", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "release-reconcile-"));
+    temporaryDirectories.push(directory);
+    const npmCalls = join(directory, "npm-calls");
+    await writeFile(npmCalls, "");
+    await command(directory, "npm", `
+const fs = require("node:fs");
+const calls = fs.readFileSync(process.env.FAKE_NPM_CALLS, "utf8").trim().split("\\n")
+  .filter(Boolean).length;
+fs.appendFileSync(process.env.FAKE_NPM_CALLS, "view\\n");
+if (calls === 0) {
+  process.stderr.write("E404 Not Found");
+  process.exit(1);
+}
+process.stdout.write(JSON.stringify({
+  version: "${releaseVersion}",
+  "dist-tags.latest": "${releaseVersion}",
+  gitHead: "${laterMainCommit}",
+  "dist.attestations": { provenance: { predicateType: "https://slsa.dev/provenance/v1" } }
+}));
+`);
+    await command(directory, "gh", `
+const args = process.argv.slice(2).join(" ");
+if (args.includes("/commits/")) {
+  process.stdout.write(JSON.stringify({
+    sha: "${laterMainCommit}",
+    commit: { verification: { verified: true, reason: "valid" } }
+  }));
+} else if (args.includes("git/ref/tags/")) {
+  process.stdout.write(JSON.stringify({
+    object: { type: "commit", sha: "${laterMainCommit}" }
+  }));
+} else {
+  process.stdout.write(JSON.stringify({
+    tagName: "${releaseTag}",
+    isDraft: false,
+    isPrerelease: false,
+    assets: []
+  }));
+}
+`);
+
+    const { stdout } = await runFile(process.execPath, [releaseSource], {
+      env: {
+        ...process.env,
+        PATH: `${directory}:${process.env.PATH}`,
+        FAKE_NPM_CALLS: npmCalls,
+        GITHUB_REPOSITORY: repository,
+        PUBLISH_OUTCOME: "success",
+        RELEASE_SOURCE_POLICY: "current-workflow",
+        RELEASE_TRIGGER_COMMIT: laterMainCommit,
+        RELEASE_REGISTRY_RETRY_DELAY_MS: "0",
+      },
+    });
+
+    expect(stdout).toContain(`${releaseTag} -> ${laterMainCommit}`);
+    expect(await readFile(npmCalls, "utf8")).toBe("view\nview\n");
+  });
+
   it("no-ops for the current version on a later main SHA by following npm gitHead", async () => {
     const directory = await mkdtemp(join(tmpdir(), "release-reconcile-"));
     temporaryDirectories.push(directory);

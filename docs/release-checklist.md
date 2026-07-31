@@ -134,10 +134,15 @@ workflow 在发布尝试后重新读取 `package.json`、npm registry、tag 与 
 1. npm 中不存在本地版本：状态为 `npm-unpublished`，preflight 输出
    `source_policy=current-workflow`，此时才将待发布 source 绑定到当前 workflow 的
    `github.sha`。publish 后（包括 registry 已接受但命令失败的部分成功、或并发 actor
-   抢先发布的竞态）必须看到 npm `gitHead === github.sha`；否则 fail closed，禁止创建
-   tag/Release。npm 前已有 metadata 也会 fail closed。
-2. npm 已有本地版本：以该版本不可变的 npm `gitHead` 作为 source record，不要求它
-   等于触发本次 workflow 的后续 `main` SHA；preflight 输出
+   抢先发布的竞态）对 registry 404、尚未出现的 provenance 或 source 最多执行五次
+   有界指数退避。最终解析出的 source commit 必须等于 `github.sha`；否则 fail closed，
+   禁止创建 tag/Release。npm 前已有 metadata 也会 fail closed。
+2. npm 已有本地版本：优先使用合法 npm `gitHead`；Trusted Publishing 未提供
+   `gitHead` 时，下载唯一的 SLSA provenance bundle，并通过 Sigstore 校验 GitHub
+   OIDC issuer、`release.yml@refs/heads/main` identity、包名/版本、tarball SHA-512、
+   仓库、workflow/ref、GitHub-hosted builder 与 invocation URL 后，才接受
+   `resolvedDependencies.gitCommit` 作为 source record。该 source 不要求等于触发本次
+   workflow 的后续 `main` SHA；preflight 输出
    `source_policy=existing-release` 并由 final reconcile 原样消费。若 tag 或 Release 缺失，状态为
    `npm-published-metadata-missing`，只用 GitHub API 补缺失 metadata，不再次 publish。
 3. npm、`latest`、tag、Release、source commit 与 provenance 一致：状态为
@@ -152,9 +157,10 @@ workflow 在发布尝试后重新读取 `package.json`、npm registry、tag 与 
    版本缺 provenance：fail closed，先调查，不自动改写不可变历史。
 
 发布成功后必须看到精确 tag `feishu-card-renderer@<version>`、非 Draft/非 prerelease
-Release、零 assets、npm `latest=<version>`、npm `gitHead=<release commit>`，并在
-`0.0.1` 之后看到 npm provenance。自动化分别报告 tag 类型/target 与 source commit
-verification；不得把 lightweight tag 或“指向 signed commit”描述成 signed tag。
+Release、零 assets、npm `latest=<version>`，并看到 npm `gitHead=<release commit>`
+或经上述完整校验的 provenance source commit。`0.0.1` 之后必须存在 npm provenance。
+自动化分别报告 tag 类型/target 与 source commit verification；不得把 lightweight
+tag 或“指向 signed commit”描述成 signed tag。
 
 维护者需要在本机做绝对只读核验时，为 reconcile 命令设置
 `RELEASE_READ_ONLY=1`；任何缺失 metadata 会直接报错，不进入 tag/Release 修复。
@@ -164,12 +170,13 @@ verification；不得把 lightweight tag 或“指向 signed commit”描述成 
 - 任意失败先使用 GitHub 的 **Re-run failed jobs**；不要从本机补发 npm。若 npm 尚未
   发布，重跑仍由同一固定 workflow 和 OIDC 完成 publish。
 - 若 npm publish 已成功但后续 tag/Release reconcile 失败，重跑会由 registry
-  检测到已存在版本，并只补缺失 tag/Release。它绝不再次 publish 同一版本。
+  检测到已存在版本，通过 `gitHead` 或已验证 provenance 恢复原发布 source，并只补
+  缺失 tag/Release。它绝不再次 publish 同一版本。
 - 若 tag 或 Release 已存在但指向错误 source，停止重跑并开 incident；release tag
   ruleset 禁止覆盖或删除，不能用 force/update 绕过。
-- metadata 修复完成后再次只读核对 npm version、`latest`、`gitHead`、provenance、
-  tag 解引用 commit、Release 状态与 assets。将 workflow run 与核对结果记录到关联
-  Issue。
+- metadata 修复完成后再次只读核对 npm version、`latest`、可用的 `gitHead` 或已验证
+  provenance source、tag 解引用 commit、Release 状态与 assets。将 workflow run 与
+  核对结果记录到关联 Issue。
 
 ### 错误版本恢复
 

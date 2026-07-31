@@ -3,9 +3,11 @@ import { appendFile, readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import {
   PACKAGE_NAME,
+  BOOTSTRAP_VERSION,
   expectedTag,
   planReleaseRecovery,
 } from "./release-state.mjs";
+import { verifiedProvenanceSource } from "./release-provenance.mjs";
 
 const runFile = promisify(execFile);
 const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
@@ -26,6 +28,33 @@ async function run(command, args, options = {}) {
 }
 
 async function npmState() {
+  const isPostPublish = typeof process.env.PUBLISH_OUTCOME === "string";
+  const attempts = isPostPublish ? 5 : 1;
+  const configuredDelay = process.env.RELEASE_REGISTRY_RETRY_DELAY_MS;
+  const retryDelay = configuredDelay === undefined ? 1_000 : Number(configuredDelay);
+  if (!Number.isInteger(retryDelay) || retryDelay < 0 || retryDelay > 10_000) {
+    throw new Error("release registry retry delay is invalid");
+  }
+
+  let lastState;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    lastState = await npmStateOnce();
+    const pending = !lastState
+      || !/^[0-9a-f]{40}$/u.test(lastState.gitHead)
+      || (
+        version !== BOOTSTRAP_VERSION
+        && lastState.provenance !== true
+      );
+    if (!pending || attempt === attempts) return lastState;
+    await new Promise((resolve) => {
+      setTimeout(resolve, retryDelay * 2 ** (attempt - 1));
+    });
+  }
+  return lastState;
+}
+
+async function npmStateOnce() {
+  let value;
   try {
     const source = await run("npm", [
       "view",
@@ -33,20 +62,51 @@ async function npmState() {
       "version",
       "dist-tags.latest",
       "gitHead",
+      "dist.integrity",
       "dist.attestations",
       "--json",
     ]);
-    const value = JSON.parse(source);
-    return {
-      version: value.version,
-      latest: value["dist-tags.latest"],
-      gitHead: value.gitHead,
-      provenance: Boolean(value["dist.attestations"]?.provenance),
-    };
+    value = JSON.parse(source);
   } catch (error) {
     if (error?.stderr?.includes("E404")) return undefined;
     throw error;
   }
+
+  const provenance = Boolean(value["dist.attestations"]?.provenance);
+  let gitHead = value.gitHead;
+  if (!/^[0-9a-f]{40}$/u.test(gitHead) && provenance) {
+    const attestationUrl =
+      `https://registry.npmjs.org/-/npm/v1/attestations/`
+      + encodeURIComponent(`${PACKAGE_NAME}@${version}`);
+    const response = await fetch(attestationUrl, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (response.status === 404) {
+      return {
+        version: value.version,
+        latest: value["dist-tags.latest"],
+        gitHead,
+        provenance: false,
+      };
+    }
+    if (!response.ok) {
+      throw new Error(`npm provenance request failed with HTTP ${response.status}`);
+    }
+    gitHead = await verifiedProvenanceSource({
+      document: await response.json(),
+      integrity: value["dist.integrity"],
+      packageName: PACKAGE_NAME,
+      repository,
+      version,
+    });
+  }
+  return {
+    version: value.version,
+    latest: value["dist-tags.latest"],
+    gitHead,
+    provenance,
+  };
 }
 
 async function tagState(tagName) {
