@@ -63,9 +63,15 @@ choice indicator/chip remove 均为 UI module 中的 named Lucide `CheckIcon`/`X
 最终基线差异共 18 张 Linux PNG，阈值与截图范围均未改变：
 
 - 12 张完整 release matrix：每张都包含选择字段，因旧 choice typography/34px
-  密度 owner 被移除，统一采用 Nova field typography 与 32px control。
+  密度 owner 被移除，统一采用 Nova field typography 与 32px control。独立审查
+  后补回的 closed mobile ellipsis/placeholder Nova 规则只再次影响其中 6 张 mobile
+  matrix；PC 六张逐字节不变。
 - 4 张 choice 专项：PC compact popup，以及 mobile Drawer、dark long option 和
-  person resource，直接反映相同 owner 收缩。
+  person resource，直接反映相同 owner 收缩。字形 indicator 改为 named Lucide
+  `CheckIcon` 后只再次影响 mobile Drawer 与 person resource；artifact-only refresh
+  与标准 CI actual 对应 SHA-256 分别为
+  `e5b7805b91acb2c89850c913d967c6996386335db5d87ae1532046c4a637ec9d` 和
+  `4848a96a021ba0923529f8601641cafa4af988478bee1a1533496f77b1a0a5d3`。
 - `card-form-controls-dark`：标准 Ubuntu runner 连续两次 strict run 与一次
   artifact-only refresh 得到同一 SHA-256
   `a3b4247e641b66a0d62c90129bb412ffd3ce4a3009b975f14bd8e3e22d520090`；
