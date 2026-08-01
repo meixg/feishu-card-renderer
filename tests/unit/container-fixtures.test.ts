@@ -171,6 +171,23 @@ describe("container fixtures", () => {
     });
   });
 
+  it("defaults a configured collapsible border to a 5px radius", () => {
+    const result = normalizeCard({
+      schema: "2.0",
+      body: {
+        elements: [
+          { tag: "collapsible_panel", border: { color: "grey" }, elements: [] },
+          { tag: "collapsible_panel", elements: [] },
+        ],
+      },
+    });
+
+    expect(result.card?.body.elements[0]).toMatchObject({
+      border: { color: "grey", corner_radius: "5px" },
+    });
+    expect(result.card?.body.elements[1]).not.toHaveProperty("border");
+  });
+
   it("keeps form/table/chart nesting conservative", () => {
     const result = validateCard(invalidContainerCard);
     const codes = result.diagnostics.map(

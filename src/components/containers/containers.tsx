@@ -209,7 +209,10 @@ export function CollapsiblePanel({ element, path }: {
   return (
     <Collapsible
       render={<section />}
-      className="fcr-collapsible-panel"
+      className={[
+        "fcr-collapsible-panel",
+        element.border ? "fcr-has-border" : "",
+      ].filter(Boolean).join(" ")}
       data-fcr-path={path}
       data-fcr-depth={containerDepth}
       open={expanded}

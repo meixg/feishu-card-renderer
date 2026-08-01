@@ -6,6 +6,7 @@ import {
   screen,
   within,
 } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
@@ -59,6 +60,49 @@ describe("container rendering", () => {
     rerender(<CardRenderer card={defaultContainerCard} />);
     expect(screen.getByRole("button", { name: "默认折叠" }))
       .toHaveAttribute("aria-controls", controls);
+  });
+
+  it("only draws a rounded collapsible border when border is configured", () => {
+    const rendererCss = readFileSync("src/styles.css", "utf8");
+    const { container, rerender } = render(<CardRenderer card={{
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "collapsible_panel",
+          header: {
+            title: { tag: "plain_text", content: "无边框" },
+          },
+          elements: [],
+        }],
+      },
+    }} />);
+    const panel = container.querySelector(".fcr-collapsible-panel");
+
+    expect(panel).not.toHaveClass("fcr-has-border");
+    expect(panel).not.toHaveStyle({ borderRadius: "5px" });
+    expect(rendererCss).not.toMatch(
+      /\.fcr-collapsible-panel\s*\{[^}]*\bborder:/s,
+    );
+
+    rerender(<CardRenderer card={{
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "collapsible_panel",
+          header: {
+            title: { tag: "plain_text", content: "默认圆角边框" },
+          },
+          border: { color: "grey" },
+          elements: [],
+        }],
+      },
+    }} />);
+
+    expect(panel).toHaveClass("fcr-has-border");
+    expect(panel).toHaveStyle({ borderRadius: "5px" });
+    expect(rendererCss).toMatch(
+      /\.fcr-collapsible-panel\.fcr-has-border\s*\{[^}]*\bborder:/s,
+    );
   });
 
   it.each(["Enter", " "])("toggles the disclosure with %j", (key) => {
