@@ -24,7 +24,7 @@
   },
   "localFiles": {
     "src/components/ui/collapsible.tsx": "70bdce26e380876ab9906b588a55bf103137755548c1c26d2b920c1c45b3e73f",
-    "src/components/containers/containers.tsx": "bb58cca1689d9d7eed14299833d6eb0b8d28001cc0c0e9733666bae7ef8350cb",
+    "src/components/containers/containers.tsx": "adb1ab663bd625c4271d9829810447c493c70f1d01098e8bb463a5c8a72a7eca",
     "src/styles/containers-nova.css": "99f0dbb4dfb227a325cc73e7caa5a292ba6eaf082b68bac67c969c9e3b237bdf"
   }
 }

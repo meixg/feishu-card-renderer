@@ -247,6 +247,8 @@
   }
   .fcr-collapsible-panel {
     overflow: hidden;
+  }
+  .fcr-collapsible-panel.fcr-has-border {
     border: 1px solid var(--fcr-color-border);
   }
   .fcr-collapsible-content {

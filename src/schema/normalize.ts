@@ -204,11 +204,13 @@ function cloneAndNormalizeComponent(
     .includes(String(tag))) {
     output.vertical_spacing ??= "medium";
   }
-  if (tag === "collapsible_panel" && isRecord(output.border) &&
-    output.border.corner_radius !== undefined &&
-    safePx(output.border.corner_radius) === undefined) {
+  if (tag === "collapsible_panel" && isRecord(output.border)) {
     const border = { ...output.border };
-    delete border.corner_radius;
+    if (border.corner_radius !== undefined &&
+      safePx(border.corner_radius) === undefined) {
+      delete border.corner_radius;
+    }
+    border.corner_radius ??= "5px";
     output.border = border;
   }
 
