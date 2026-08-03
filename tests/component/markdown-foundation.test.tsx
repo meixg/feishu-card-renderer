@@ -91,6 +91,42 @@ describe("bounded markdown semantics through CardRenderer", () => {
     ]));
   });
 
+  it("renders the Feishu font color extension without exposing its markup", async () => {
+    const onDiagnostic = vi.fn();
+    const { container } = render(<CardRenderer card={card(
+      '<font color="grey">✅ 已操作，正在处理，请勿重复点击。</font>',
+    )} onDiagnostic={onDiagnostic} />);
+
+    expect(screen.queryByText(/<\/?font/)).toBeNull();
+    const status = screen.getByText("✅ 已操作，正在处理，请勿重复点击。");
+    expect(status.tagName).toBe("SPAN");
+    expect(status).toHaveAttribute("data-fcr-font-color", "grey");
+    expect(status).toHaveStyle({ color: "var(--fcr-color-text-secondary)" });
+    expect(container.querySelector("font")).toBeNull();
+    await act(async () => {});
+    expect(onDiagnostic).toHaveBeenCalledWith([]);
+  });
+
+  it("keeps malformed or unrecognized font extensions visible and inert", async () => {
+    const onDiagnostic = vi.fn();
+    const { container } = render(<CardRenderer card={card(
+      '<font color="grey" onclick="alert(1)">unsafe</font>\n\n'
+        + '<font color="chartreuse">unknown</font>',
+    )} onDiagnostic={onDiagnostic} />);
+
+    expect(container).toHaveTextContent(
+      '<font color="grey" onclick="alert(1)">unsafe</font>',
+    );
+    expect(container).toHaveTextContent(
+      '<font color="chartreuse">unknown</font>',
+    );
+    expect(container.querySelector("font")).toBeNull();
+    await act(async () => {});
+    expect(onDiagnostic.mock.calls[0][0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "markdown_unsupported_markup" }),
+    ]));
+  });
+
   it("blocks Markdown images and unsafe links without network-capable elements", async () => {
     const onDiagnostic = vi.fn();
     const { container } = render(<CardRenderer

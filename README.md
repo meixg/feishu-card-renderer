@@ -204,8 +204,10 @@ recoverable diagnostic；`small`、`large`、`extra_large`、合法 px 与 `0px`
 作为额外偏移相加；header、横向布局、分栏列序列和控件内部反馈不使用该纵向默认值。
 
 独立 `markdown` 使用有界 CommonMark 白名单，当前基础语义包括标题、段落、强调、
-粗体、删除线、安全链接、嵌套列表、引用和分隔线。它与有限语法 `lark_md`
-保持隔离。原始 HTML 和尚未实现的飞书扩展标签显示为可见原文；Markdown 图片
+粗体、删除线、安全链接、嵌套列表、引用和分隔线，并以受控 AST 节点支持飞书
+`<font color="…">` 颜色扩展（颜色值使用固定协议枚举）。它与有限语法 `lark_md`
+保持隔离。原始 HTML、带额外属性或未知颜色的 `font` 标签，以及尚未实现的飞书扩展
+标签显示为可见原文；Markdown 图片
 只显示 alt，不加载网络资源。单个 Markdown 限制为 20,000 字符、12 层语法深度、
 1,000 个语法节点和 200 个链接/图片/列表项，超限时保留安全前缀并通过
 `onDiagnostic` 报告 recoverable diagnostic。行内代码可在窄卡片中安全断行；

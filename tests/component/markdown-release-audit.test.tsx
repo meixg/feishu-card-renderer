@@ -42,6 +42,9 @@ describe("Markdown release fixtures through public seams", () => {
     expect(container.querySelector("em")).toHaveTextContent("强调");
     expect(container.querySelector("strong")).toHaveTextContent("粗体");
     expect(container.querySelector("del")).toHaveTextContent("删除线");
+    expect(container.querySelector(
+      'strong > [data-fcr-font-color="grey"]',
+    )).toHaveTextContent("协议颜色扩展");
     expect(within(container).getByRole("link", { name: "安全链接" }))
       .toHaveAttribute("rel", "noopener noreferrer");
     expect(container.querySelector("ul ol")).not.toBeNull();

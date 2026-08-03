@@ -16,6 +16,10 @@ _Avoid_: 博客风、文档站风、重装饰排版
 当前明确支持的 CommonMark 块级与行内结构；原始 HTML 不执行、不直接注入 DOM，飞书扩展标签只在其协议语义被单独实现后进入该集合。
 _Avoid_: 完整 HTML、浏览器原生 HTML 透传
 
+**协议字体颜色扩展**:
+独立 `markdown` 中严格配对且只包含合法 `color` 枚举的 `<font>` 标签；解析后成为受控语义节点，不创建原生 `font` DOM，也不接受额外 HTML 属性。
+_Avoid_: HTML font 透传、任意 CSS 颜色、静默剥离非法属性
+
 **宿主主题变量**:
 由集成方覆盖的稳定 `--fcr-*` 语义样式入口，用于品牌适配；其默认值来自 shadcn/ui，并在内部映射到当前 shadcn 快照的主题 token。
 _Avoid_: Markdown 样式 props、JSON 自定义 CSS、公开 shadcn 内部 token

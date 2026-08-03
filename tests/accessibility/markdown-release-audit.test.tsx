@@ -19,6 +19,8 @@ it("exposes every supported Markdown structure through an accessible public seam
   expect(within(container).getByRole("table")).toBeVisible();
   expect(container.querySelectorAll("code").length).toBeGreaterThan(1);
   expect(within(container).getByRole("link", { name: "安全链接" })).toBeVisible();
+  expect(container.querySelector('[data-fcr-font-color="grey"]'))
+    .toHaveTextContent("协议颜色扩展");
   expect(within(container).getByRole("img", {
     name: "未完成，只读任务",
   })).toBeVisible();
