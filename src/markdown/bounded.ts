@@ -21,6 +21,7 @@ export const MARKDOWN_LIMITS = {
 export type MarkdownNode = {
   type: string;
   value?: string;
+  color?: string;
   url?: string;
   alt?: string | null;
   depth?: number;
@@ -31,6 +32,79 @@ export type MarkdownNode = {
   align?: Array<"left" | "right" | "center" | null>;
   children?: MarkdownNode[];
 };
+
+const FONT_COLORS = new Set([
+  "blue",
+  "wathet",
+  "turquoise",
+  "green",
+  "yellow",
+  "orange",
+  "red",
+  "carmine",
+  "violet",
+  "purple",
+  "indigo",
+  "grey",
+  "white",
+]);
+
+function fontColorOpening(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const match = /^<font\s+color\s*=\s*(?:"([a-z]+)"|'([a-z]+)')\s*>$/i
+    .exec(value);
+  const color = (match?.[1] ?? match?.[2])?.toLowerCase();
+  return color && FONT_COLORS.has(color) ? color : undefined;
+}
+
+function isFontColorClosing(value: string | undefined): boolean {
+  return typeof value === "string" && /^<\/font\s*>$/i.test(value);
+}
+
+function isFontOpeningMarkup(value: string | undefined): boolean {
+  return typeof value === "string" && /^<font\b[^>]*>$/i.test(value);
+}
+
+function transformFontColorExtensions(node: MarkdownNode): void {
+  if (!node.children) return;
+  const source = node.children;
+  const transformed: MarkdownNode[] = [];
+  for (let index = 0; index < source.length; index += 1) {
+    const current = source[index];
+    const color = current.type === "html"
+      ? fontColorOpening(current.value)
+      : undefined;
+    if (!color) {
+      transformFontColorExtensions(current);
+      transformed.push(current);
+      continue;
+    }
+
+    let nesting = 1;
+    let closingIndex = index + 1;
+    for (; closingIndex < source.length; closingIndex += 1) {
+      const candidate = source[closingIndex];
+      if (candidate.type !== "html") continue;
+      if (isFontOpeningMarkup(candidate.value)) nesting += 1;
+      else if (isFontColorClosing(candidate.value)) nesting -= 1;
+      if (nesting === 0) break;
+    }
+    if (nesting !== 0) {
+      transformed.push(current);
+      continue;
+    }
+
+    const extension: MarkdownNode = {
+      type: "fontColor",
+      color,
+      children: source.slice(index + 1, closingIndex),
+    };
+    transformFontColorExtensions(extension);
+    transformed.push(extension);
+    index = closingIndex;
+  }
+  node.children = transformed;
+}
 
 export type MarkdownAnalysis = {
   tree: MarkdownNode;
@@ -69,6 +143,7 @@ export function analyzeMarkdown(
         gfmTableFromMarkdown(),
       ],
     }) as MarkdownNode;
+    transformFontColorExtensions(tree);
     decorateTaskListItems(tree);
     let nodes = 0;
     let complexNodes = 0;

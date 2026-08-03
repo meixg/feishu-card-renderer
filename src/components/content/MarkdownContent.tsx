@@ -7,6 +7,22 @@ import { MarkdownTable } from "./MarkdownTable";
 
 type Budget = { nodes: number; complexNodes: number; tableNodes: number };
 
+const FONT_COLORS: Readonly<Record<string, string>> = {
+  blue: "#3370ff",
+  wathet: "#3cc8ff",
+  turquoise: "#00b8a9",
+  green: "#34c724",
+  yellow: "#f5b500",
+  orange: "#ff8800",
+  red: "#f54a45",
+  carmine: "#f01d94",
+  violet: "#8f48d9",
+  purple: "#7b67ee",
+  indigo: "#5b65f5",
+  grey: "var(--fcr-color-text-secondary)",
+  white: "#ffffff",
+};
+
 function sourceText(node: MarkdownNode): string {
   if (node.type === "image") return node.alt || "图片";
   if (typeof node.value === "string") return node.value;
@@ -52,6 +68,10 @@ function renderNode(
     case "emphasis": return <em>{children(node, budget, depth)}</em>;
     case "strong": return <strong>{children(node, budget, depth)}</strong>;
     case "delete": return <del>{children(node, budget, depth)}</del>;
+    case "fontColor":
+      return <span data-fcr-font-color={node.color} style={{
+        color: FONT_COLORS[node.color ?? ""],
+      }}>{children(node, budget, depth)}</span>;
     case "inlineCode":
       return <code className="fcr-markdown-inline-code">{node.value}</code>;
     case "code": {

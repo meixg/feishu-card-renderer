@@ -51,14 +51,14 @@ compact/default/fill。
 
 `markdownReleaseFixtures` 独立提供 minimal、complete、defaults、invalid 和
 unknown 五类卡。complete 卡同时覆盖全部已支持语法（标题、段落、强调、粗体、
-删除线、安全链接、嵌套有序/无序列表、引用、分隔线、行内/围栏/缩进代码、只读
+删除线、安全链接、嵌套有序/无序列表、引用、分隔线、受控 `font` 颜色扩展、行内/围栏/缩进代码、只读
 任务列表和 GFM 表格）及全部已实现官方字段：`element_id`、`content`、
 `text_size`、`text_align`、`icon`、`margin`。这些字段不再列入透传缺口；
 `completeFieldEvidenceByTag.markdown` 逐字段绑定公共 `CardRenderer` DOM 差分
 证据，默认值和非法值另经公共 schema seam 验证。
 
 `adversarialMarkdownFixtures` 覆盖 20,000 字符边界、20 层嵌套、超限表格、病理
-分隔符、260 个链接、危险 URL、原始 HTML、未知飞书扩展标签和远程 Markdown
+分隔符、260 个链接、危险 URL、原始 HTML、非法 `font` 属性/颜色、未知飞书扩展标签和远程 Markdown
 图片。组件验收要求超限保留安全前缀和 sibling、产生 recoverable diagnostic，
 且不出现可执行 HTML、危险链接或网络图片元素。
 
