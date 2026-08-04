@@ -16,8 +16,10 @@ export type {
   CardBody,
   CardConfig,
   CardHeader,
+  HeaderTemplate,
   NormalizedCard,
 } from "./card";
+export { HEADER_TEMPLATES } from "./card";
 export type { Card as CardJsonV2 } from "./card";
 export {
   childPath,

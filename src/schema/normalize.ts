@@ -1,4 +1,4 @@
-import type { NormalizedCard } from "./card";
+import { HEADER_TEMPLATES, type NormalizedCard } from "./card";
 import { CONTAINER_TAGS } from "./components";
 import {
   childPath,
@@ -290,6 +290,9 @@ export function normalizeCard(
   };
   if (isRecord(cloned.header)) {
     normalizeSlots(headerChildSlots(cloned.header), "$.header", 0, state);
+    cloned.header.template = HEADER_TEMPLATES.includes(
+      cloned.header.template as typeof HEADER_TEMPLATES[number],
+    ) ? cloned.header.template : "default";
   }
   if (isRecord(cloned.body) && Array.isArray(cloned.body.elements)) {
     cloned.body.elements = cloned.body.elements.map((element, index) =>

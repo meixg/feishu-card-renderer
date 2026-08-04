@@ -72,6 +72,16 @@ test("theme, device, and width visual baselines", async ({ page }) => {
   }
 });
 
+test("blue header template has protocol theme colors", async ({ page }) => {
+  await page.goto("/tests/visual/");
+  const renderer = page.locator("#case-header-template-blue");
+  const header = renderer.locator(".fcr-header");
+
+  await expect(header).toHaveCSS("background-color", "rgb(232, 239, 255)");
+  await expect(header).toHaveCSS("color", "rgb(36, 91, 219)");
+  await expect(renderer).toHaveScreenshot("header-template-blue.png");
+});
+
 test("container visual baseline", async ({ page }) => {
   await page.goto("/tests/visual/");
   for (const name of ["containers", "containers-dark", "containers-narrow"]) {

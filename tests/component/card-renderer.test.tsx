@@ -56,6 +56,20 @@ describe("CardRenderer", () => {
     expect(document.querySelector("script")).toBeNull();
   });
 
+  it("renders a blue header when header.template is blue", () => {
+    const { container } = render(<CardRenderer card={{
+      schema: "2.0",
+      header: {
+        title: { tag: "plain_text", content: "Multi Account Misjudge Appeal" },
+        template: "blue",
+      },
+      body: { elements: [] },
+    }} />);
+
+    expect(container.querySelector(".fcr-header"))
+      .toHaveClass("fcr-header-template-blue");
+  });
+
   it("sanitizes markdown links and never creates raw HTML", () => {
     const { container } = render(<CardRenderer card={{ schema: "2.0", body: { elements: [{
       tag: "markdown",

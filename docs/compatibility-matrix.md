@@ -27,7 +27,9 @@ body 流另覆盖当前支持 margin 的元素在正/负/零值下与父级 gap 
 `{ note, choice }` formValue。
 
 `header` 是顶层结构而非 `body.elements` tag，由 renderer fixture、schema 测试和
-light/dark 视觉用例独立覆盖。
+light/dark 视觉用例独立覆盖。`template` 支持官方 13 个主题枚举，非法值产生
+recoverable `invalid_enum` 诊断并规范化为 `default`；视图通过固定 class 映射主题，
+不把协议输入拼接为 Tailwind class。
 
 Button 已验证支持官方 `type` 枚举、`small|medium|large`
 size 与 `default|fill` width。协议的 bordered、text、filled、laser 是飞书视觉
