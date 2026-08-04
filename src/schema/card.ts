@@ -4,6 +4,24 @@ import type {
   UnsupportedCardElement,
 } from "./components";
 
+export const HEADER_TEMPLATES = [
+  "blue",
+  "wathet",
+  "turquoise",
+  "green",
+  "yellow",
+  "orange",
+  "red",
+  "carmine",
+  "violet",
+  "purple",
+  "indigo",
+  "grey",
+  "default",
+] as const;
+
+export type HeaderTemplate = typeof HEADER_TEMPLATES[number];
+
 export type CardConfig = {
   update_multi?: true;
   width_mode?: "default" | "compact" | "fill";
@@ -32,7 +50,7 @@ export type CardConfig = {
 export type CardHeader = {
   title: TextElement;
   subtitle?: TextElement;
-  template?: string;
+  template?: HeaderTemplate;
   [key: string]: unknown;
 };
 
@@ -63,10 +81,13 @@ export type NormalizedCardBody = Omit<CardBody, "elements"> & {
   elements: Array<CardElement | UnsupportedCardElement>;
 };
 
-export type NormalizedCard = Omit<Card, "config" | "body"> & {
+export type NormalizedCard = Omit<Card, "config" | "body" | "header"> & {
   config: CardConfig & {
     update_multi: true;
     width_mode: "default" | "compact" | "fill";
+  };
+  header?: Omit<CardHeader, "template"> & {
+    template: HeaderTemplate;
   };
   body: NormalizedCardBody;
 };

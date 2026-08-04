@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { CardRenderer } from "../../src";
 import workspaceForm from "../fixtures/workspace-form.json";
 import {
+  blueHeaderRendererCard,
   chartRendererCard,
   completeMarkdownCodeTasksCard,
   completeMarkdownTableCard,
@@ -620,6 +621,9 @@ createRoot(document.getElementById("root")!).render(
             />
           </main>
         : <main style={{ display: "grid", gap: 24 }}>
+      <section id="case-header-template-blue">
+        <CardRenderer card={blueHeaderRendererCard} />
+      </section>
       {(["default", "compact", "fill"] as const).map((width) => (
         <section id={`case-${width}`} key={width}>
           <CardRenderer card={{ ...completeRendererCard,

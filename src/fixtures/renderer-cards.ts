@@ -6,6 +6,15 @@ export const minimalRendererCard: Card = {
   body: { elements: [{ tag: "div", text: { tag: "plain_text", content: "正文" } }] },
 };
 
+export const blueHeaderRendererCard: Card = {
+  schema: "2.0",
+  header: {
+    title: { tag: "plain_text", content: "Multi Account Misjudge Appeal" },
+    template: "blue",
+  },
+  body: { elements: [] },
+};
+
 export const completeRendererCard: Card = {
   schema: "2.0",
   config: { width_mode: "default", update_multi: true },

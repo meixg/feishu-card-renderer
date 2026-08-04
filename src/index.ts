@@ -26,8 +26,10 @@ export type {
   CardBody,
   CardConfig,
   CardHeader,
+  HeaderTemplate,
   NormalizedCard,
 } from "./schema/card";
+export { HEADER_TEMPLATES } from "./schema/card";
 export type {
   CardDiagnostic,
   CardDiagnosticCode,

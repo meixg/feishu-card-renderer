@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CARD_COMPONENT_TAGS,
   CARD_COMPONENT_SCHEMAS,
+  HEADER_TEMPLATES,
   isCardElement,
   normalizeCard,
   validateCard,
@@ -20,6 +21,40 @@ function codes(result: ReturnType<typeof validateCard>): string[] {
 }
 
 describe("JSON 2.0 schema core", () => {
+  it("validates and normalizes the official header template enum", () => {
+    for (const template of HEADER_TEMPLATES) {
+      const result = normalizeCard({
+        schema: "2.0",
+        header: {
+          title: { tag: "plain_text", content: "Title" },
+          template,
+        },
+      });
+
+      expect(result.diagnostics).toEqual([]);
+      expect(result.card?.header?.template).toBe(template);
+    }
+
+    expect(normalizeCard({
+      schema: "2.0",
+      header: { title: { tag: "plain_text", content: "Title" } },
+    }).card?.header?.template).toBe("default");
+
+    const invalid = normalizeCard({
+      schema: "2.0",
+      header: {
+        title: { tag: "plain_text", content: "Title" },
+        template: "brand-blue",
+      },
+    });
+    expect(invalid.card?.header?.template).toBe("default");
+    expect(invalid.diagnostics).toContainEqual(expect.objectContaining({
+      classification: "recoverable",
+      code: "invalid_enum",
+      path: "$.header.template",
+    }));
+  });
+
   it("normalizes omitted body element-flow spacing without mutating input", () => {
     const input = {
       schema: "2.0",

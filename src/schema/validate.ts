@@ -1,4 +1,4 @@
-import type { Card } from "./card";
+import { HEADER_TEMPLATES, type Card } from "./card";
 import {
   CONTAINER_TAGS,
   KNOWN_TAGS,
@@ -622,6 +622,17 @@ export function validateCard(input: unknown): ValidationResult<Card> {
   };
   if (isRecord(input.header)) {
     validateProtocolSlots(headerChildSlots(input.header), "$.header", 0, state);
+    const template = input.header.template;
+    if (template !== undefined &&
+      (typeof template !== "string" || !HEADER_TEMPLATES.includes(
+        template as typeof HEADER_TEMPLATES[number],
+      ))) {
+      state.diagnostics.push(diagnostic(
+        "invalid_enum",
+        "$.header.template",
+        `template must be one of: ${HEADER_TEMPLATES.join(", ")}.`,
+      ));
+    }
   }
   if (isRecord(input.config)) {
     validateEnums(input.config, "$.config", state, ["width_mode"]);
