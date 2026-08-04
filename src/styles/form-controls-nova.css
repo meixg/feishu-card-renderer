@@ -5,6 +5,11 @@
   .fcr-theme-dark {
     --fcr-interaction-muted-foreground: oklch(0.708 0 0);
   }
+  .fcr-root .fcr-ui-field-label[data-required]::after {
+    content: "*";
+    margin-inline-start: 2px;
+    color: var(--fcr-ui-destructive);
+  }
   .fcr-ui-field:where(
     .fcr-form-control,
     :has(> .fcr-ui-input:is([type="time"], [type="datetime-local"])),

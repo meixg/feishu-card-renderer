@@ -19,6 +19,43 @@ function choose(label: string, option: string) {
 }
 
 describe("interactive components and CardAction", () => {
+  it("marks required input labels and blocks an empty form submission", () => {
+    const onAction = vi.fn();
+    const { container } = render(<CardRenderer onAction={onAction} card={{
+      schema: "2.0",
+      config: { update_multi: true },
+      body: { elements: [{
+        tag: "form",
+        name: "misjudge_submit_form",
+        elements: [
+          {
+            tag: "input",
+            name: "reason",
+            label: { tag: "plain_text", content: "误伤原因" },
+            required: true,
+            placeholder: { tag: "plain_text", content: "请输入误伤原因" },
+            label_position: "top",
+          },
+          {
+            tag: "button",
+            name: "submit_btn",
+            text: { tag: "plain_text", content: "confirm" },
+            form_action_type: "submit",
+          },
+        ],
+      }] },
+    }} />);
+
+    expect(screen.getByRole("textbox", { name: "误伤原因" }))
+      .toHaveAttribute("required");
+    expect(container.querySelector("[data-slot='field-label'][data-required]"))
+      .toHaveTextContent("误伤原因");
+
+    fireEvent.click(screen.getByRole("button", { name: "confirm" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("此项为必填项");
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
   it("maps every official protocol Button type into an observable semantic group", () => {
     render(<CardRenderer onAction={() => {}} card={{
       schema: "2.0",

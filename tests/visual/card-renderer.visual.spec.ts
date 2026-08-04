@@ -1208,10 +1208,18 @@ test("form-control state colors use the card-scoped public interaction token", a
   const lightRoot = page.locator("#case-form-controls-pc .fcr-root").first();
   const darkRoot = page.locator("#case-form-controls-dark .fcr-root").first();
   const title = lightRoot.getByRole("textbox", { name: "标题" });
+  const titleLabel = lightRoot.locator(
+    '[data-slot="field-label"][data-required]',
+  ).first();
   const description = lightRoot.getByText("用于显示在卡片顶部");
 
   await expect(title).toHaveAttribute("required", "");
   await expect(title).toHaveAttribute("placeholder", "请输入标题");
+  await expect(titleLabel).toHaveText("标题");
+  expect(await titleLabel.evaluate((node) =>
+    getComputedStyle(node, "::after").content)).toBe('"*"');
+  expect(await titleLabel.evaluate((node) =>
+    getComputedStyle(node, "::after").color)).toBe("oklch(0.577 0.245 27.325)");
   const defaults = await Promise.all([lightRoot, darkRoot].map((root) =>
     root.evaluate((node) => getComputedStyle(node)
       .getPropertyValue("--fcr-interaction-muted-foreground").trim())));
