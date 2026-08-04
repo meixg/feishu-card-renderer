@@ -201,7 +201,7 @@ export function Input({ element, path }: { element: InputElement; path: string }
       field.set(event.target.value, path) };
   return <><Field className="fcr-form-control"
     data-invalid={field.invalid || undefined}>
-    <FieldLabel htmlFor={id}>
+    <FieldLabel htmlFor={id} required={element.required === true}>
       {element.label?.content ?? element.name ?? "输入"}
     </FieldLabel>
     {element.input_type === "multiline_text"
@@ -317,7 +317,7 @@ export function SingleSelect({ element, path }: { element: Single; path: string 
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   return <><Field className="fcr-choice-field"
     data-invalid={field.invalid || undefined}>
-    <FieldLabel>{label}</FieldLabel>
+    <FieldLabel required={element.required === true}>{label}</FieldLabel>
     <ChoiceField
       controlRef={field.controlRef}
       describedBy={feedback.describedBy}
@@ -362,7 +362,7 @@ export function MultiSelect({ element, path }: { element: Multi; path: string })
   const feedback = fieldFeedback(ids.error, tips.describedBy, field.invalid);
   return <><Field className="fcr-choice-field"
     data-invalid={field.invalid || undefined}>
-    <FieldLabel>{label}</FieldLabel>
+    <FieldLabel required={element.required === true}>{label}</FieldLabel>
     <ChoiceField
       controlRef={field.controlRef}
       describedBy={feedback.describedBy}
@@ -437,7 +437,9 @@ export function Picker({ element, path }: { element: Picker; path: string }) {
   const value = String(field.value ?? "");
   const selected = parseDateValue(value);
   return <><Field data-invalid={field.invalid || undefined}>
-    <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <FieldLabel htmlFor={id} required={element.required === true}>
+      {label}
+    </FieldLabel>
     {tag === "date_picker" && device === "pc"
       ? <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
@@ -519,7 +521,7 @@ export function Checker({ element, path }: { element: CheckerElement; path: stri
         required={element.required}
         onCheckedChange={(checked) => field.set(checked, path)}
       />
-      <FieldLabel htmlFor={id}>
+      <FieldLabel htmlFor={id} required={element.required === true}>
         {element.text?.content ?? element.label?.content ??
           element.name ?? "确认"}
       </FieldLabel>
@@ -555,7 +557,9 @@ export function SelectImage({ element, path }: { element: SelectImageElement; pa
     sameOptionValue(rawOptionValue(option), field.value));
   return <><Field className="fcr-form-control"
     data-invalid={field.invalid || undefined}>
-    <FieldLabel id={labelId}>{label}</FieldLabel>
+    <FieldLabel id={labelId} required={element.required === true}>
+      {label}
+    </FieldLabel>
     <fieldset className="fcr-select-image"
       aria-describedby={feedback.describedBy}
       aria-invalid={field.invalid || undefined}

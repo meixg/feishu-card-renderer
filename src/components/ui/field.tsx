@@ -3,6 +3,10 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
+type FieldLabelProps = ComponentProps<typeof Label> & {
+  required?: boolean;
+};
+
 function Field({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
@@ -16,11 +20,13 @@ function Field({ className, ...props }: ComponentProps<"div">) {
 
 function FieldLabel({
   className,
+  required = false,
   ...props
-}: ComponentProps<typeof Label>) {
+}: FieldLabelProps) {
   return (
     <Label
       data-slot="field-label"
+      data-required={required || undefined}
       className={cn("fcr-ui-field-label", className)}
       {...props}
     />

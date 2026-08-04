@@ -59,7 +59,7 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/ui/textarea.tsx":
       "e56903be5faa3fae06d3f9bf59a0c660f5ccb1dc6061ac8dbfd058402eb41087",
     "src/components/ui/field.tsx":
-      "d1a80cfd4c72a296bf8b2c2c6ad223206ed6cc8999494e209257f930aad25509",
+      "5b28a7e2cc5a469a35eec150ea0cac0d0cb1576ab8511b4625d8d3a9dd0e0d29",
     "src/components/ui/label.tsx":
       "d9bb5179ab8d78825ad63fdbe7fd3f00a96ee5afaf619edddc7bdba2c2d34f9e",
     "src/components/ui/checkbox.tsx":
@@ -67,7 +67,7 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/ui/radio-group.tsx":
       "bb2759d487791fdb51abe914c1d6129f34ddebdea70dfd0b15cc168a80145a14",
     "src/styles/form-controls-nova.css":
-      "ea0a08f5c0c752127b12f7f3f713a563cc31b345020068e4d37fd3906b870f2d",
+      "142ff5fba6c77d59c5dfa15fb7d3d993d36d01feaf3d9778e176ca30912d37aa",
   }),
   "PC choice fields": Object.freeze({
     "src/components/ui/select.tsx":
@@ -77,7 +77,7 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/ui/choice-field.tsx":
       "f211e7a5d0052f5aba84801907c964649b922568fa27f94a837748b27172ced2",
     "src/components/interactive/interactive.tsx":
-      "8521d64fe6eb046e8f0379fb6e2c6f1b6a4d4ffb02104ea4cf7f7ff52adb6230",
+      "b63c7d5093368c8174d405fde2c892444ff8c914e50a6a357ddf4febff47f4ec",
     "src/styles/choice-nova.css":
       "811aa260ba6463ed1679e5b448c788c89c8d0678881585dd4f40c71f556292f6",
   }),
