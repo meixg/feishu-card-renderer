@@ -26,9 +26,9 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
+      entryRoot: "src",
       include: ["src"],
       insertTypesEntry: true,
-      rollupTypes: false,
     }),
   ],
   build: {
