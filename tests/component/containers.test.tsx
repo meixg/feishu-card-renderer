@@ -62,6 +62,29 @@ describe("container rendering", () => {
       .toHaveAttribute("aria-controls", controls);
   });
 
+  it("does not render a collapsible header icon when icon is omitted", () => {
+    render(<CardRenderer card={{
+      schema: "2.0",
+      body: {
+        elements: [{
+          tag: "collapsible_panel",
+          header: {
+            title: { tag: "plain_text", content: ">>" },
+            icon_position: "right",
+          },
+          elements: [],
+        }],
+      },
+    }} />);
+
+    const trigger = screen.getByRole("button", { name: ">>" });
+
+    expect(trigger.querySelector("svg")).not.toBeInTheDocument();
+    expect(trigger).not.toHaveClass("fcr-icon-left", "fcr-icon-right");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("only draws a rounded collapsible border when border is configured", () => {
     const rendererCss = readFileSync("src/styles.css", "utf8");
     const { container, rerender } = render(<CardRenderer card={{
@@ -196,7 +219,7 @@ describe("container rendering", () => {
     const trigger = screen.getByRole("button", { name: "安全折叠" });
     const controls = trigger.getAttribute("aria-controls");
 
-    expect(trigger).toHaveClass("fcr-icon-left");
+    expect(trigger).not.toHaveClass("fcr-icon-left", "fcr-icon-right");
     expect(trigger).not.toHaveClass("injected-class");
     expect(controls).toMatch(/^fcr-panel-/);
     expect(trigger).toHaveAttribute("aria-expanded", "false");

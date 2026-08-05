@@ -264,7 +264,8 @@ Base UI 提供无样式 primitive 与虚拟键盘行为，固定 shadcn wrapper/
 结构和默认视觉，renderer 只适配逐卡 portal、viewport 与滚动。
 折叠面板与交互容器的状态适配见
 [container interaction provenance](docs/specs/shadcn-base-nova-containers-baseline.md)；
-`collapsible_panel` 组合 scoped Collapsible、Button 与 Lucide chevron，
+`collapsible_panel` 组合 scoped Collapsible、Button，并仅在协议提供
+`header.icon` 时呈现 Lucide chevron，
 `interactive_container` 只使用逐卡作用域的 focus ring token，不引入 Card 外壳。
 表格分页见
 [table pagination provenance](docs/specs/shadcn-base-nova-table-pagination-baseline.md)：

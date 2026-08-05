@@ -183,10 +183,12 @@ export function CollapsiblePanel({ element, path }: {
   const instanceId = useId().replace(/[^A-Za-z0-9_-]/g, "");
   const contentId = `fcr-panel-${instanceId}`;
   const title = element.header?.title?.content ?? "折叠面板";
-  const iconPositionClass = {
-    left: "fcr-icon-left",
-    right: "fcr-icon-right",
-  }[element.header?.icon_position ?? "left"];
+  const iconPositionClass = element.header?.icon
+    ? {
+        left: "fcr-icon-left",
+        right: "fcr-icon-right",
+      }[element.header.icon_position ?? "left"]
+    : "";
   const header = (
     <CollapsibleTrigger
       render={<Button
@@ -198,11 +200,11 @@ export function CollapsiblePanel({ element, path }: {
         ].join(" ")}
       />}
       aria-controls={contentId}>
-      <ChevronDownIcon
+      {element.header?.icon ? <ChevronDownIcon
         aria-hidden="true"
         data-icon="inline-start"
         className="fcr-collapse-icon"
-      />
+      /> : null}
       <span>{title}</span>
     </CollapsibleTrigger>
   );

@@ -296,7 +296,7 @@ export async function verifyUiProvenance({
       "apps/v4/registry/bases/base/ui/button.tsx",
       "apps/v4/registry/styles/style-nova.css",
       "apps/v4/registry/themes.ts",
-    ], "2026-07-31"],
+    ], "2026-08-05"],
     ["calendar", "docs/specs/shadcn-base-nova-calendar-baseline.json", [
       "apps/v4/registry/bases/base/ui/popover.tsx",
       "apps/v4/registry/bases/base/ui/calendar.tsx",
