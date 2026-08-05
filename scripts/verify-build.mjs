@@ -93,6 +93,7 @@ if (!entryTypes.includes("CardJsonV2")) {
 }
 await runFile("node_modules/.bin/tsc", [
   "--noEmit",
+  "--ignoreConfig",
   "--strict",
   "--skipLibCheck",
   "--module", "ESNext",
