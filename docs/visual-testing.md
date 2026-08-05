@@ -60,6 +60,52 @@ budgets, masks, crops, retries, or parallel baselines. Change this contract
 deliberately and obtain a fresh three-run determinism proof. Refresh snapshots
 only when fixed-environment evidence attributes a genuine baseline change.
 
+## Updating baselines
+
+Linux baselines are GitHub-runner artifacts, not workstation output. Even when
+`pnpm visual:environment` verifies the same Playwright and Chromium versions,
+the host font rasterization stack can still produce different PNG bytes.
+`pnpm visual:update` therefore refuses to update snapshots on workstation
+Linux. Do not bypass the guard or copy a locally generated file into a Linux
+baseline.
+
+Dispatch the artifact-only workflow against the PR branch instead:
+
+```sh
+gh workflow run visual-refresh.yml --ref <branch>
+gh run list --workflow visual-refresh.yml --branch <branch> --limit 1
+gh run watch <run-id> --exit-status
+gh run download <run-id> --name visual-snapshots-1
+```
+
+Review the downloaded files and copy only the baselines directly affected by
+the change. The workflow installs and verifies the same managed browser as
+required CI, cannot push or create a PR, and is the sole automation allowed to
+set `FCR_VISUAL_REFRESH=1`.
+
+Matrix variants that own separate snapshots must remain separate Playwright
+tests. A loop containing several `toHaveScreenshot` assertions stops at the
+first mismatch and turns one logical change into several full CI runs.
+
+## Before opening a PR
+
+Run `pnpm pr:preflight` after the branch and its Changeset are tracked by Git.
+It verifies the release declaration against `origin/main`, runs typecheck,
+lint, workflow contracts, unit, component and accessibility tests, then
+validates the managed visual environment. On workstation Linux it collects all
+visual tests with `playwright test --list` but does not compare pixels, because
+the GitHub runner is the Linux baseline authority. Required CI performs the
+complete screenshot suite. GitHub Actions and non-Linux workstations run their
+matching complete visual suite directly. For an internal-maintenance PR that
+genuinely needs no release, use
+`pnpm pr:preflight --release-skip`; this only skips the local Changeset check.
+It does not authorize the GitHub `release:skip` label, which must still be
+added by a maintainer.
+
+When a shared visual selector changes, search its renderer and fixture usage
+before selecting affected snapshots. A targeted visual test is a fast feedback
+loop, not the final preflight; the complete suite remains required.
+
 Issue #97 baseline audit identifies spacing-driven captures by whether the
 tree contains a multi-child body or affected container flow: the complete
 renderer, closed choice/form-control cards, container cards, the all-tags

@@ -13,3 +13,6 @@
 ## 验证
 
 <!-- 列出已运行的检查。 -->
+
+- [ ] 已运行 `pnpm pr:preflight`（Linux 像素比较由 required CI 完成）；仅内部维护
+      变更可运行 `pnpm pr:preflight --release-skip`，且仍需维护者添加对应标签
