@@ -11,8 +11,8 @@ export function parsePreflightArguments(args) {
 
 export function preflightSteps({
   releaseSkip,
-  platform = process.platform,
-  githubActions = process.env.GITHUB_ACTIONS,
+  platform,
+  githubActions,
 }) {
   const authoritativePixels = platform !== "linux" || githubActions === "true";
   return [
@@ -47,7 +47,11 @@ export function runPreflight({ args = process.argv.slice(2), spawn = spawnSync }
       + "the visual suite, while required CI performs screenshot comparison.",
     );
   }
-  for (const [command, commandArgs] of preflightSteps(options)) {
+  for (const [command, commandArgs] of preflightSteps({
+    ...options,
+    platform: process.platform,
+    githubActions: process.env.GITHUB_ACTIONS,
+  })) {
     const result = spawn(command, commandArgs, { stdio: "inherit" });
     if (result.error) throw result.error;
     if (result.status !== 0) {
