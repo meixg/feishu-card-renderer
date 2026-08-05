@@ -18,7 +18,7 @@ Issue #82 的交互容器迁移固定到 shadcn/ui
 本地适配只负责：
 
 - 让协议折叠标题通过官方 Collapsible trigger 组合官方 Button wrapper；
-- 用具名 Lucide chevron 表达展开状态；
+- 仅在协议提供 `header.icon` 时用具名 Lucide chevron 表达展开状态；
 - 保持协议内容、padding、顺序、圆角和嵌套规则归 renderer 所有；
 - 让 `interactive_container` 仅消费逐卡作用域内的 shadcn ring token，不引入
   shadcn Card 外壳；
