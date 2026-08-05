@@ -237,6 +237,14 @@ requireContract(
   "visual refresh must regenerate snapshots exactly once",
 );
 requireContract(
+  /name: Regenerate visual snapshots\n\s*run: pnpm visual:update\n\s*env:\n\s*FCR_VISUAL_REFRESH: "1"/.test(visualRefresh),
+  "visual refresh must explicitly authorize the guarded Linux baseline update",
+);
+requireContract(
+  occurrences(allAutomation, /FCR_VISUAL_REFRESH:/g) === 1,
+  "only the artifact-only visual refresh may authorize Linux baseline updates",
+);
+requireContract(
   /run: pnpm exec playwright install --with-deps chromium/.test(visualRefresh)
     && /name: Verify visual environment contract\n\s*run: pnpm visual:environment/.test(visualRefresh),
   "visual refresh must install and verify the same managed browser as required CI",
