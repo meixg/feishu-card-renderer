@@ -71,6 +71,7 @@
   .fcr-header {
     padding: 16px 20px;
     border-bottom: 1px solid var(--fcr-color-border);
+    border-radius: var(--fcr-radius-card) var(--fcr-radius-card) 0 0;
   }
   .fcr-header-template-blue { background: #e8efff; color: #245bdb; }
   .fcr-header-template-wathet { background: #e7f4ff; color: #1456a0; }
