@@ -2,7 +2,7 @@
 
 Linux visual baselines have one rendering contract:
 
-- `pnpm-lock.yaml` pins Playwright 1.62.0 and Chromium revision 1234
+- `pnpm-lock.yaml` pins Playwright 1.62.1 and Chromium revision 1234
   (Chrome for Testing 151.0.7922.34). Screenshot workflows install that managed
   browser and its documented Linux dependencies with
   `playwright install --with-deps chromium`.
