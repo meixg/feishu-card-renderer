@@ -79,6 +79,8 @@ test("blue header template has protocol theme colors", async ({ page }) => {
 
   await expect(header).toHaveCSS("background-color", "rgb(232, 239, 255)");
   await expect(header).toHaveCSS("color", "rgb(36, 91, 219)");
+  await expect(header).toHaveCSS("border-top-left-radius", "10px");
+  await expect(header).toHaveCSS("border-top-right-radius", "10px");
   await expect(renderer).toHaveScreenshot("header-template-blue.png");
 });
 
