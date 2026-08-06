@@ -4,6 +4,7 @@ import { CardRenderer } from "../../src/renderer/CardRenderer";
 import type { CardDiagnostic } from "../../src/schema/diagnostics";
 import type { CardAction, Person } from "../../src/types";
 import type { ResourceResolver } from "../../src/renderer/context";
+import { JsonEditor } from "./JsonEditor";
 import {
   parsePlaygroundJson,
   playgroundExampleJson,
@@ -68,12 +69,11 @@ export function Playground({
           </div>
           <label className="playground-editor">
             <span className="sr-only">飞书卡片 JSON 2.0</span>
-            <textarea
-              aria-describedby="playground-input-status"
-              aria-invalid={!parsed.ok}
+            <JsonEditor
+              describedBy="playground-input-status"
+              invalid={!parsed.ok}
               value={source}
-              onChange={(event) => setSource(event.target.value)}
-              spellCheck={false}
+              onChange={setSource}
             />
           </label>
           <div
