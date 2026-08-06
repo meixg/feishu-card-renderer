@@ -106,6 +106,25 @@ function transformFontColorExtensions(node: MarkdownNode): void {
   node.children = transformed;
 }
 
+function transformSoftBreaks(node: MarkdownNode): void {
+  if (!node.children) return;
+  const transformed: MarkdownNode[] = [];
+  for (const child of node.children) {
+    if (child.type !== "text" || !child.value?.includes("\n")) {
+      transformSoftBreaks(child);
+      transformed.push(child);
+      continue;
+    }
+
+    const lines = child.value.split("\n");
+    lines.forEach((line, index) => {
+      if (line) transformed.push({ type: "text", value: line });
+      if (index < lines.length - 1) transformed.push({ type: "break" });
+    });
+  }
+  node.children = transformed;
+}
+
 export type MarkdownAnalysis = {
   tree: MarkdownNode;
   diagnostics: readonly CardDiagnostic[];
@@ -144,6 +163,7 @@ export function analyzeMarkdown(
       ],
     }) as MarkdownNode;
     transformFontColorExtensions(tree);
+    transformSoftBreaks(tree);
     decorateTaskListItems(tree);
     let nodes = 0;
     let complexNodes = 0;
