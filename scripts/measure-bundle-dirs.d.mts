@@ -5,9 +5,14 @@ export function requireSingleMatch(
   directory: string,
 ): string;
 
+export function collectStaticJavaScriptFiles(
+  directory: string,
+  entry?: string,
+): Promise<string[]>;
+
 export function measureBundleDirectory(directory: string): Promise<Record<
   string,
-  { file: string; raw: number; gzip: number }
+  { files: string[]; raw: number; gzip: number }
 >>;
 
 export function measureBundleComparison(

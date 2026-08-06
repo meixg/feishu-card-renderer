@@ -18,9 +18,10 @@
 pnpm add feishu-card-renderer react react-dom
 ```
 
-项目发布 ESM、TypeScript 类型和预编译 CSS，支持 React 18.2 至 19。复杂交互由
-包内私有的 shadcn/Base UI 视图层实现，相关运行时依赖会随本包安装；使用者不需要
-安装、扫描或配置 Tailwind CSS。
+项目发布 ESM、TypeScript 类型和预编译 CSS，支持 React 18.2 至 19。浏览器基线为
+Chrome 111、Edge 111、Firefox 114 和 Safari 16.4；更早版本不在支持范围内。复杂
+交互由包内私有的 shadcn/Base UI 视图层实现，相关运行时依赖会随本包安装；使用者
+不需要安装、扫描或配置 Tailwind CSS。
 
 ## 快速开始
 
