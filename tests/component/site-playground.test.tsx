@@ -7,9 +7,13 @@ afterEach(cleanup);
 
 describe("project site playground", () => {
   it("renders the example and updates the preview from pasted JSON", () => {
-    render(<Playground theme="light" device="pc" />);
+    const { container } = render(<Playground theme="light" device="pc" />);
 
     expect(screen.getByText("Playground 预览")).toBeInTheDocument();
+    expect(container.querySelector(".playground-editor-highlight"))
+      .toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelectorAll('[data-syntax-token="property"]'))
+      .not.toHaveLength(0);
     fireEvent.change(screen.getByLabelText("飞书卡片 JSON 2.0"), {
       target: {
         value: JSON.stringify({

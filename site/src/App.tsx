@@ -7,6 +7,10 @@ import darkImage from "../../tests/visual/card-renderer.visual.spec.ts-snapshots
 import mobileImage from "../../tests/visual/card-renderer.visual.spec.ts-snapshots/card-renderer-mobile-chromium-darwin.png";
 import { catalog, categories, type CatalogItem } from "./catalog";
 import { Playground } from "./Playground";
+import {
+  SyntaxHighlightedCode,
+} from "./SyntaxHighlightedCode";
+import type { SyntaxLanguage } from "./syntax-tokenizer";
 
 type Theme = "light" | "dark";
 type Device = "pc" | "mobile";
@@ -57,6 +61,9 @@ const people: Record<string, Person> = {
 
 function CodeBlock({ code, label }: { code: string; label: string }) {
   const [copied, setCopied] = useState(false);
+  const language: SyntaxLanguage = label.endsWith(".json")
+    ? "json"
+    : label === "Terminal" ? "shell" : "tsx";
   return (
     <div className="code-block">
       <div className="code-toolbar">
@@ -72,7 +79,7 @@ function CodeBlock({ code, label }: { code: string; label: string }) {
           {copied ? "已复制" : "复制"}
         </button>
       </div>
-      <pre><code>{code}</code></pre>
+      <pre><SyntaxHighlightedCode code={code} language={language} /></pre>
     </div>
   );
 }

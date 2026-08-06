@@ -251,20 +251,39 @@ main { width: min(1440px, 100%); margin: 0 auto; }
 .playground-toolbar-actions button:hover:not(:disabled) { background: #273348; }
 .playground-toolbar-actions button:disabled { cursor: not-allowed; opacity: 0.45; }
 .playground-editor { display: flex; flex: 1; min-height: 0; }
-.playground-editor textarea {
+.playground-editor-layers { position: relative; display: flex; flex: 1; min-width: 0; }
+.playground-editor textarea, .playground-editor-highlight {
   width: 100%;
   min-height: 570px;
-  resize: vertical;
-  border: 0;
+  margin: 0;
   padding: 20px;
-  color: #e6edf7;
-  background: #111827;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 13px;
   line-height: 1.65;
-  outline: none;
   tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
 }
+.playground-editor-highlight {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: #e6edf7;
+  background: #111827;
+  pointer-events: none;
+}
+.playground-editor textarea {
+  position: relative;
+  z-index: 1;
+  resize: vertical;
+  border: 0;
+  color: transparent;
+  caret-color: #e6edf7;
+  background: transparent;
+  -webkit-text-fill-color: transparent;
+  outline: none;
+}
+.playground-editor textarea::selection { background: rgb(93 140 255 / 45%); }
 .playground-editor textarea:focus { box-shadow: inset 0 0 0 2px #5d8cff; }
 .playground-input-ok, .playground-input-error {
   min-height: 38px;
@@ -383,6 +402,13 @@ main { width: min(1440px, 100%); margin: 0 auto; }
   font-size: 12px;
   line-height: 1.65;
 }
+.syntax-code { color: #d8dee9; }
+.syntax-comment { color: #7f8ca3; font-style: italic; }
+.syntax-keyword { color: #c792ea; }
+.syntax-number { color: #f78c6c; }
+.syntax-property { color: #82aaff; }
+.syntax-punctuation { color: #89a4c7; }
+.syntax-string { color: #c3e88d; }
 .api-table-wrap { overflow-x: auto; border: 1px solid var(--site-line); border-radius: 12px; }
 .api-table { width: 100%; min-width: 760px; border-collapse: collapse; background: var(--site-surface); }
 .api-table th, .api-table td {
@@ -600,7 +626,7 @@ footer {
   .boundary-grid { grid-template-columns: 1fr 1fr; }
   .playground-shell { grid-template-columns: 1fr; }
   .playground-editor-pane { border-right: 0; border-bottom: 1px solid var(--site-line); }
-  .playground-editor textarea { min-height: 480px; }
+  .playground-editor textarea, .playground-editor-highlight { min-height: 480px; }
   .catalog-layout { grid-template-columns: 1fr; }
   .catalog-nav {
     position: static;
