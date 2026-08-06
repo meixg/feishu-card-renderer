@@ -214,6 +214,21 @@ test("chart light, dark, and mobile visual baselines", async ({ page }) => {
   }
 });
 
+test("chart stays within its card body", async ({ page }) => {
+  await page.goto("/tests/visual/");
+  const renderer = page.locator("#case-chart-light");
+  const body = renderer.locator(".fcr-body");
+  const chart = renderer.locator(".fcr-chart");
+  await expect(chart).toHaveAttribute("data-state", "ready");
+
+  const bounds = await Promise.all([body.boundingBox(), chart.boundingBox()]);
+  expect(bounds[0]).not.toBeNull();
+  expect(bounds[1]).not.toBeNull();
+  expect(bounds[1]!.x).toBeGreaterThanOrEqual(bounds[0]!.x);
+  expect(bounds[1]!.x + bounds[1]!.width)
+    .toBeLessThanOrEqual(bounds[0]!.x + bounds[0]!.width);
+});
+
 test("chart preview dialog visual baseline", async ({ page }) => {
   await page.goto("/tests/visual/");
   const renderer = page.locator("#case-chart-light");
