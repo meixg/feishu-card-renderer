@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Keep the site aligned with the pinned library browser baseline.
+    target: ["chrome111", "edge111", "firefox114", "safari16.4"],
     outDir: "../site-dist",
     emptyOutDir: true,
   },

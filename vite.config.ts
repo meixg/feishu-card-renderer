@@ -32,6 +32,8 @@ export default defineConfig({
     }),
   ],
   build: {
+    // Pin Vite 8's 2026 baseline so future tool updates cannot silently raise it.
+    target: ["chrome111", "edge111", "firefox114", "safari16.4"],
     lib: {
       entry: {
         index: "src/index.ts",
@@ -42,7 +44,7 @@ export default defineConfig({
       cssFileName: "styles",
     },
     cssCodeSplit: false,
-    rollupOptions: {
+    rolldownOptions: {
       external: [
         "react",
         "react-dom",
