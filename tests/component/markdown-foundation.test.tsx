@@ -76,6 +76,25 @@ describe("bounded markdown semantics through CardRenderer", () => {
     expect(container.querySelector(".fcr-markdown-content > hr")).not.toBeNull();
   });
 
+  it("preserves single newlines inside a markdown paragraph as visible line breaks", () => {
+    const { container } = render(<CardRenderer card={card(
+      "Creator network: feishuhetong777-NL (107275)\n"
+        + "Creator details: lnz_874 (6831135897201083393)\n"
+        + "Multi-account risk is valid.",
+    )} />);
+
+    const paragraph = container.querySelector<HTMLElement>(
+      ".fcr-markdown-content > p",
+    );
+    expect(paragraph).not.toBeNull();
+    expect(paragraph).toHaveTextContent(
+      "Creator network: feishuhetong777-NL (107275)"
+        + "Creator details: lnz_874 (6831135897201083393)"
+        + "Multi-account risk is valid.",
+    );
+    expect(paragraph!.querySelectorAll("br")).toHaveLength(2);
+  });
+
   it("keeps raw HTML and unknown Feishu extensions visible and inert", async () => {
     const onDiagnostic = vi.fn();
     const { container } = render(<CardRenderer
