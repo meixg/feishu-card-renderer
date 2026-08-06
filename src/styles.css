@@ -276,7 +276,7 @@
     border: 1px dashed var(--fcr-color-border); color: var(--fcr-color-text-secondary);
   }
   .fcr-chart {
-    position: relative; width: 100%; min-width: 0; min-height: 120px;
+    position: relative; width: 100%; min-width: 0; min-height: 120px; margin: 0;
     display: block; overflow: hidden; border: 0; contain: layout paint;
     color: inherit; background: var(--fcr-color-surface);
   }
