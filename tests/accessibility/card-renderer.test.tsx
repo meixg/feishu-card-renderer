@@ -99,7 +99,8 @@ it("keeps Workspace required errors and keyboard submission accessible", async (
   expect(input).toHaveFocus();
   await user.keyboard("keyboard note");
   await user.tab();
-  await user.keyboard("{Enter}{ArrowDown}{Enter}");
+  await user.keyboard("{Enter}{Home}{Enter}");
+  expect(select).toHaveTextContent("Option A");
   await user.tab();
   expect(submit).toHaveFocus();
   await user.keyboard(" ");
