@@ -9,8 +9,8 @@ import { catalog, categories, type CatalogItem } from "./catalog";
 import { Playground } from "./Playground";
 import {
   SyntaxHighlightedCode,
+  type SyntaxLanguage,
 } from "./SyntaxHighlightedCode";
-import type { SyntaxLanguage } from "./syntax-tokenizer";
 
 type Theme = "light" | "dark";
 type Device = "pc" | "mobile";
@@ -59,11 +59,16 @@ const people: Record<string, Person> = {
   ou_demo_kai: { id: "ou_demo_kai", name: "Kai · 演示用户", avatarUrl: mobileImage },
 };
 
-function CodeBlock({ code, label }: { code: string; label: string }) {
+function CodeBlock({
+  code,
+  label,
+  language,
+}: {
+  code: string;
+  label: string;
+  language: SyntaxLanguage;
+}) {
   const [copied, setCopied] = useState(false);
-  const language: SyntaxLanguage = label.endsWith(".json")
-    ? "json"
-    : label === "Terminal" ? "shell" : "tsx";
   return (
     <div className="code-block">
       <div className="code-toolbar">
@@ -166,7 +171,7 @@ function ComponentDemo({
       </div>
       <details className="json-details">
         <summary>查看完整 JSON</summary>
-        <CodeBlock code={json} label={`${item.tag}.json`} />
+        <CodeBlock code={json} label={`${item.tag}.json`} language="json" />
       </details>
     </article>
   );
@@ -315,8 +320,9 @@ export function App() {
               <p>包发布 ESM、TypeScript 声明和带作用域的预编译 CSS；宿主无需配置 Tailwind。</p>
             </div>
             <div>
-              <CodeBlock code={installCode} label="Terminal" />
-              <CodeBlock code={quickStartCode} label="CardHost.tsx" />
+              <CodeBlock code={installCode} label="Terminal" language="plain" />
+              <CodeBlock code={quickStartCode} label="CardHost.tsx"
+                language="tsx" />
             </div>
           </div>
           <div className="guide-grid">
@@ -328,7 +334,7 @@ export function App() {
                 resolver 支持同步或异步结果，并接收 AbortSignal。
               </p>
             </div>
-            <CodeBlock code={resolverCode} label="Adapters.tsx" />
+            <CodeBlock code={resolverCode} label="Adapters.tsx" language="tsx" />
           </div>
           <div className="guide-grid guide-grid-wide">
             <div className="guide-copy">
