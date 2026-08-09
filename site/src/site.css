@@ -269,6 +269,7 @@ main { width: min(1440px, 100%); margin: 0 auto; }
   min-height: 570px;
   padding: 20px;
   caret-color: #e6edf7;
+  cursor: text;
 }
 .playground-code-editor .cm-cursor {
   border-left-color: #e6edf7;
