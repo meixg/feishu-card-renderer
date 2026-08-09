@@ -27,6 +27,7 @@ test("Playground editor has a visible cursor and accepts keyboard input", async 
   await page.goto("/feishu-card-renderer/");
   const editor = page.getByRole("textbox", { name: "飞书卡片 JSON 2.0" });
   await editor.click();
+  await expect(editor).toHaveCSS("cursor", "text");
 
   const colors = await page.locator(".playground-code-editor").evaluate((host) => ({
     background: getComputedStyle(host.querySelector(".cm-editor")!).backgroundColor,
