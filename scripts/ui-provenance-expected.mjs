@@ -77,7 +77,7 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/ui/choice-field.tsx":
       "f211e7a5d0052f5aba84801907c964649b922568fa27f94a837748b27172ced2",
     "src/components/interactive/interactive.tsx":
-      "b63c7d5093368c8174d405fde2c892444ff8c914e50a6a357ddf4febff47f4ec",
+      "e53deb04264629586e50dcfa1d7e50cfaa7469061937fd6b597be8b0d778d4f7",
     "src/styles/choice-nova.css":
       "811aa260ba6463ed1679e5b448c788c89c8d0678881585dd4f40c71f556292f6",
   }),

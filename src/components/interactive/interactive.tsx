@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ButtonElement, CheckerElement, DatePickerElement, DateTimePickerElement,
   InputElement, MultiSelectPersonElement, MultiSelectStaticElement,
@@ -76,7 +76,11 @@ function useTips(element: {
     describedBy,
     nodes: tips.length > 0
       ? <FieldDescription id={describedBy} className="fcr-field-tips">
-          {tips.map((tip, index) => <span key={index}>{tip}</span>)}
+          {tips.map((tip, index) =>
+            <Fragment key={index}>
+              {index > 0 ? " " : null}
+              <span>{tip}</span>
+            </Fragment>)}
         </FieldDescription>
       : null,
   };

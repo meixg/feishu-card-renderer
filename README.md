@@ -18,9 +18,10 @@
 pnpm add feishu-card-renderer react react-dom
 ```
 
-项目发布 ESM、TypeScript 类型和预编译 CSS，支持 React 18.2 至 19。复杂交互由
-包内私有的 shadcn/Base UI 视图层实现，相关运行时依赖会随本包安装；使用者不需要
-安装、扫描或配置 Tailwind CSS。
+项目发布 ESM、TypeScript 类型和预编译 CSS，支持 React 18.2 至 19。浏览器基线为
+Chrome 111、Edge 111、Firefox 114 和 Safari 16.4；更早版本不在支持范围内。复杂
+交互由包内私有的 shadcn/Base UI 视图层实现，相关运行时依赖会随本包安装；使用者
+不需要安装、扫描或配置 Tailwind CSS。
 
 ## 快速开始
 
@@ -206,7 +207,8 @@ recoverable diagnostic；`small`、`large`、`extra_large`、合法 px 与 `0px`
 独立 `markdown` 使用有界 CommonMark 白名单，当前基础语义包括标题、段落、强调、
 粗体、删除线、安全链接、嵌套列表、引用和分隔线，并以受控 AST 节点支持飞书
 `<font color="…">` 颜色扩展（颜色值使用固定协议枚举）。它与有限语法 `lark_md`
-保持隔离。原始 HTML、带额外属性或未知颜色的 `font` 标签，以及尚未实现的飞书扩展
+保持隔离；段落内的单个换行符按可见 soft break 渲染。原始 HTML、带额外属性或
+未知颜色的 `font` 标签，以及尚未实现的飞书扩展
 标签显示为可见原文；Markdown 图片
 只显示 alt，不加载网络资源。单个 Markdown 限制为 20,000 字符、12 层语法深度、
 1,000 个语法节点和 200 个链接/图片/列表项，超限时保留安全前缀并通过

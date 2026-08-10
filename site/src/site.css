@@ -251,21 +251,38 @@ main { width: min(1440px, 100%); margin: 0 auto; }
 .playground-toolbar-actions button:hover:not(:disabled) { background: #273348; }
 .playground-toolbar-actions button:disabled { cursor: not-allowed; opacity: 0.45; }
 .playground-editor { display: flex; flex: 1; min-height: 0; }
-.playground-editor textarea {
+.playground-code-editor { display: flex; flex: 1; min-width: 0; }
+.playground-code-editor .cm-editor {
   width: 100%;
   min-height: 570px;
-  resize: vertical;
-  border: 0;
-  padding: 20px;
   color: #e6edf7;
   background: #111827;
+}
+.playground-code-editor .cm-scroller {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 13px;
   line-height: 1.65;
-  outline: none;
+  overflow: auto;
   tab-size: 2;
 }
-.playground-editor textarea:focus { box-shadow: inset 0 0 0 2px #5d8cff; }
+.playground-code-editor .cm-content {
+  min-height: 570px;
+  padding: 20px;
+  caret-color: #e6edf7;
+  cursor: text;
+}
+.playground-code-editor .cm-cursor {
+  border-left-color: #e6edf7;
+  border-left-width: 2px;
+}
+.playground-code-editor .cm-focused {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #5d8cff;
+}
+.playground-code-editor .cm-selectionBackground,
+.playground-code-editor .cm-content::selection {
+  background: rgb(93 140 255 / 45%) !important;
+}
 .playground-input-ok, .playground-input-error {
   min-height: 38px;
   padding: 9px 16px;
@@ -383,6 +400,13 @@ main { width: min(1440px, 100%); margin: 0 auto; }
   font-size: 12px;
   line-height: 1.65;
 }
+.syntax-code, .playground-code-editor { color: #d8dee9; }
+.tok-comment { color: #7f8ca3; font-style: italic; }
+.tok-keyword, .tok-typeName { color: #c792ea; }
+.tok-number, .tok-bool, .tok-null { color: #f78c6c; }
+.tok-propertyName, .tok-attributeName { color: #82aaff; }
+.tok-punctuation, .tok-operator { color: #89a4c7; }
+.tok-string { color: #c3e88d; }
 .api-table-wrap { overflow-x: auto; border: 1px solid var(--site-line); border-radius: 12px; }
 .api-table { width: 100%; min-width: 760px; border-collapse: collapse; background: var(--site-surface); }
 .api-table th, .api-table td {
@@ -600,7 +624,8 @@ footer {
   .boundary-grid { grid-template-columns: 1fr 1fr; }
   .playground-shell { grid-template-columns: 1fr; }
   .playground-editor-pane { border-right: 0; border-bottom: 1px solid var(--site-line); }
-  .playground-editor textarea { min-height: 480px; }
+  .playground-code-editor .cm-editor,
+  .playground-code-editor .cm-content { min-height: 480px; }
   .catalog-layout { grid-template-columns: 1fr; }
   .catalog-nav {
     position: static;

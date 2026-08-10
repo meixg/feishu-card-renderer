@@ -1,7 +1,9 @@
 import { readFile, readdir } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
-import { resolve } from "node:path";
+import { dirname, join, normalize, relative, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
+
+const staticImportPattern = /(?:import|export)\s+(?:[^"'`]*?\s+from\s+)?["'](\.[^"']+)["']/gu;
 
 export function requireSingleMatch(files, pattern, label, directory) {
   const matches = files.filter((file) => pattern.test(file));
@@ -14,15 +16,42 @@ export function requireSingleMatch(files, pattern, label, directory) {
   return matches[0];
 }
 
+export async function collectStaticJavaScriptFiles(directory, entry = "index.js") {
+  const absolute = resolve(directory);
+  const collected = new Set();
+
+  async function visit(file) {
+    const normalizedFile = normalize(file);
+    if (collected.has(normalizedFile)) return;
+    if (relative(absolute, resolve(absolute, normalizedFile)).startsWith("..")) {
+      throw new Error(`${directory}: static import escapes the bundle directory (${file})`);
+    }
+    const source = await readFile(resolve(absolute, normalizedFile), "utf8");
+    collected.add(normalizedFile);
+    for (const match of source.matchAll(staticImportPattern)) {
+      await visit(join(dirname(normalizedFile), match[1]));
+    }
+  }
+
+  await visit(entry);
+  return [...collected].sort();
+}
+
+async function measureFiles(absolute, files) {
+  const buffers = await Promise.all(files.map((file) => readFile(resolve(absolute, file))));
+  return {
+    files,
+    raw: buffers.reduce((total, bytes) => total + bytes.byteLength, 0),
+    gzip: buffers.reduce(
+      (total, bytes) => total + gzipSync(bytes, { level: 9 }).byteLength,
+      0,
+    ),
+  };
+}
+
 export async function measureBundleDirectory(directory) {
   const absolute = resolve(directory);
   const files = await readdir(absolute);
-  const shared = requireSingleMatch(
-    files,
-    /^index-.*\.js$/u,
-    "hashed shared index chunk",
-    directory,
-  );
   const vchart = requireSingleMatch(
     files,
     /^vchart-runtime-.*\.js$/u,
@@ -30,19 +59,13 @@ export async function measureBundleDirectory(directory) {
     directory,
   );
   const artifacts = {
-    eager: "index.js",
-    shared,
-    css: "styles.css",
-    vchart,
+    eager: await collectStaticJavaScriptFiles(directory),
+    css: ["styles.css"],
+    vchart: [vchart],
   };
   const result = {};
-  for (const [name, file] of Object.entries(artifacts)) {
-    const bytes = await readFile(resolve(absolute, file));
-    result[name] = {
-      file,
-      raw: bytes.byteLength,
-      gzip: gzipSync(bytes, { level: 9 }).byteLength,
-    };
+  for (const [name, artifactFiles] of Object.entries(artifacts)) {
+    result[name] = await measureFiles(absolute, artifactFiles);
   }
   return result;
 }

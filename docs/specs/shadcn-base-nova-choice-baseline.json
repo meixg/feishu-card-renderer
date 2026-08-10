@@ -26,7 +26,7 @@
     "src/components/ui/select.tsx": "a7ec5ce882d22ad3928b1b7212766c9b8435e0af1e7ef96c38ab2f844fa8fce3",
     "src/components/ui/combobox.tsx": "05d81e0b360522b6df9423777b80bce9fab35f088b3382bdd4f4ba16df924748",
     "src/components/ui/choice-field.tsx": "f211e7a5d0052f5aba84801907c964649b922568fa27f94a837748b27172ced2",
-    "src/components/interactive/interactive.tsx": "b63c7d5093368c8174d405fde2c892444ff8c914e50a6a357ddf4febff47f4ec",
+    "src/components/interactive/interactive.tsx": "e53deb04264629586e50dcfa1d7e50cfaa7469061937fd6b597be8b0d778d4f7",
     "src/styles/choice-nova.css": "811aa260ba6463ed1679e5b448c788c89c8d0678881585dd4f40c71f556292f6"
   }
 }

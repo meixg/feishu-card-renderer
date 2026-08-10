@@ -1,8 +1,9 @@
-import { access, readFile, readdir, stat } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
 import postcss from "postcss";
+import { measureBundleDirectory } from "./measure-bundle-dirs.mjs";
 
 const requiredArtifacts = [
   "dist/index.js",
@@ -129,7 +130,9 @@ for (const [dependency, range] of Object.entries(expectedRuntimeDependencies)) {
 if (packageManifest.dependencies?.["lucide-react"] !== "^1.28.0") {
   throw new Error("lucide-react must remain the reviewed named-icon dependency (^1.28.0).");
 }
-if (entry.includes('from "lucide-react"') || entry.includes("lucide-react/dist")) {
+// Rolldown emits source-region comments containing dependency paths. Match
+// executable module references so those comments do not look like imports.
+if (/(?:\bfrom|\bimport(?:\s*\()?)\s*["']lucide-react(?:\/[^"']*)?["']/u.test(entry)) {
   throw new Error("Lucide must be tree-shaken into the renderer, not left as a broad runtime import.");
 }
 if (packageManifest.dependencies?.tailwindcss ||
@@ -216,15 +219,13 @@ if (typeof schemaModule.validateCard !== "function" ||
   throw new Error("The schema subpath must export validation and normalization.");
 }
 
-const entryBytes = (await stat("dist/index.js")).size;
-const sharedBytes = (await stat(
-  join("dist", files.find((file) => /^index-.*\.js$/.test(file)) ?? ""),
-)).size;
+const bundleMetrics = await measureBundleDirectory("dist");
 console.log(
   "Build contract verified: ESM, bundled Markdown parser, import-time DOM/network safety, "
   + "schema subpath, declarations, single scoped CSS artifact, React external, lazy VChart chunk.",
 );
 console.log(
-  `Bundle metrics (raw): eager renderer ${entryBytes} B + shared ${sharedBytes} B; `
-  + `lazy VChart ${(await stat(join("dist", vchartChunks[0]))).size} B.`,
+  `Bundle metrics (raw): eager closure ${bundleMetrics.eager.raw} B `
+  + `(${bundleMetrics.eager.files.join(", ")}); `
+  + `lazy VChart ${bundleMetrics.vchart.raw} B.`,
 );
