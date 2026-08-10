@@ -308,8 +308,8 @@ requireContract(
 requireContract(!/\bpull_request(?:_target)?\b/.test(changesets), "Changesets maintenance must never run on pull requests");
 requireContract(!/^\s*id-token:/m.test(changesets), "Changesets maintenance must not request OIDC");
 requireContract(
-  /uses: changesets\/action@[0-9a-f]{40}\s+#\s+v1\.8\.0/.test(changesets),
-  "Changesets action must be pinned to the audited v1.8.0 commit",
+  /uses: changesets\/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d\s+#\s+v1\.9\.0/.test(changesets),
+  "Changesets action must be pinned to the audited v1.9.0 commit",
 );
 requireContract(
   /commitMode: github-api/.test(changesets)
