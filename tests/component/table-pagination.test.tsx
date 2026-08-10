@@ -44,26 +44,51 @@ describe("table pagination through CardRenderer", () => {
     });
 
     expect(previous).toBeDisabled();
-    expect(current()).toHaveAccessibleName("第 1 页，共 3 页");
+    expect(within(navigation).getAllByRole("button").map((button) =>
+      button.textContent)).toEqual(["上一页", "1", "2", "3", "下一页"]);
+    expect(current()).toHaveAccessibleName("第 1 页");
     expect(within(container).getAllByRole("cell").map((cell) => cell.textContent))
       .toEqual(["one", "two"]);
 
-    fireEvent.click(next);
+    fireEvent.click(within(navigation).getByRole("button", { name: "第 2 页" }));
     expect(previous).toBeEnabled();
     expect(next).toBeEnabled();
-    expect(current()).toHaveAccessibleName("第 2 页，共 3 页");
+    expect(current()).toHaveAccessibleName("第 2 页");
     expect(within(container).getAllByRole("cell").map((cell) => cell.textContent))
       .toEqual(["three", "four"]);
 
     fireEvent.click(next);
     expect(next).toBeDisabled();
-    expect(current()).toHaveAccessibleName("第 3 页，共 3 页");
+    expect(current()).toHaveAccessibleName("第 3 页");
     expect(within(container).getAllByRole("cell").map((cell) => cell.textContent))
       .toEqual(["five"]);
 
     previous.focus();
     fireEvent.click(previous);
-    expect(current()).toHaveAccessibleName("第 2 页，共 3 页");
+    expect(current()).toHaveAccessibleName("第 2 页");
+  });
+
+  it("uses shadcn page links and ellipses for large page sets", () => {
+    const rows = Array.from({ length: 10 }, (_, index) => String(index + 1));
+    const { container } = render(<CardRenderer card={card(rows, 1)} />);
+    const navigation = within(container).getByRole("navigation", {
+      name: "表格分页",
+    });
+    const pageNames = () => within(navigation).getAllByRole("button")
+      .filter((button) => button.getAttribute("aria-label")?.startsWith("第 "))
+      .map((button) => button.getAttribute("aria-label"));
+
+    expect(pageNames()).toEqual([
+      "第 1 页", "第 2 页", "第 3 页", "第 4 页", "第 5 页", "第 10 页",
+    ]);
+    expect(navigation.querySelectorAll('[data-slot="pagination-ellipsis"]'))
+      .toHaveLength(1);
+
+    fireEvent.click(within(navigation).getByRole("button", { name: "第 5 页" }));
+    expect(pageNames()).toEqual(["第 1 页", "第 4 页", "第 5 页", "第 6 页", "第 10 页"]);
+    expect(navigation.querySelectorAll('[data-slot="pagination-ellipsis"]'))
+      .toHaveLength(2);
+    expect(within(container).getByRole("cell")).toHaveTextContent("5");
   });
 
   it("localizes accessible names and disabled controls perform zero transitions", () => {
@@ -77,7 +102,7 @@ describe("table pagination through CardRenderer", () => {
       name: "Previous page",
     });
     expect(within(navigation).getByRole("button", { current: "page" }))
-      .toHaveAccessibleName("Page 1 of 2");
+      .toHaveAccessibleName("Page 1");
     fireEvent.click(previous);
     expect(within(container).getAllByRole("cell").map((cell) => cell.textContent))
       .toEqual(["one", "two"]);

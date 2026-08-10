@@ -271,8 +271,9 @@ Base UI 提供无样式 primitive 与虚拟键盘行为，固定 shadcn wrapper/
 `interactive_container` 只使用逐卡作用域的 focus ring token，不引入 Card 外壳。
 表格分页见
 [table pagination provenance](docs/specs/shadcn-base-nova-table-pagination-baseline.md)：
-保留本地 `page_size` 行切片与语义 table，使用 shadcn Pagination/Button composition
-和具名 Lucide chevron；表格内容可独立横向滚动，分页控件保持在卡片宽度内。
+保留本地 `page_size` 行切片与语义 table，使用 shadcn Pagination 的页码、活跃态、
+省略号和前后翻页 composition，并通过具名 Lucide 图标呈现；表格内容可独立横向
+滚动，分页控件保持在卡片宽度内。
 
 最终收缩以可执行的
 [legacy interaction inventory](docs/specs/legacy-interaction-inventory.json)
