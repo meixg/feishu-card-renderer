@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
@@ -34,22 +34,23 @@ function PaginationItem(props: ComponentProps<"li">) {
   return <li data-slot="pagination-item" {...props} />;
 }
 
-type PaginationButtonProps = ComponentProps<typeof Button> & {
+type PaginationLinkProps = ComponentProps<typeof Button> & {
   isActive?: boolean;
 };
 
-function PaginationButton({
+function PaginationLink({
   className,
   isActive,
   size = "icon",
   ...props
-}: PaginationButtonProps) {
+}: PaginationLinkProps) {
   return (
     <Button
       type="button"
       variant={isActive ? "outline" : "ghost"}
       size={size}
       aria-current={isActive ? "page" : undefined}
+      data-active={isActive || undefined}
       data-slot="pagination-link"
       className={cn("fcr-ui-pagination-link", className)}
       {...props}
@@ -57,27 +58,68 @@ function PaginationButton({
   );
 }
 
-function PaginationPrevious(props: ComponentProps<typeof PaginationButton>) {
+function PaginationPrevious({
+  className,
+  text = "Previous",
+  ...props
+}: ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
-    <PaginationButton size="icon" {...props}>
+    <PaginationLink
+      aria-label="Go to previous page"
+      size="default"
+      className={cn("fcr-ui-pagination-previous", className)}
+      {...props}
+    >
       <ChevronLeft aria-hidden="true" />
-    </PaginationButton>
+      <span className="fcr-ui-pagination-previous-text">{text}</span>
+    </PaginationLink>
   );
 }
 
-function PaginationNext(props: ComponentProps<typeof PaginationButton>) {
+function PaginationNext({
+  className,
+  text = "Next",
+  ...props
+}: ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
-    <PaginationButton size="icon" {...props}>
+    <PaginationLink
+      aria-label="Go to next page"
+      size="default"
+      className={cn("fcr-ui-pagination-next", className)}
+      {...props}
+    >
+      <span className="fcr-ui-pagination-next-text">{text}</span>
       <ChevronRight aria-hidden="true" />
-    </PaginationButton>
+    </PaginationLink>
+  );
+}
+
+function PaginationEllipsis({
+  className,
+  ...props
+}: ComponentProps<"span">) {
+  return (
+    <span
+      aria-hidden="true"
+      data-slot="pagination-ellipsis"
+      className={cn(
+        "fcr-ui-pagination-ellipsis fcr-ui-button-size-icon",
+        className,
+      )}
+      {...props}
+    >
+      <MoreHorizontal aria-hidden="true" size={16} />
+      <span className="fcr-sr-only">More pages</span>
+    </span>
   );
 }
 
 export {
   Pagination,
-  PaginationButton,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
+  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 };

@@ -127,12 +127,12 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
   }),
   "table pagination": Object.freeze({
     "src/components/ui/pagination.tsx":
-      "edffc70ea0aeb4cd6dd43db06751da73ee16903dc7004d7cb55f86b1e1631671",
+      "c36e7cac93474378d8bbf8a95d4924a839144ae6c0fb324e99d269c38953385b",
     "src/components/ui/table.tsx":
       "8d9b091b034ddd9c8c6abe5e53041c3168c2d6e29ddfc0251c3249d48698e988",
     "src/components/content/complex.tsx":
-      "a6d2e8a71611d966d48ec5143f0b98acc09274a60d4bdd26231ea8adb7043ff9",
+      "2198f8c6e7b15560cf64f7760044d06f074e14fe554d94288aa4578d20d5a49a",
     "src/styles/table-pagination-nova.css":
-      "544aa6d39bb1d566b80bee6974aa478827790b9ecfa9044c7b7f08d07a40667c",
+      "6573d78123d971a928d7a2160742ebed83893f183b9130372c13ee73cacf57f0",
   }),
 });

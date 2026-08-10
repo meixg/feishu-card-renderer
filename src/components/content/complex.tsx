@@ -13,9 +13,10 @@ import { useImageResource, usePersonResource } from "../../renderer/resources";
 import { useRendererContext } from "../../renderer/context";
 import {
   Pagination,
-  PaginationButton,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
+  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "../ui/pagination";
@@ -140,6 +141,17 @@ function formatCell(value: unknown, column: TableColumn): React.ReactNode {
   return "";
 }
 
+type PaginationPart = number | "ellipsis";
+
+function paginationParts(page: number, pages: number): PaginationPart[] {
+  if (pages <= 7) return Array.from({ length: pages }, (_, index) => index);
+  if (page <= 3) return [0, 1, 2, 3, 4, "ellipsis", pages - 1];
+  if (page >= pages - 4) {
+    return [0, "ellipsis", pages - 5, pages - 4, pages - 3, pages - 2, pages - 1];
+  }
+  return [0, "ellipsis", page - 1, page, page + 1, "ellipsis", pages - 1];
+}
+
 export function Table({ element }: { element: TableElement }): React.JSX.Element {
   const { locale } = useRendererContext();
   const isChinese = locale.toLowerCase().startsWith("zh");
@@ -169,22 +181,28 @@ export function Table({ element }: { element: TableElement }): React.JSX.Element
         <PaginationItem>
           <PaginationPrevious
             aria-label={isChinese ? "上一页" : "Previous page"}
+            text={isChinese ? "上一页" : "Previous"}
             disabled={page === 0}
             onClick={() => setPage((current) => Math.max(0, current - 1))}
           />
         </PaginationItem>
-        <PaginationItem>
-          <PaginationButton isActive size="default"
-            aria-label={isChinese
-              ? `第 ${page + 1} 页，共 ${pages} 页`
-              : `Page ${page + 1} of ${pages}`}
-            aria-live="polite">
-            {page + 1} / {pages}
-          </PaginationButton>
-        </PaginationItem>
+        {paginationParts(page, pages).map((part, index) =>
+          <PaginationItem key={part === "ellipsis" ? `ellipsis:${index}` : part}>
+            {part === "ellipsis"
+              ? <PaginationEllipsis />
+              : <PaginationLink
+                  isActive={part === page}
+                  aria-label={isChinese ? `第 ${part + 1} 页` : `Page ${part + 1}`}
+                  aria-live={part === page ? "polite" : undefined}
+                  onClick={() => setPage(part)}
+                >
+                  {part + 1}
+                </PaginationLink>}
+          </PaginationItem>)}
         <PaginationItem>
           <PaginationNext
             aria-label={isChinese ? "下一页" : "Next page"}
+            text={isChinese ? "下一页" : "Next"}
             disabled={page + 1 === pages}
             onClick={() => setPage((current) => Math.min(pages - 1, current + 1))}
           />

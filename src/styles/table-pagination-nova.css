@@ -13,23 +13,38 @@
   }
 
   .fcr-root .fcr-table-pagination {
-    display: flex;
-    width: 100%;
     max-width: 100%;
-    justify-content: flex-end;
     overflow-x: auto;
     padding-top: 8px;
     overscroll-behavior-inline: contain;
+  }
+
+  .fcr-root .fcr-ui-pagination {
+    display: flex;
+    width: 100%;
+    justify-content: safe center;
   }
 
   .fcr-root .fcr-ui-pagination-content {
     display: flex;
     flex: 0 0 auto;
     align-items: center;
-    gap: 4px;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  .fcr-root .fcr-ui-pagination-ellipsis {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (width < 640px) {
+    .fcr-root .fcr-ui-pagination-previous-text,
+    .fcr-root .fcr-ui-pagination-next-text {
+      display: none;
+    }
+  }
 }

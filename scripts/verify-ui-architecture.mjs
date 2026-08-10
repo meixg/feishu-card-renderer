@@ -38,7 +38,7 @@ export async function verifyUiArchitecture() {
       "CheckIcon", "ChevronDownIcon", "SearchIcon", "XIcon",
     ])],
     ["src/components/ui/pagination.tsx", new Set([
-      "ChevronLeft", "ChevronRight",
+      "ChevronLeft", "ChevronRight", "MoreHorizontal",
     ])],
     ["src/components/interactive/interactive.tsx", new Set([
       "CalendarIcon", "EllipsisIcon",
