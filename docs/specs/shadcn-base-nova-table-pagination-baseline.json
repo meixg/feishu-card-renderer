@@ -26,6 +26,6 @@
     "src/components/ui/pagination.tsx": "c36e7cac93474378d8bbf8a95d4924a839144ae6c0fb324e99d269c38953385b",
     "src/components/ui/table.tsx": "8d9b091b034ddd9c8c6abe5e53041c3168c2d6e29ddfc0251c3249d48698e988",
     "src/components/content/complex.tsx": "2198f8c6e7b15560cf64f7760044d06f074e14fe554d94288aa4578d20d5a49a",
-    "src/styles/table-pagination-nova.css": "6573d78123d971a928d7a2160742ebed83893f183b9130372c13ee73cacf57f0"
+    "src/styles/table-pagination-nova.css": "7e379e1d6201f533768e383306d455fb98646bc286b85d8f2ff51adca8405d87"
   }
 }

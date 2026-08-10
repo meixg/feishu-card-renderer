@@ -1467,6 +1467,7 @@ test("table pagination keeps standard controls, keyboard behavior, and narrow ov
     const root = host.locator(".fcr-root");
     const tableContainer = root.locator('[data-slot="table-container"]');
     const pagination = root.getByRole("navigation");
+    const paginationContent = pagination.locator('[data-slot="pagination-content"]');
     const next = pagination.getByRole("button", { name: "下一页" });
     const previous = pagination.getByRole("button", { name: "上一页" });
 
@@ -1480,6 +1481,34 @@ test("table pagination keeps standard controls, keyboard behavior, and narrow ov
     }
     expect(await next.evaluate((node) =>
       node.getBoundingClientRect().width)).toBeGreaterThan(32);
+
+    if (name !== "narrow") {
+      const rightGap = await paginationContent.evaluate((content) => {
+        const contentRect = content.getBoundingClientRect();
+        const paginationRect = content.parentElement?.getBoundingClientRect();
+        return paginationRect ? paginationRect.right - contentRect.right : Number.NaN;
+      });
+      expect.soft(Math.abs(rightGap)).toBeLessThanOrEqual(1);
+    }
+
+    const expectStablePress = async (target: Locator) => {
+      const restingOverflow = await pagination.evaluate((node) => ({
+        scrollHeight: node.scrollHeight,
+        scrollTop: node.scrollTop,
+      }));
+      await target.hover();
+      await page.mouse.down();
+      expect.soft(await pagination.evaluate((node) => ({
+        scrollHeight: node.scrollHeight,
+        scrollTop: node.scrollTop,
+      }))).toEqual(restingOverflow);
+      await page.mouse.up();
+    };
+    await expectStablePress(pagination.getByRole("button", { name: "第 1 页" }));
+    await expectStablePress(pagination.getByRole("button", { name: "第 2 页" }));
+    await expectStablePress(previous);
+    await expectStablePress(next);
+    await pagination.getByRole("button", { name: "第 1 页" }).click();
 
     await next.focus();
     await next.press("Enter");

@@ -133,6 +133,6 @@ export const PINNED_SHADCN_LOCAL_HASHES = Object.freeze({
     "src/components/content/complex.tsx":
       "2198f8c6e7b15560cf64f7760044d06f074e14fe554d94288aa4578d20d5a49a",
     "src/styles/table-pagination-nova.css":
-      "6573d78123d971a928d7a2160742ebed83893f183b9130372c13ee73cacf57f0",
+      "7e379e1d6201f533768e383306d455fb98646bc286b85d8f2ff51adca8405d87",
   }),
 });
