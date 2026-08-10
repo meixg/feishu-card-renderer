@@ -22,7 +22,7 @@
   .fcr-root .fcr-ui-pagination {
     display: flex;
     width: 100%;
-    justify-content: safe center;
+    justify-content: safe flex-end;
   }
 
   .fcr-root .fcr-ui-pagination-content {
@@ -39,6 +39,10 @@
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
+  }
+
+  .fcr-root .fcr-table-pagination .fcr-ui-pagination-link:active {
+    transform: none;
   }
 
   @media (width < 640px) {

@@ -23,6 +23,8 @@ registry 校验。删除 key、替换路径、修改合法格式 hash，或同�
 滚动、分页布局与窄卡 overflow；颜色、边框、圆角、阴影、focus 与标准控件尺寸
 全部来自固定 Button/Nova adaptation。上一页和下一页使用带本地化文字的标准
 `size="default"`，页码使用标准 `size="icon"`，当前页使用 outline active state；
-scoped layout CSS 不覆盖 Button 尺寸。上一页、下一页和省略号使用具名 Lucide
+分页内容在可用宽度内居右，窄卡溢出时通过 safe alignment 回退到可滚动起点。
+scoped layout CSS 不覆盖 Button 尺寸，并仅取消分页按钮按下时的纵向位移，避免
+横向滚动容器产生瞬时纵向 scrollbar。上一页、下一页和省略号使用具名 Lucide
 `ChevronLeft`/`ChevronRight`/`MoreHorizontal`，图标为装饰性，页码和翻页控件的
 accessible name 由 renderer locale 提供。
